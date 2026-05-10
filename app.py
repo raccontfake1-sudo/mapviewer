@@ -6,11 +6,11 @@ import tempfile
 import html
 import os
 
-# 1. إعدادات الصفحة
+# إعداد الصفحة لتكون عريضة وواضحة
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 # -------------------------
-# HELPERS
+# وظائف معالجة البيانات
 # -------------------------
 def get_mapping_columns(i):
     if i == 1: return {"mapping": "NIST mapping", "text": "Text", "final": "Final Score"}
@@ -30,14 +30,14 @@ def extract_mappings(row, df, top_k=10):
             "text": str(row.get(cols["text"], "")),
             "final": score
         })
-    # ترتيب تنازلي بناءً على السكور (الأقرب أولاً)
+    # الترتيب من الأقرب (الأعلى سكور) للأبعد
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 def create_graph(selected_id, source_text, mappings):
-    # إنشاء الشبكة مع تعطيل شريط الأدوات الافتراضي
+    # إنشاء الشبكة بارتفاع مناسب للوضوح
     net = Network(height="700px", width="100%", bgcolor="#ffffff")
     
-    # إعدادات الفيزياء لجعل التوزيع دائرياً ومتساوياً تماماً مثل صورتك
+    # إعدادات فيزياء الشبكة لضمان شكل دائري "طبق الأصل"
     net.set_options("""
     {
       "nodes": {
@@ -50,36 +50,30 @@ def create_graph(selected_id, source_text, mappings):
         "smooth": false
       },
       "physics": {
-        "forceAtlas2Based": {
-          "gravitationalConstant": -100,
-          "centralGravity": 0.01,
-          "springLength": 200,
-          "springConstant": 0.08
-        },
+        "forceAtlas2Based": { "gravitationalConstant": -100, "springLength": 200 },
         "solver": "forceAtlas2Based",
         "stabilization": { "enabled": true, "iterations": 1000 }
       }
     }
     """)
 
-    # العقدة المركزية (الأزرق)
+    # العقدة المركزية (الأزرق - الأصل)
     net.add_node(selected_id, label=selected_id, title=html.escape(source_text), 
                  color="#1687d9", size=45, shape="circle", 
                  font={'color': 'white', 'bold': True, 'size': 22})
 
-    # العقد المحيطة (الأخضر) والأسهم المرقمة
+    # العقد المحيطة (الأخضر) مع ترقيم الأسهم وسماكتها
     for idx, item in enumerate(mappings):
-        rank_label = f"#{idx + 1}"  # الترقيم من #1 إلى #10
+        rank_label = f"#{idx + 1}"  # الترقيم المطلوب (#1 إلى #10)
         
-        # التحكم في سماكة الخط بناءً على الترتيب (الأول هو الأسمك)
-        # يبدأ من 10 للأول ويقل تدريجياً
+        # التحكم في سماكة الخط (الأقرب يكون أسمك)
         edge_width = 10 - idx  
         
         # إضافة العقدة الفرعية
         net.add_node(item["mapping"], label=item["mapping"], title=html.escape(item["text"]), 
-                     color="#328a36", size=30, shape="circle", font={'color': 'white'})
+                     color="#328a36", size=32, shape="circle", font={'color': 'white'})
         
-        # إضافة السهم مع التسمية (#1, #2...) والسمك المتغير
+        # ربط العقدة بالسهم المرقم والسميك
         net.add_edge(selected_id, item["mapping"], label=rank_label, width=edge_width)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
@@ -87,7 +81,7 @@ def create_graph(selected_id, source_text, mappings):
         return open(tmp.name, 'r', encoding='utf-8').read()
 
 # -------------------------
-# MAIN INTERFACE
+# واجهة المستخدم (Streamlit)
 # -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 if os.path.exists(DATA_FILE):
@@ -97,15 +91,13 @@ if os.path.exists(DATA_FILE):
     if "selected_id" not in st.session_state:
         st.session_state.selected_id = str(df["ECC id control"].iloc[0])
 
-    # واجهة العرض
-    st.markdown(f"## Control Mapping Viewer")
+    st.title("Control Mapping Viewer")
     st.write(f"Viewing: **{st.session_state.selected_id}**")
     
-    # استخراج البيانات المحددة
+    # استخراج البيانات وتوليد الرسم
     row = df[df["ECC id control"].astype(str) == st.session_state.selected_id].iloc[0]
     mappings = extract_mappings(row, df)
 
-    # عرض الرسم البياني
     graph_html = create_graph(st.session_state.selected_id, str(row["Source Text"]), mappings)
     components.html(graph_html, height=750)
 
