@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # -------------------------
-# CSS STYLE
+# CSS STYLE 
 # -------------------------
 st.markdown("""
 <style>
@@ -41,8 +41,8 @@ def short_text(text, limit=120):
     return text if len(text) <= limit else text[:limit] + "..."
 
 def get_mapping_columns(i):
-    if i == 1: return {"mapping": "NIST mapping", "text": "Text", "final": "Final Score", "confidence": "Confidence match"}
-    return {"mapping": f"NIST mapping {i}", "text": f"Text {i}", "final": f"Final Score {i}", "confidence": f"Confidence match {i}"}
+    if i == 1: return {"mapping": "NIST mapping", "text": "Text", "final": "Final Score"}
+    return {"mapping": f"NIST mapping {i}", "text": f"Text {i}", "final": f"Final Score {i}"}
 
 def extract_mappings(row, df, top_k):
     results = []
@@ -57,48 +57,41 @@ def extract_mappings(row, df, top_k):
         results.append({
             "mapping": str(row.get(cols["mapping"], "")),
             "text": str(row.get(cols["text"], "")),
-            "final": final_score,
-            "confidence": str(row.get(cols["confidence"], "N/A"))
+            "final": final_score
         })
+    # ترتيب تنازلي (الأقرب سكور يظهر أولاً)
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 def create_graph(selected_control, source_text, mappings):
     net = Network(height="600px", width="100%", bgcolor="#ffffff", font_color="#333")
     
-    # إعدادات الخطوط والدوائر لتظهر الأرقام بوضوح
     net.set_options("""
     {
-      "nodes": {
-        "font": {"size": 18, "face": "arial", "vadjust": -2},
-        "borderWidth": 2
-      },
+      "nodes": { "font": { "size": 18, "face": "arial" }, "borderWidth": 2 },
+      "edges": { "font": { "size": 14, "align": "middle", "color": "#1476d4", "strokeWidth": 4, "strokeColor": "#ffffff" }, "width": 2 },
       "physics": {
-        "forceAtlas2Based": {"gravitationalConstant": -60, "centralGravity": 0.01, "springLength": 130},
-        "solver": "forceAtlas2Based"
+        "forceAtlas2Based": { "gravitationalConstant": -80, "centralGravity": 0.01, "springLength": 160, "springConstant": 0.08 },
+        "solver": "forceAtlas2Based",
+        "stabilization": { "enabled": true, "iterations": 100 }
       }
     }
     """)
 
-    # العقدة المركزية (الضابط)
+    # العقدة المركزية
     net.add_node(selected_control, label=selected_control, title=html.escape(source_text), 
                  color="#1687d9", size=45, shape="circle", font={'color': 'white', 'size': 24, 'bold': True})
 
-    # العقد المحيطة (النسب المئوية داخل الدوائر)
+    # العقد المحيطة والأسهم
     for item in mappings:
         score_percent = f"{item['final'] * 100:.0f}%"
         node_color = "#328a36" if item["final"] >= 0.85 else "#5a9e5d"
         
-        # نضع النسبة المئوية كـ label لتظهر داخل الدائرة
-        # ونضع اسم الكود (مثلاً GV.PO-01) كـ title ليظهر عند تمرير الماوس
-        net.add_node(item["mapping"], 
-                     label=score_percent, 
-                     title=f"Code: {item['mapping']}\n{item['text']}", 
-                     color={"background": node_color, "border": "#246628"}, 
-                     size=30, 
-                     shape="circle", 
-                     font={'color': 'white', 'bold': True})
+        # إضافة العقدة باسم الكود (مثلاً GV.PO-01)
+        net.add_node(item["mapping"], label=item["mapping"], title=html.escape(item["text"]), 
+                     color={"background": node_color, "border": "#246628"}, size=30, shape="circle", font={'color': 'white'})
         
-        net.add_edge(selected_control, item["mapping"], color="#d1d5db", width=1.5)
+        # إضافة السهم مع كتابة النسبة المئوية عليه
+        net.add_edge(selected_control, item["mapping"], label=score_percent, color="#d1d5db")
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
@@ -133,7 +126,7 @@ with st.sidebar.container(height=650):
 # MAIN CONTENT
 # -------------------------
 selected_row = df[df["ECC id control"].astype(str) == st.session_state.selected_id].iloc[0]
-mappings = extract_mappings(selected_row, df, top_k=12)
+mappings = extract_mappings(selected_row, df, top_k=10)
 
 st.markdown('<div class="main-title">Control Mapping Viewer</div>', unsafe_allow_html=True)
 st.markdown(f'<div class="subtitle">Viewing Control: <b>{st.session_state.selected_id}</b></div>', unsafe_allow_html=True)
