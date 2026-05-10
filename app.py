@@ -10,25 +10,56 @@ import os
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 # -------------------------
+# وظيفة إزالة الـ Parent Controls
+# -------------------------
+def remove_parent_controls(df):
+    return df[
+        df["ECC id control"]
+        .astype(str)
+        .str.count(r"\.") >= 2
+    ]
+
+# -------------------------
 # وظائف استخراج البيانات
 # -------------------------
 def get_mapping_columns(i):
-    if i == 1: return {"mapping": "NIST mapping", "text": "Text", "final": "Final Score"}
-    return {"mapping": f"NIST mapping {i}", "text": f"Text {i}", "final": f"Final Score {i}"}
+    if i == 1:
+        return {
+            "mapping": "NIST mapping",
+            "text": "Text",
+            "final": "Final Score",
+            "commonality": "Commonality",
+            "justification": "Justification",
+            "differences": "Differences"
+        }
+    else:
+        return {
+            "mapping": f"NIST mapping {i}",
+            "text": f"Text {i}",
+            "final": f"Final Score {i}",
+            "commonality": f"Commonality {i}",
+            "justification": f"Justification {i}",
+            "differences": f"Differences {i}"
+        }
 
 def extract_mappings(row, df, top_k=10):
     results = []
     for i in range(1, 11):
         cols = get_mapping_columns(i)
-        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])): continue
+        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])):
+            continue
         try:
             val = str(row.get(cols["final"], 0)).replace('%', '')
             score = float(val) / 100.0 if float(val) > 1.0 else float(val)
-        except: score = 0.0
+        except:
+            score = 0.0
         results.append({
             "mapping": str(row.get(cols["mapping"], "")),
             "text": str(row.get(cols["text"], "")),
-            "final": score
+            "final": score,
+            "commonality": str(row.get(cols["commonality"], "")),
+            "justification": str(row.get(cols["justification"], "")),
+            "differences": str(row.get(cols["differences"], ""))
         })
     # ترتيب من الأقرب (أعلى درجة) للأبعد
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
@@ -37,7 +68,7 @@ def create_graph(selected_id, source_text, mappings):
     # إنشاء الشبكة مع خلفية بيضاء
     net = Network(height="750px", width="100%", bgcolor="#ffffff")
     
-    # إعدادات الفيزياء لضمان التوزيع الدائري (الوردة)
+    # إعدادات الفيزياء لضمان التوزيع الدائري
     net.set_options("""
     {
       "nodes": {
@@ -57,23 +88,19 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
 
-    # العقدة المركزية (اللون الأزرق)
+    # العقدة المركزية
     net.add_node(selected_id, label=selected_id, title=html.escape(source_text), 
                  color="#1687d9", size=45, shape="circle", 
                  font={'color': 'white', 'bold': True, 'size': 22})
 
-    # العقد المحيطة (اللون الأخضر) مع الترقيم والسمك المتغير
+    # العقد المحيطة
     for idx, item in enumerate(mappings):
-        rank_label = f"#{idx + 1}"  # الترقيم المطلوب (#1, #2...)
+        rank_label = f"#{idx + 1}"
+        edge_width = max(1, 10 - idx)
         
-        # التحكم في سمك الخط: الأول يكون سمكه 10 ويقل تدريجياً
-        edge_width = 10 - idx 
-        
-        # إضافة العقدة الفرعية
         net.add_node(item["mapping"], label=item["mapping"], title=html.escape(item["text"]), 
                      color="#328a36", size=32, shape="circle", font={'color': 'white'})
         
-        # إضافة السهم مع التسمية والسمك المطلوب
         net.add_edge(selected_id, item["mapping"], label=rank_label, width=edge_width)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
@@ -84,9 +111,13 @@ def create_graph(selected_id, source_text, mappings):
 # الواجهة الرئيسية
 # -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
+
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
+    
+    # إزالة الـ Parent Controls
+    df = remove_parent_controls(df)
     
     # قائمة التحكم الجانبية لاختيار الـ ID
     st.sidebar.title("Controls List")
@@ -98,10 +129,23 @@ if os.path.exists(DATA_FILE):
     # جلب البيانات للعنصر المختار
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     mappings = extract_mappings(row, df)
-
+    
     # عرض الرسم البياني
     graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
     components.html(graph_html, height=800)
+    
+    # عرض التفسيرات من AI
+    if mappings:
+        st.subheader("AI Explanations")
+        st.write("Commonality, Justification, and Differences for each mapping")
+        
+        for idx, item in enumerate(mappings):
+            with st.expander(f"#{idx + 1} - {item['mapping']}"):
+                st.markdown(f"**Commonality:** {item['commonality']}")
+                st.markdown(f"**Justification:** {item['justification']}")
+                st.markdown(f"**Differences:** {item['differences']}")
+    else:
+        st.info("No mappings found for this control.")
 
 else:
     st.error("Data file not found. Please ensure the CSV is in the same directory.")
