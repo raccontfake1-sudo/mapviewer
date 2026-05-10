@@ -8,7 +8,7 @@ st.title("Control Mapping Viewer")
 # تحميل البيانات تلقائياً
 @st.cache_data
 def load_data():
-    file_path = 'final_ontology_refined_mappings_with_explanations.csv'
+    file_path = 'final_ontology_refined_mappings_with_explanations.csv.'
     df = pd.read_csv(file_path)
     
     # محاولة إيجاد عمود السكور تلقائياً وترتيبه
