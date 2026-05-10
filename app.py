@@ -16,7 +16,7 @@ def remove_parent_controls(df):
     return df[
         df["ECC id control"]
         .astype(str)
-        .str.match(r'^\.')
+        .str.match(r'^\d')
     ]
 
 # -------------------------
