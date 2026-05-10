@@ -4,7 +4,7 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 import tempfile
 import html
-import os 
+import os
 
 # إعداد الصفحة
 st.set_page_config(
@@ -13,38 +13,27 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# -------------------------
-# CSS STYLE (نفس تنسيقاتك الأصلية)
-# -------------------------
+# إضافة تنسيقات CSS لتحسين المظهر
 st.markdown("""
 <style>
-    /* ... (نفس تنسيقات CSS التي أرسلتها في كودك) ... */
-    .mapping-card { border: 2px solid #75b843; border-radius: 6px; background-color: #f1faec; padding: 14px; margin-bottom: 14px; }
-    .mapping-title { font-size: 20px; font-weight: 800; color: #1476d4; }
-    .rank-pill { background-color: #1476d4; color: white; border-radius: 18px; padding: 5px 10px; font-weight: 700; }
+    .mapping-card { border: 2px solid #75b843; border-radius: 6px; padding: 15px; margin-bottom: 10px; background-color: #f9fbf7; }
+    .mapping-title { font-size: 20px; font-weight: 800; color: #1476d4; margin-bottom: 8px; }
+    .rank-pill { background-color: #1476d4; color: white; border-radius: 20px; padding: 2px 12px; font-size: 14px; }
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------------
-# HELPERS
-# -------------------------
+# دالة لتنظيف النصوص الطويلة
 def short_text(text, limit=150):
     text = str(text)
     return text if len(text) <= limit else text[:limit] + "..."
 
+# أسماء الأعمدة بناءً على الملف الجديد في مستودعك
 def get_mapping_columns(i):
-    # دالة ذكية للتعامل مع تسميات الأعمدة المختلفة
-    suffix = f" {i}" if i > 1 else ""
+    suffix = f".{i}" if i > 1 else ""
     return {
         "mapping": f"NIST mapping{suffix}",
         "text": f"Text{suffix}",
-        "dense": f"Dense{suffix}",
-        "sparse": f"Sparse{suffix}",
-        "hybrid": f"Hybrid{suffix}",
-        "ontology": f"Ontology score{suffix}",
         "final": f"Final Score{suffix}",
-        "confidence": f"Confidence match{suffix}",
-        "commonality": f"Commonality{suffix}",
         "justification": f"Justification{suffix}",
         "differences": f"Differences{suffix}"
     }
@@ -55,8 +44,8 @@ def extract_mappings(row, df, top_k):
         cols = get_mapping_columns(i)
         if cols["mapping"] not in df.columns: continue
         if pd.isna(row.get(cols["mapping"])): continue
-
-        # جلب القيم مع التأكد من تحويل السكور لرقم للترتيب
+        
+        # تحويل السكور لرقم
         final_val = str(row.get(cols["final"], "0")).replace('%', '')
         try:
             final_score = float(final_val)
@@ -68,79 +57,46 @@ def extract_mappings(row, df, top_k):
             "mapping": str(row.get(cols["mapping"], "")),
             "text": str(row.get(cols["text"], "")),
             "final": final_score,
-            "commonality": row.get(cols["commonality"], "N/A"),
-            "justification": row.get(cols["justification"], "N/A"),
-            "differences": row.get(cols["differences"], "N/A")
+            "justification": str(row.get(cols["justification"], "N/A")),
+            "differences": str(row.get(cols["differences"], "N/A"))
         })
-
-    # الترتيب: الأقرب (الأعلى سكور) فالأبعد
+    
+    # ترتيب النتائج حسب السكور الأعلى
     results = sorted(results, key=lambda x: x["final"], reverse=True)
     return results[:top_k]
 
-# -------------------------
-# LOAD DATA (البحث الذكي عن الملف)
-# -------------------------
-DATA_FILES = [
-    "final_with_explanations.csv", # الملف الناتج من step6
-    "data/final_with_explanations.csv",
-    "final_ontology_refined_mappings_with_explanations.csv"
-]
+# تحميل البيانات - تأكد من مطابقة الاسم للموجود في GitHub
+DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
-df = None
-for f_path in DATA_FILES:
-    if os.path.exists(f_path):
-        df = pd.read_csv(f_path)
-        break
-
-if df is None:
-    st.error("لم يتم العثور على ملف البيانات. تأكد من تشغيل step6 أو وجود ملف CSV.")
-    st.stop()
-
-# -------------------------
-# MAIN INTERFACE
-# -------------------------
-control_col = "ECC id control"
-source_col = "Source Text"
-
-# شريط البحث الجانبي
-st.sidebar.markdown("### Controls Search")
-search = st.sidebar.text_input("", placeholder="Search ID (e.g. 1.1)")
-
-filtered_df = df.copy()
-if search:
-    filtered_df = filtered_df[filtered_df[control_col].astype(str).str.contains(search)]
-
-# اختيار الـ Control
-if not filtered_df.empty:
-    if "selected_control" not in st.session_state:
-        st.session_state.selected_control = str(filtered_df[control_col].iloc[0])
-    
-    # قائمة الأزرار الجانبية
-    control_box = st.sidebar.container(height=500)
-    with control_box:
-        for _, r in filtered_df.iterrows():
-            cid = str(r[control_col])
-            if st.button(f"{cid}: {short_text(r[source_col], 50)}", key=cid):
-                st.session_state.selected_control = cid
-                st.rerun()
-
-    selected_control = st.session_state.selected_control
-    row = df[df[control_col].astype(str) == selected_control].iloc[0]
-    
-    # استخراج وعرض النتائج
-    st.markdown(f'<div class="main-title">Mapping Results</div>', unsafe_allow_html=True)
-    st.markdown(f"#### ECC Control: {selected_control}")
-    st.info(row[source_col])
-
-    mappings = extract_mappings(row, df, 10)
-
-    # عرض التفاصيل في كروت مرتبة
-    for item in mappings:
-        with st.expander(f"#{item['rank']} | {item['mapping']} - Score: {item['final']}%"):
-            st.markdown(f"**Description:** {item['text']}")
-            st.success(f"**Commonality:** {item['commonality']}")
-            st.info(f"**Justification:** {item['justification']}")
-            st.warning(f"**Differences:** {item['differences']}")
-
+if not os.path.exists(DATA_FILE):
+    st.error(f"الملف {DATA_FILE} غير موجود في المستودع. تأكد من رفعه.")
 else:
-    st.warning("لا توجد نتائج تطابق بحثك.")
+    df = pd.read_csv(DATA_FILE)
+    
+    st.title("🔗 Control Mapping Explorer (AI Enhanced)")
+    
+    # القائمة الجانبية للبحث
+    st.sidebar.header("البحث والفلترة")
+    control_col = "Control ID" if "Control ID" in df.columns else df.columns[0]
+    source_col = "Control Text" if "Control Text" in df.columns else df.columns[1]
+    
+    search = st.sidebar.selectbox("اختر رقم الضابط (Control ID):", df[control_col].unique())
+    top_k = st.sidebar.slider("عدد النتائج المعروضة:", 1, 10, 5)
+    
+    filtered_df = df[df[control_col] == search]
+    
+    if not filtered_df.empty:
+        row = filtered_df.iloc[0]
+        st.subheader(f"ECC Control: {search}")
+        st.info(row[source_col])
+        
+        st.markdown("### Mapping Results")
+        mappings = extract_mappings(row, df, top_k)
+        
+        for m in mappings:
+            with st.expander(f"#{m['rank']} | {m['mapping']} - Score: {m['final']}%"):
+                st.markdown(f"**NIST Text:** {m['text']}")
+                st.success(f"**AI Justification:**\n{m['justification']}")
+                st.warning(f"**Differences noticed by AI:**\n{m['differences']}")
+    else:
+        st.warning("لا توجد بيانات لهذا الضابط.")
