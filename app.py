@@ -54,17 +54,11 @@ def extract_mappings(row, df, top_k=10):
         except:
             score = 0.0
         
-        # جلب Commonality مع قيمة افتراضية
+        # Commonality و Justification يقرأون من الملف مباشرة (بدون تغيير)
         commonality_value = row.get(cols["commonality"], "")
-        if pd.isna(commonality_value) or commonality_value == "":
-            commonality_value = "Both controls share related cybersecurity objectives."
-        
-        # جلب Justification مع قيمة افتراضية
         justification_value = row.get(cols["justification"], "")
-        if pd.isna(justification_value) or justification_value == "":
-            justification_value = "The controls contain similar cybersecurity concepts."
         
-        # جلب Differences مع قيمة افتراضية
+        # فقط Differences له قيمة افتراضية إذا كان مفقوداً
         differences_value = row.get(cols["differences"], "")
         if pd.isna(differences_value) or differences_value == "":
             differences_value = "The controls differ in implementation focus and specific requirements."
@@ -81,10 +75,8 @@ def extract_mappings(row, df, top_k=10):
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 def create_graph(selected_id, source_text, mappings):
-    # إنشاء الشبكة مع خلفية بيضاء
     net = Network(height="750px", width="100%", bgcolor="#ffffff")
     
-    # إعدادات الفيزياء لضمان التوزيع الدائري
     net.set_options("""
     {
       "nodes": {
@@ -104,12 +96,10 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
 
-    # العقدة المركزية
     net.add_node(selected_id, label=selected_id, title=html.escape(source_text), 
                  color="#1687d9", size=45, shape="circle", 
                  font={'color': 'white', 'bold': True, 'size': 22})
 
-    # العقد المحيطة
     for idx, item in enumerate(mappings):
         rank_label = f"#{idx + 1}"
         edge_width = max(1, 10 - idx)
@@ -132,25 +122,20 @@ if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
     
-    # إزالة الـ Parent Controls
     df = remove_parent_controls(df)
     
-    # قائمة التحكم الجانبية لاختيار الـ ID
     st.sidebar.title("Controls List")
     selected_id = st.sidebar.selectbox("Select Control ID:", df["ECC id control"].unique())
     
     st.title("Control Mapping Viewer")
     st.write(f"Viewing: **{selected_id}**")
     
-    # جلب البيانات للعنصر المختار
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     mappings = extract_mappings(row, df)
     
-    # عرض الرسم البياني
     graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
     components.html(graph_html, height=800)
     
-    # عرض التفسيرات من AI
     if mappings:
         st.subheader("AI Explanations")
         
