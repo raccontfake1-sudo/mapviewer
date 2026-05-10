@@ -5,6 +5,7 @@ import streamlit.components.v1 as components
 import tempfile
 import html
 import os 
+
 st.set_page_config(
     page_title="Control Mapping Viewer",
     layout="wide",
@@ -209,7 +210,13 @@ def extract_mappings(row, df, top_k):
         if pd.isna(row.get(cols["mapping"])):
             continue
 
-        final_score = float(row.get(cols["final"], 0))
+        try:
+            # تنظيف النسبة المئوية وتحويلها لرقم عشري
+            final_str = str(row.get(cols["final"], "0")).replace('%', '')
+            final_score = float(final_str)
+        except:
+            final_score = 0.0
+            
         dense = float(row.get(cols["dense"], 0))
         sparse = float(row.get(cols["sparse"], 0))
         hybrid = float(row.get(cols["hybrid"], 0))
@@ -226,6 +233,7 @@ def extract_mappings(row, df, top_k):
             "confidence": str(row.get(cols["confidence"], ""))
         })
 
+    # ترتيب النتائج من الأعلى للأقل (من الأقرب للأبعد كما طلب الدكتور)
     results = sorted(results, key=lambda x: x["final"], reverse=True)
     return results[:top_k]
 
@@ -307,7 +315,12 @@ def create_graph(selected_control, source_text, mappings):
     )
 
     for item in mappings:
-        score_percent = item["final"] * 100
+        # معالجة عرض السكور كنسبة مئوية صحيحة
+        score_val = item["final"]
+        if score_val <= 1.0:
+            score_percent = score_val * 100
+        else:
+            score_percent = score_val
 
         net.add_node(
             item["mapping"],
@@ -380,18 +393,18 @@ tab_choice = st.sidebar.radio(
 )
 
 
+# محاولة تحميل الملف تلقائياً لراحة المستخدم
 DATA_PATH = "final_ontology_refined_mappings_with_explanations.csv" 
 
 if os.path.exists(DATA_PATH):
     df = pd.read_csv(DATA_PATH)
 else:
-   
-    uploaded_file = st.file_uploader("Custom CSV for ECC (File not found locally):", type=["csv"])
+    uploaded_file = st.sidebar.file_uploader("Upload CSV Data:", type=["csv"])
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
     else:
         st.markdown('<div class="main-title">Control Mapping Viewer</div>', unsafe_allow_html=True)
-        st.info(f"Please ensure '{DATA_PATH}' is in the repository or upload it here.")
+        st.info(f"Please ensure '{DATA_PATH}' is in the folder or upload it via sidebar.")
         st.stop()
 
 
@@ -402,7 +415,7 @@ control_col = "ECC id control"
 source_col = "Source Text"
 
 if control_col not in df.columns or source_col not in df.columns:
-    st.error("Your CSV must contain: ECC id control and Source Text")
+    st.error("CSV error: Missing ECC id control or Source Text columns.")
     st.stop()
 
 controls_df = df[[control_col, source_col]].dropna().copy()
@@ -415,7 +428,7 @@ st.sidebar.markdown(
 
 search = st.sidebar.text_input(
     "",
-    placeholder="Search by control number (e.g., 2.4)"
+    placeholder="Search by control number..."
 )
 
 if search:
@@ -516,14 +529,16 @@ if tab_choice == "📊 Mappings":
         card_container = st.container(height=650)
         with card_container:
             for item in mappings:
-               
+                # عرض السكور بوضوح في البطاقة
+                disp_score = item["final"] * 100 if item["final"] <= 1.0 else item["final"]
                 st.markdown(f"""
                 <div class="mapping-card">
-                    <span class="rank-pill">#{item['rank']}</span>
+                    <span class="rank-pill">Score: {disp_score:.0f}%</span>
                     <span class="mapping-title">{item['mapping']}</span>
                     <div class="mapping-text">{item['text']}</div>
                 </div>
                 """, unsafe_allow_html=True)
+
 # -------------------------
 elif tab_choice == "📈 Analytics":
 
@@ -538,6 +553,12 @@ elif tab_choice == "📈 Analytics":
                 mapping_value = row.get(cols["mapping"])
                 if pd.isna(mapping_value) or str(mapping_value).strip() == "":
                     continue
+                
+                try:
+                    f_score = float(str(row.get(cols["final"], 0)).replace('%',''))
+                except:
+                    f_score = 0.0
+
                 all_items.append({
                     "control": control_id,
                     "mapping": str(mapping_value),
@@ -545,7 +566,7 @@ elif tab_choice == "📈 Analytics":
                     "sparse": float(row.get(cols["sparse"], 0) or 0),
                     "hybrid": float(row.get(cols["hybrid"], 0) or 0),
                     "ontology": float(row.get(cols["ontology"], 0) or 0),
-                    "final": float(row.get(cols["final"], 0) or 0),
+                    "final": f_score,
                     "confidence": str(row.get(cols["confidence"], "")),
                     "rank": i
                 })
@@ -577,23 +598,13 @@ elif tab_choice == "📈 Analytics":
     .metric-number { font-size: 52px; font-weight: 900; color: #1f2937; }
     .metric-label { font-size: 20px; color: #596579; font-weight: 600; }
     .gap-warning { border: 3px solid #f59e0b; background: #fff9e8; border-radius: 10px; padding: 30px; text-align: center; }
-    .gap-success { border: 3px solid #10 b981; background: #e9fff3; border-radius: 10px; padding: 30px; text-align: center; }
+    .gap-success { border: 3px solid #10b981; background: #e9fff3; border-radius: 10px; padding: 30px; text-align: center; }
     .orange-number { font-size: 54px; font-weight: 900; color: #f59e0b; }
     .green-number { font-size: 54px; font-weight: 900; color: #10b981; }
     .progress-bg { width: 100%; height: 12px; background: #e5e7eb; border-radius: 20px; overflow: hidden; margin-top: 12px; }
     .progress-blue { height: 100%; background: linear-gradient(90deg, #3b82f6, #6366f1); border-radius: 20px; }
     .progress-purple { height: 100%; background: #8b5cf6; border-radius: 20px; }
     .progress-green { height: 100%; background: #10b981; border-radius: 20px; }
-    .progress-orange { height: 100%; background: #f59e0b; border-radius: 20px; }
-    .progress-red { height: 100%; background: #ef4444; border-radius: 20px; }
-    .relation-box { border: 2px solid #e5e7eb; border-radius: 10px; padding: 28px; background: #f8fafc; }
-    .relation-title { text-align: center; font-size: 22px; font-weight: 800; color: #596579; margin-bottom: 24px; }
-    .relation-row { margin-bottom: 24px; font-size: 18px; font-weight: 700; }
-    .relation-value { float: right; color: #596579; font-weight: 600; }
-    .reciprocal-box { border: 3px solid #10b981; background: #e9fff3; border-radius: 14px; padding: 36px; display: flex; align-items: center; justify-content: space-around; }
-    .big-green { font-size: 86px; font-weight: 900; color: #10b981; text-align: center; }
-    .table-head { background: #f1f3f6; font-weight: 800; padding: 18px; border-bottom: 2px solid #e5e7eb; }
-    .table-row { padding: 18px; border-bottom: 1px solid #e5e7eb; font-size: 18px; font-weight: 600; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -627,4 +638,3 @@ elif tab_choice == "📈 Analytics":
     with s3:
         st.markdown(f'<div class="metric-box"><div class="metric-number">{avg_jaccard:.1f}%</div><div class="metric-label">Avg Jaccard Similarity</div><div class="progress-bg"><div class="progress-green" style="width:{avg_jaccard}%;"></div></div></div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
-    st.stop()
