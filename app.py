@@ -53,13 +53,29 @@ def extract_mappings(row, df, top_k=10):
             score = float(val) / 100.0 if float(val) > 1.0 else float(val)
         except:
             score = 0.0
+        
+        # جلب Commonality مع قيمة افتراضية
+        commonality_value = row.get(cols["commonality"], "")
+        if pd.isna(commonality_value) or commonality_value == "":
+            commonality_value = "Both controls share related cybersecurity objectives."
+        
+        # جلب Justification مع قيمة افتراضية
+        justification_value = row.get(cols["justification"], "")
+        if pd.isna(justification_value) or justification_value == "":
+            justification_value = "The controls contain similar cybersecurity concepts."
+        
+        # جلب Differences مع قيمة افتراضية
+        differences_value = row.get(cols["differences"], "")
+        if pd.isna(differences_value) or differences_value == "":
+            differences_value = "The controls differ in implementation focus and specific requirements."
+        
         results.append({
             "mapping": str(row.get(cols["mapping"], "")),
             "text": str(row.get(cols["text"], "")),
             "final": score,
-            "commonality": str(row.get(cols["commonality"], "")),
-            "justification": str(row.get(cols["justification"], "")),
-            "differences": str(row.get(cols["differences"], ""))
+            "commonality": str(commonality_value),
+            "justification": str(justification_value),
+            "differences": str(differences_value)
         })
     # ترتيب من الأقرب (أعلى درجة) للأبعد
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
@@ -137,7 +153,6 @@ if os.path.exists(DATA_FILE):
     # عرض التفسيرات من AI
     if mappings:
         st.subheader("AI Explanations")
-        st.write("Commonality, Justification, and Differences for each mapping")
         
         for idx, item in enumerate(mappings):
             with st.expander(f"#{idx + 1} - {item['mapping']}"):
