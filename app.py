@@ -14,7 +14,7 @@ st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 # -------------------------
 def remove_parent_controls(df):
     return df[
-        df["ECC id control"]
+        ~df["ECC id control"]
         .astype(str)
         .str.match(r'^\d')
     ]
