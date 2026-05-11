@@ -10,29 +10,17 @@ import os
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 # -------------------------
-# CSS STYLE - لتطابق شكل التفسيرات في الصورة
+# 1. دالة الفلتر (للتأكد من وجود بيانات في القائمة)
 # -------------------------
-st.markdown("""
-<style>
-    .explanation-box {
-        background-color: #1a1c24;
-        color: #e0e0e0;
-        border: 1px solid #3d3f4b;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 15px;
-    }
-    .exp-title { color: #ffffff; font-weight: bold; font-size: 1.1em; margin-bottom: 10px; }
-    .exp-label { color: #9da0a9; font-weight: bold; margin-top: 10px; display: block; }
-    .exp-text { margin-bottom: 10px; line-height: 1.6; }
-</style>
-""", unsafe_allow_html=True)
+def remove_parent_controls(df):
+    # نعيد كل البيانات مؤقتاً لنتأكد من ظهور القائمة
+    # (يمكنك تعديل هذا الشرط لاحقاً حسب رغبتك)
+    return df
 
 # -------------------------
-# وظائف معالجة البيانات
+# 2. تعريف أسماء الأعمدة
 # -------------------------
 def get_mapping_columns(i):
-    # نأخذ الأعمدة الأساسية بالإضافة لأعمدة التفسير (AI Explanations)
     suffix = "" if i == 1 else f" {i}"
     return {
         "mapping": f"NIST mapping{suffix}",
@@ -43,26 +31,44 @@ def get_mapping_columns(i):
         "differences": f"Differences{suffix}"
     }
 
+# -------------------------
+# 3. استخراج البيانات
+# -------------------------
 def extract_mappings(row, df, top_k=10):
     results = []
     for i in range(1, 11):
         cols = get_mapping_columns(i)
-        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])): continue
+        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])):
+            continue
+            
         try:
             val = str(row.get(cols["final"], 0)).replace('%', '')
             score = float(val) / 100.0 if float(val) > 1.0 else float(val)
-        except: score = 0.0
+        except:
+            score = 0.0
+            
+        # جلب النصوص (مع استخدام "غير متوفر" كقيمة افتراضية)
+        commonality = row.get(cols["commonality"], "")
+        justification = row.get(cols["justification"], "")
+        differences = row.get(cols["differences"], "")
         
+        if pd.isna(commonality) or commonality == "": commonality = "غير متوفر"
+        if pd.isna(justification) or justification == "": justification = "غير متوفر"
+        if pd.isna(differences) or differences == "": differences = "غير متوفر"
+            
         results.append({
             "mapping": str(row.get(cols["mapping"], "")),
             "text": str(row.get(cols["text"], "")),
             "final": score,
-            "commonality": str(row.get(cols["commonality"], "N/A")),
-            "justification": str(row.get(cols["justification"], "N/A")),
-            "differences": str(row.get(cols["differences"], "N/A"))
+            "commonality": commonality,
+            "justification": justification,
+            "differences": differences
         })
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
+# -------------------------
+# 4. رسم الشبكة
+# -------------------------
 def create_graph(selected_id, source_text, mappings):
     net = Network(height="650px", width="100%", bgcolor="#ffffff")
     net.set_options("""
@@ -75,12 +81,15 @@ def create_graph(selected_id, source_text, mappings):
       "edges": { "font": { "size": 16, "align": "middle", "color": "#1476d4" }, "color": "#d3dbe3" }
     }
     """)
-    # العقدة المركزية بدون رقم في الوسط كما طلبت
-    net.add_node(selected_id, label=" ", color="#1687d9", size=45, shape="circle")
+    
+    # العقدة المركزية
+    net.add_node(selected_id, label=selected_id, title=html.escape(source_text), 
+                 color="#1687d9", size=45, shape="circle", font={'color': 'white', 'bold': True})
 
     for idx, item in enumerate(mappings):
-        edge_width = 10 - idx
-        net.add_node(item["mapping"], label=item["mapping"], color="#328a36", size=32, shape="circle", font={'color':'white'})
+        edge_width = max(1, 10 - idx)
+        net.add_node(item["mapping"], label=item["mapping"], title=html.escape(item["text"]), 
+                     color="#328a36", size=32, shape="circle", font={'color': 'white'})
         net.add_edge(selected_id, item["mapping"], label=f"#{idx+1}", width=edge_width)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
@@ -88,40 +97,48 @@ def create_graph(selected_id, source_text, mappings):
         return open(tmp.name, 'r', encoding='utf-8').read()
 
 # -------------------------
-# الواجهة الرئيسية
+# 5. الواجهة الرئيسية
 # -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
+
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
+    
+    # تطبيق الفلتر (إذا أردت إخفاء بعض المعرفات)
+    df = remove_parent_controls(df)
+    
+    # التأكد من وجود بيانات قبل عرض القائمة
+    if df.empty:
+        st.error("لا توجد بيانات بعد تطبيق الفلتر. يرجى مراجعة دالة remove_parent_controls")
+        st.stop()
     
     st.sidebar.title("Controls List")
     selected_id = st.sidebar.selectbox("Select Control ID:", df["ECC id control"].unique())
     
     st.title("Control Mapping Viewer")
     
+    # جلب بيانات الصف المحدد
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     mappings = extract_mappings(row, df)
-
-    # 1. عرض الرسم البياني (طبق الأصل)
+    
+    # عرض الرسم البياني
     graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
     components.html(graph_html, height=680)
-
-    # 2. عرض قسم التفسيرات (AI Explanations) بنفس شكل الصورة
+    
+    # عرض قسم التفسيرات (بأسلوب Markdown بسيط وواضح)
     st.markdown("## AI Explanations")
-    for idx, m in enumerate(mappings):
-        with st.expander(f"#{idx+1} - {m['mapping']}", expanded=(idx == 0)):
-            st.markdown(f"""
-            <div class="explanation-box">
-                <span class="exp-label">Commonality:</span>
-                <div class="exp-text">{m['commonality']}</div>
-                
-                <span class="exp-label">Justification:</span>
-                <div class="exp-text">{m['justification']}</div>
-                
-                <span class="exp-label">Differences:</span>
-                <div class="exp-text">{m['differences']}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    
+    if mappings:
+        for idx, m in enumerate(mappings):
+            # استخدام expander مباشرة بدون HTML معقد
+            with st.expander(f"#{idx+1} - {m['mapping']}"):
+                # استخدام markdown العادي
+                st.markdown(f"**Commonality:** {m['commonality']}")
+                st.markdown(f"**Justification:** {m['justification']}")
+                st.markdown(f"**Differences:** {m['differences']}")
+    else:
+        st.info("No detailed mappings found for this control.")
+        
 else:
-    st.error("Data file not found.")
+    st.error("Data file not found. Please ensure the CSV is in the same directory.")
