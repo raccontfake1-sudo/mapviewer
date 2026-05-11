@@ -3,106 +3,147 @@ import pandas as pd
 from pyvis.network import Network
 import streamlit.components.v1 as components
 import tempfile
+import html
 import os
-import re
 
-# 1. إعداد الصفحة والتصميم
+# 1. إعداد الصفحة
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
+# 2. إضافة تنسيق CSS لتطابق شكل "AI Explanations" في الصورة تماماً
 st.markdown("""
 <style>
-    .main-title { font-size: 28px; font-weight: bold; color: #1e1e1e; }
-    .exp-box {
-        background-color: #1e1e1e; 
-        padding: 15px; 
-        border-radius: 10px; 
-        border-left: 5px solid #1476d4;
-        margin: 10px 0px;
+    .explanation-container {
+        background-color: #111217;
+        padding: 20px;
+        border-radius: 10px;
     }
-    .label { color: #58a6ff; font-weight: bold; font-size: 14px; margin-bottom: 4px; }
-    .content { color: #ffffff; font-size: 13.5px; line-height: 1.5; margin-bottom: 12px; }
+    .explanation-box {
+        background-color: #1a1c24;
+        color: #e0e0e0;
+        border: 1px solid #3d3f4b;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .exp-header {
+        color: #ffffff;
+        font-weight: bold;
+        font-size: 1.1em;
+        border-bottom: 1px solid #3d3f4b;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .exp-label {
+        color: #ffffff;
+        font-weight: bold;
+        display: block;
+        margin-top: 15px;
+    }
+    .exp-content {
+        color: #aeb1b7;
+        line-height: 1.6;
+        margin-bottom: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# 2. دالة تنظيف البيانات (الحل الجذري لمشكلة ظهور الأكواد)
-def sanitize_data(text):
-    if pd.isna(text): return "N/A"
-    # تحويل النص إلى سلسلة نصية
-    text = str(text)
-    # إزالة أي وسوم HTML مثل <div> <span> <p> وغيرها
-    clean = re.compile('<.*?>')
-    cleaned_text = re.sub(clean, '', text)
-    # فك ترميز أي رموز خاصة مثل &amp; أو &quot;
-    import html
-    return html.unescape(cleaned_text).strip()
+# -------------------------
+# وظائف استخراج البيانات
+# -------------------------
+def get_mapping_columns(i):
+    suffix = "" if i == 1 else f" {i}"
+    return {
+        "mapping": f"NIST mapping{suffix}",
+        "text": f"Text{suffix}",
+        "final": f"Final Score{suffix}",
+        "commonality": f"Commonality{suffix}",
+        "justification": f"Justification{suffix}",
+        "differences": f"Differences{suffix}"
+    }
 
-# 3. معالجة بيانات الأعمدة
-def get_clean_mappings(row, df):
+def extract_mappings(row, df, top_k=10):
     results = []
     for i in range(1, 11):
-        suffix = "" if i == 1 else f" {i}"
-        m_col = f"NIST mapping{suffix}"
+        cols = get_mapping_columns(i)
+        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])): continue
+        try:
+            val = str(row.get(cols["final"], 0)).replace('%', '')
+            score = float(val) / 100.0 if float(val) > 1.0 else float(val)
+        except: score = 0.0
         
-        if m_col in df.columns and pd.notna(row.get(m_col)):
-            results.append({
-                "rank": i,
-                "mapping": str(row.get(m_col)),
-                # تنظيف كل حقل بيانات بشكل منفصل
-                "commonality": sanitize_data(row.get(f"Commonality{suffix}")),
-                "justification": sanitize_data(row.get(f"Justification{suffix}")),
-                "differences": sanitize_data(row.get(f"Differences{suffix}"))
-            })
-    return results
+        results.append({
+            "mapping": str(row.get(cols["mapping"], "")),
+            "text": str(row.get(cols["text"], "")),
+            "final": score,
+            "commonality": str(row.get(cols["commonality"], "No data available")),
+            "justification": str(row.get(cols["justification"], "No data available")),
+            "differences": str(row.get(cols["differences"], "No data available"))
+        })
+    return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
-# 4. بناء الرسم البياني
-def build_graph(center_id, mappings):
-    net = Network(height="500px", width="100%", bgcolor="#ffffff", directed=False)
-    net.add_node(center_id, label=center_id, color="#1687d9", size=35, font={'color': 'white'})
-    for m in mappings:
-        net.add_node(m["mapping"], label=m["mapping"], color="#328a36", size=25, font={'color': 'white'})
-        net.add_edge(center_id, m["mapping"], label=f"#{m['rank']}", color="#dcd2d2", font={'size': 12, 'color': '#1476d4'})
-    
+def create_graph(selected_id, source_text, mappings):
+    net = Network(height="600px", width="100%", bgcolor="#ffffff")
+    net.set_options("""
+    {
+      "physics": {
+        "forceAtlas2Based": { "gravitationalConstant": -100, "springLength": 200 },
+        "solver": "forceAtlas2Based"
+      },
+      "nodes": { "font": { "size": 18 }, "borderWidth": 2 },
+      "edges": { "font": { "size": 14, "align": "middle" }, "smooth": false }
+    }
+    """)
+    # العقدة المركزية فارغة كما طلبت
+    net.add_node(selected_id, label=" ", title=html.escape(source_text), color="#1687d9", size=45, shape="circle")
+
+    for idx, item in enumerate(mappings):
+        net.add_node(item["mapping"], label=item["mapping"], color="#328a36", size=32, shape="circle", font={'color':'white'})
+        net.add_edge(selected_id, item["mapping"], label=f"#{idx+1}", width=10-idx)
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
         return open(tmp.name, 'r', encoding='utf-8').read()
 
-# 5. تشغيل التطبيق الرئيسي
+# -------------------------
+# العرض الرئيسي
+# -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
-
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
+    df.columns = [c.strip() for c in df.columns]
     
-    st.sidebar.header("Controls Navigation")
-    selected_id = st.sidebar.selectbox("Select Control ID:", df["ECC id control"].unique())
+    st.sidebar.title("Controls")
+    selected_id = st.sidebar.selectbox("ID:", df["ECC id control"].unique())
     
-    row_data = df[df["ECC id control"] == selected_id].iloc[0]
-    mappings = get_clean_mappings(row_data, df)
-
-    st.markdown(f'<div class="main-title">Control Mapping: {selected_id}</div>', unsafe_allow_html=True)
+    st.title("Control Mapping Viewer")
     
-    col_vis, col_exp = st.columns([1.2, 1])
+    row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
+    mappings = extract_mappings(row, df)
 
-    with col_vis:
-        st.write("### Network Visualization")
-        graph_html = build_graph(str(selected_id), mappings)
-        components.html(graph_html, height=550)
+    # 1. عرض الرسم البياني
+    graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
+    components.html(graph_html, height=650)
 
-    with col_exp:
-        st.write("### 🤖 AI Explanations")
-        for m in mappings:
-            with st.expander(f"#{m['rank']} - {m['mapping']}", expanded=(m['rank'] == 1)):
-                # العرض باستخدام Markdown نظيف تماماً
-                st.markdown(f"""
-                <div class="exp-box">
-                    <div class="label">Commonality:</div>
-                    <div class="content">{m['commonality']}</div>
-                    
-                    <div class="label">Justification:</div>
-                    <div class="content">{m['justification']}</div>
-                    
-                    <div class="label">Differences:</div>
-                    <div class="content">{m['differences']}</div>
-                </div>
-                """, unsafe_allow_html=True)
+    # 2. عرض قسم AI Explanations (بالضبط كما في الصورة)
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("## AI Explanations")
+    
+    for idx, m in enumerate(mappings):
+        # استخدام expander لعرض الرقم والعنوان
+        with st.expander(f"#{idx+1} - {m['mapping']}", expanded=(idx == 0)):
+            st.markdown(f"""
+            <div class="explanation-box">
+                <div class="exp-header">#{idx+1} - {m['mapping']}</div>
+                
+                <span class="exp-label">Commonality:</span>
+                <p class="exp-content">{m['commonality']}</p>
+                
+                <span class="exp-label">Justification:</span>
+                <p class="exp-content">{m['justification']}</p>
+                
+                <span class="exp-label">Differences:</span>
+                <p class="exp-content">{m['differences']}</p>
+            </div>
+            """, unsafe_allow_html=True)
 else:
-    st.error("CSV file not found in the repository.")
+    st.error("File not found.")
