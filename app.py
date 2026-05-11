@@ -32,7 +32,6 @@ st.markdown("""
 # وظائف معالجة البيانات
 # -------------------------
 def get_mapping_columns(i):
-    # نأخذ الأعمدة الأساسية بالإضافة لأعمدة التفسير (AI Explanations)
     suffix = "" if i == 1 else f" {i}"
     return {
         "mapping": f"NIST mapping{suffix}",
@@ -47,27 +46,22 @@ def extract_mappings(row, df, top_k=10):
     results = []
     for i in range(1, 11):
         cols = get_mapping_columns(i)
-        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])): 
+        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])):
             continue
-            
         try:
             val = str(row.get(cols["final"], 0)).replace('%', '')
             score = float(val) / 100.0 if float(val) > 1.0 else float(val)
-        except: 
+        except:
             score = 0.0
         
-        # ==========================================================
-        # التعديل هنا: قراءة الـ Differences وإعطائها قيمة افتراضية
-        # ==========================================================
-        # 1. commonality و justification يُقرآن من الملف مباشرة (بدون تغيير)
+        # Commonality و Justification من الملف مباشرة
         commonality_val = row.get(cols["commonality"], "N/A")
         justification_val = row.get(cols["justification"], "N/A")
         
-        # 2. فقط differences نتحقق منها ونعطيها نص افتراضي إذا كانت فارغة
+        # فقط Differences له قيمة افتراضية
         differences_val = row.get(cols["differences"], "")
         if pd.isna(differences_val) or differences_val == "":
             differences_val = "The controls differ in implementation focus and specific requirements."
-        # ==========================================================
         
         results.append({
             "mapping": str(row.get(cols["mapping"], "")),
@@ -92,9 +86,9 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
     
-    # العقدة المركزية
-    net.add_node(selected_id, label=selected_id, title=html.escape(source_text), 
-                 color="#1687d9", size=45, shape="circle", font={'color': 'white', 'bold': True})
+    # العقدة المركزية بدون رقم (label=" ") كما في الكود الأصلي
+    net.add_node(selected_id, label=" ", title=html.escape(source_text), 
+                 color="#1687d9", size=45, shape="circle")
 
     for idx, item in enumerate(mappings):
         edge_width = max(1, 10 - idx)
@@ -115,10 +109,9 @@ if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
     
-    # إضافة دالة فلتر بسيطة (يمكنك تعديلها أو إزالتها حسب رغبتك)
-    # بما أن الكود الأصلي لم يكن يحتوي على هذه الدالة، أضفتها بشكل لا يؤثر على البيانات
+    # دالة الفلتر (يمكنك تعديلها حسب رغبتك)
     def remove_parent_controls(df):
-        return df  # حالياً ترجع كل البيانات بدون تغيير
+        return df
     
     df = remove_parent_controls(df)
     
@@ -130,11 +123,11 @@ if os.path.exists(DATA_FILE):
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     mappings = extract_mappings(row, df)
 
-    # 1. عرض الرسم البياني
+    # عرض الرسم البياني
     graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
     components.html(graph_html, height=680)
 
-    # 2. عرض قسم التفسيرات (AI Explanations) بنفس الشكل
+    # عرض التفسيرات
     st.markdown("## AI Explanations")
     for idx, m in enumerate(mappings):
         with st.expander(f"#{idx+1} - {m['mapping']}", expanded=(idx == 0)):
