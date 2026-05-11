@@ -6,12 +6,8 @@ import tempfile
 import html
 import os
 
-# إعداد الصفحة لتكون عريضة
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
-# -------------------------
-# وظائف استخراج البيانات
-# -------------------------
 def get_mapping_columns(i):
     if i == 1: return {"mapping": "NIST mapping", "text": "Text", "final": "Final Score"}
     return {"mapping": f"NIST mapping {i}", "text": f"Text {i}", "final": f"Final Score {i}"}
@@ -30,20 +26,14 @@ def extract_mappings(row, df, top_k=10):
             "text": str(row.get(cols["text"], "")),
             "final": score
         })
-    # ترتيب من الأقرب (أعلى درجة) للأبعد
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 def create_graph(selected_id, source_text, mappings):
-    # إنشاء الشبكة مع خلفية بيضاء
     net = Network(height="750px", width="100%", bgcolor="#ffffff")
     
-    # إعدادات الفيزياء لضمان التوزيع الدائري (الوردة)
     net.set_options("""
     {
-      "nodes": {
-        "font": { "size": 18, "face": "arial" },
-        "borderWidth": 2
-      },
+      "nodes": { "font": { "size": 18, "face": "arial" }, "borderWidth": 2 },
       "edges": {
         "font": { "size": 16, "align": "middle", "color": "#1476d4", "strokeWidth": 4, "strokeColor": "#ffffff" },
         "color": { "color": "#d3dbe3" },
@@ -57,51 +47,38 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
 
-    # العقدة المركزية (اللون الأزرق)
-    net.add_node(selected_id, label=selected_id, title=html.escape(source_text), 
-                 color="#1687d9", size=45, shape="circle", 
-                 font={'color': 'white', 'bold': True, 'size': 22})
+    # العقدة المركزية بدون رقم (تم تغيير label إلى فراغ)
+    net.add_node(selected_id, 
+                 label=" ", 
+                 title=html.escape(source_text), 
+                 color="#1687d9", 
+                 size=45, 
+                 shape="circle")
 
-    # العقد المحيطة (اللون الأخضر) مع الترقيم والسمك المتغير
     for idx, item in enumerate(mappings):
-        rank_label = f"#{idx + 1}"  # الترقيم المطلوب (#1, #2...)
-        
-        # التحكم في سمك الخط: الأول يكون سمكه 10 ويقل تدريجياً
+        rank_label = f"#{idx + 1}"
         edge_width = 10 - idx 
-        
-        # إضافة العقدة الفرعية
         net.add_node(item["mapping"], label=item["mapping"], title=html.escape(item["text"]), 
                      color="#328a36", size=32, shape="circle", font={'color': 'white'})
-        
-        # إضافة السهم مع التسمية والسمك المطلوب
         net.add_edge(selected_id, item["mapping"], label=rank_label, width=edge_width)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
         return open(tmp.name, 'r', encoding='utf-8').read()
 
-# -------------------------
-# الواجهة الرئيسية
-# -------------------------
+# تشغيل الواجهة
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
     
-    # قائمة التحكم الجانبية لاختيار الـ ID
     st.sidebar.title("Controls List")
     selected_id = st.sidebar.selectbox("Select Control ID:", df["ECC id control"].unique())
     
     st.title("Control Mapping Viewer")
-    st.write(f"Viewing: **{selected_id}**")
     
-    # جلب البيانات للعنصر المختار
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     mappings = extract_mappings(row, df)
 
-    # عرض الرسم البياني
     graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
     components.html(graph_html, height=800)
-
-else:
-    st.error("Data file not found. Please ensure the CSV is in the same directory.")
