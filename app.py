@@ -6,102 +6,143 @@ import tempfile
 import html
 import os
 
-# إعداد الصفحة لتكون عريضة
-st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
+# -------------------------
+# 1. إعدادات الصفحة والتصميم (CSS)
+# -------------------------
+st.set_page_config(page_title="Control Mapping Viewer", layout="wide", initial_sidebar_state="expanded")
+
+st.markdown("""
+<style>
+    .main-title { font-size: 32px; font-weight: 800; color: #2f2f2f; margin-bottom: 10px; }
+    .subtitle { font-size: 16px; color: #666; margin-bottom: 20px; }
+    
+    /* تنسيق صندوق التفسيرات الاحترافي الداكن */
+    .explanation-box {
+        background-color: #1e1e1e; 
+        padding: 20px; 
+        border-radius: 12px; 
+        color: #dcdcdc; 
+        border-left: 5px solid #1476d4;
+        margin-bottom: 10px;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .exp-label { color: #58a6ff; font-weight: bold; font-size: 15px; margin-top: 12px; display: block; }
+    .exp-content { font-size: 14px; line-height: 1.6; color: #f0f0f0; margin-bottom: 5px; }
+    
+    /* تحسين شكل القائمة الجانبية */
+    [data-testid="stSidebar"] { background-color: #ffffff; border-right: 1px solid #ddd; }
+    div.stButton > button {
+        width: 100%; text-align: left; padding: 12px;
+        border-radius: 8px; border: 1px solid #eee; background-color: white;
+        margin-bottom: 5px; transition: 0.3s;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # -------------------------
-# وظائف استخراج البيانات
+# 2. وظائف معالجة البيانات
 # -------------------------
+def clean_html_tags(text):
+    """تنظيف النصوص من وسوم HTML إذا وجدت بداخل البيانات"""
+    if pd.isna(text): return "N/A"
+    import re
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', str(text))
+
 def get_mapping_columns(i):
-    if i == 1: return {"mapping": "NIST mapping", "text": "Text", "final": "Final Score"}
-    return {"mapping": f"NIST mapping {i}", "text": f"Text {i}", "final": f"Final Score {i}"}
+    suffix = "" if i == 1 else f" {i}"
+    return {
+        "mapping": f"NIST mapping{suffix}",
+        "text": f"Text{suffix}",
+        "final": f"Final Score{suffix}",
+        "commonality": f"Commonality{suffix}",
+        "justification": f"Justification{suffix}",
+        "differences": f"Differences{suffix}"
+    }
 
-def extract_mappings(row, df, top_k=10):
+def extract_mappings(row, df):
     results = []
     for i in range(1, 11):
         cols = get_mapping_columns(i)
-        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])): continue
-        try:
-            val = str(row.get(cols["final"], 0)).replace('%', '')
-            score = float(val) / 100.0 if float(val) > 1.0 else float(val)
-        except: score = 0.0
+        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])):
+            continue
+        
+        # تنظيف البيانات من أي وسوم HTML زائدة موجودة في ملف الـ CSV نفسه
         results.append({
+            "rank": i,
             "mapping": str(row.get(cols["mapping"], "")),
             "text": str(row.get(cols["text"], "")),
-            "final": score
+            "commonality": clean_html_tags(row.get(cols["commonality"])),
+            "justification": clean_html_tags(row.get(cols["justification"])),
+            "differences": clean_html_tags(row.get(cols["differences"]))
         })
-    # ترتيب من الأقرب (أعلى درجة) للأبعد
-    return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
+    return results
 
-def create_graph(selected_id, source_text, mappings):
-    # إنشاء الشبكة مع خلفية بيضاء
-    net = Network(height="750px", width="100%", bgcolor="#ffffff")
-    
-    # إعدادات الفيزياء لضمان التوزيع الدائري (الوردة)
-    net.set_options("""
-    {
-      "nodes": {
-        "font": { "size": 18, "face": "arial" },
-        "borderWidth": 2
-      },
-      "edges": {
-        "font": { "size": 16, "align": "middle", "color": "#1476d4", "strokeWidth": 4, "strokeColor": "#ffffff" },
-        "color": { "color": "#d3dbe3" },
-        "smooth": false
-      },
-      "physics": {
-        "forceAtlas2Based": { "gravitationalConstant": -100, "springLength": 200 },
-        "solver": "forceAtlas2Based",
-        "stabilization": { "enabled": true, "iterations": 1000 }
-      }
-    }
-    """)
-
-    # العقدة المركزية (اللون الأزرق)
-    net.add_node(selected_id, label=selected_id, title=html.escape(source_text), 
-                 color="#1687d9", size=45, shape="circle", 
-                 font={'color': 'white', 'bold': True, 'size': 22})
-
-    # العقد المحيطة (اللون الأخضر) مع الترقيم والسمك المتغير
-    for idx, item in enumerate(mappings):
-        rank_label = f"#{idx + 1}"  # الترقيم المطلوب (#1, #2...)
-        
-        # التحكم في سمك الخط: الأول يكون سمكه 10 ويقل تدريجياً
-        edge_width = 10 - idx 
-        
-        # إضافة العقدة الفرعية
-        net.add_node(item["mapping"], label=item["mapping"], title=html.escape(item["text"]), 
-                     color="#328a36", size=32, shape="circle", font={'color': 'white'})
-        
-        # إضافة السهم مع التسمية والسمك المطلوب
-        net.add_edge(selected_id, item["mapping"], label=rank_label, width=edge_width)
-
+# -------------------------
+# 3. بناء الرسم البياني
+# -------------------------
+def create_styled_graph(selected_id, source_text, mappings):
+    net = Network(height="550px", width="100%", bgcolor="#ffffff", directed=False)
+    net.add_node(selected_id, label=selected_id, color="#1687d9", size=40, font={'color': 'white', 'bold': True})
+    for item in mappings:
+        net.add_node(item["mapping"], label=item["mapping"], color="#328a36", size=25, font={'color': 'white'})
+        net.add_edge(selected_id, item["mapping"], label=f"#{item['rank']}", width=2, color="#dcd2d2", 
+                     font={'size': 14, 'color': '#1476d4', 'strokeWidth': 2, 'strokeColor': '#ffffff'})
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
         return open(tmp.name, 'r', encoding='utf-8').read()
 
 # -------------------------
-# الواجهة الرئيسية
+# 4. الواجهة الرئيسية
 # -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
+
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
-    df.columns = [c.strip() for c in df.columns]
+    st.sidebar.title("Controls")
     
-    # قائمة التحكم الجانبية لاختيار الـ ID
-    st.sidebar.title("Controls List")
-    selected_id = st.sidebar.selectbox("Select Control ID:", df["ECC id control"].unique())
-    
-    st.title("Control Mapping Viewer")
-    st.write(f"Viewing: **{selected_id}**")
-    
-    # جلب البيانات للعنصر المختار
-    row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
-    mappings = extract_mappings(row, df)
+    if "selected_id" not in st.session_state:
+        st.session_state.selected_id = str(df["ECC id control"].iloc[0])
 
-    # عرض الرسم البياني
-    graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
-    components.html(graph_html, height=800)
+    # قائمة البحث والاختيار
+    search = st.sidebar.text_input("Search ID:", placeholder="e.g. 1.1")
+    f_df = df[df["ECC id control"].astype(str).str.contains(search)] if search else df
+    
+    for _, r in f_df.head(20).iterrows(): # عرض أول 20 لسرعة التحميل
+        if st.sidebar.button(f"ID: {r['ECC id control']}", key=f"b_{r['ECC id control']}"):
+            st.session_state.selected_id = str(r["ECC id control"])
 
+    current_id = st.session_state.selected_id
+    row_data = df[df["ECC id control"].astype(str) == current_id].iloc[0]
+    mappings = extract_mappings(row_data, df)
+
+    st.markdown(f'<div class="main-title">Control Mapping Viewer</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="subtitle">Viewing: <b>{current_id}</b></div>', unsafe_allow_html=True)
+
+    col_graph, col_info = st.columns([1.3, 1])
+
+    with col_graph:
+        graph_html = create_styled_graph(current_id, str(row_data["Source Text"]), mappings)
+        components.html(graph_html, height=580)
+
+    with col_info:
+        st.write("### 🤖 AI Explanations")
+        info_container = st.container(height=550)
+        with info_container:
+            for m in mappings:
+                # استخدام expander مع عرض البيانات النظيفة مباشرة
+                with st.expander(f"**#{m['rank']} - {m['mapping']}**", expanded=(m['rank'] == 1)):
+                    st.markdown(f"""
+                    <div class="explanation-box">
+                        <div class="exp-label">Commonality:</div>
+                        <div class="exp-content">{m['commonality']}</div>
+                        
+                        <div class="exp-label">Justification:</div>
+                        <div class="exp-content">{m['justification']}</div>
+                        
+                        <div class="exp-label">Differences:</div>
+                        <div class="exp-content">{m['differences']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 else:
-    st.error("Data file not found. Please ensure the CSV is in the same directory.")
+    st.error("CSV file not found.")
