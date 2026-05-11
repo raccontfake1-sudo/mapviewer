@@ -6,171 +6,141 @@ import tempfile
 import html
 import os
 
-# -------------------------
-# 1. إعدادات الصفحة والتصميم (CSS)
-# -------------------------
-st.set_page_config(page_title="Control Mapping Viewer", layout="wide", initial_sidebar_state="expanded")
+# 1. إعدادات الصفحة
+st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
+# -------------------------
+# CSS STYLE - تحسين المظهر
+# -------------------------
 st.markdown("""
 <style>
-    .main-title { font-size: 36px; font-weight: 800; color: #2f2f2f; margin-bottom: 10px; }
-    .subtitle { font-size: 18px; color: #666; margin-bottom: 20px; }
-    /* تنسيق صندوق التفسيرات الداكن */
-    .explanation-box {
-        background-color: #1e1e1e; 
-        padding: 20px; 
-        border-radius: 10px; 
-        color: #dcdcdc; 
-        border-left: 6px solid #1476d4;
-        margin-bottom: 10px;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    .block-container { padding-top: 1rem; }
+    .mapping-card { 
+        border: 2px solid #75b843; 
+        border-radius: 8px; 
+        background-color: #f1faec; 
+        padding: 15px; 
+        margin-bottom: 10px; 
     }
-    .exp-label { color: #58a6ff; font-weight: bold; font-size: 16px; margin-top: 10px; display: block; }
-    .exp-content { font-size: 14.5px; line-height: 1.6; color: #e0e0e0; margin-bottom: 12px; }
-    
-    /* تحسين شكل القائمة الجانبية */
-    [data-testid="stSidebar"] { background-color: #ffffff; border-right: 1px solid #ddd; }
-    div.stButton > button {
-        width: 100%; height: auto; text-align: left; padding: 15px;
-        border-radius: 8px; border: 1px solid #eee; background-color: white;
-        margin-bottom: 5px; transition: 0.3s;
+    .rank-pill { 
+        background-color: #1476d4; 
+        color: white; 
+        border-radius: 15px; 
+        padding: 2px 10px; 
+        font-weight: bold; 
     }
-    div.stButton > button:hover { background-color: #eaf6ff; border-color: #1476d4; }
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------
-# 2. وظائف معالجة البيانات
+# HELPERS
 # -------------------------
 def get_mapping_columns(i):
-    suffix = "" if i == 1 else f" {i}"
-    return {
-        "mapping": f"NIST mapping{suffix}",
-        "text": f"Text{suffix}",
-        "final": f"Final Score{suffix}",
-        "commonality": f"Commonality{suffix}",
-        "justification": f"Justification{suffix}",
-        "differences": f"Differences{suffix}"
-    }
+    if i == 1: return {"mapping": "NIST mapping", "text": "Text", "final": "Final Score"}
+    return {"mapping": f"NIST mapping {i}", "text": f"Text {i}", "final": f"Final Score {i}"}
 
-def extract_mappings(row, df):
+def extract_mappings(row, df, top_k=10):
     results = []
     for i in range(1, 11):
         cols = get_mapping_columns(i)
-        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])):
-            continue
-        
-        # استخراج القيم مع معالجة النسب المئوية
+        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])): continue
         try:
             val = str(row.get(cols["final"], 0)).replace('%', '')
             score = float(val) / 100.0 if float(val) > 1.0 else float(val)
         except: score = 0.0
-
+        
         results.append({
-            "rank": i,
             "mapping": str(row.get(cols["mapping"], "")),
             "text": str(row.get(cols["text"], "")),
-            "final": score,
-            "commonality": str(row.get(cols["commonality"], "N/A")),
-            "justification": str(row.get(cols["justification"], "N/A")),
-            "differences": str(row.get(cols["differences"], "N/A"))
+            "final": score
         })
-    # ترتيب حسب السكور النهائي
-    return sorted(results, key=lambda x: x["final"], reverse=True)
+    # ترتيب من الأقرب (الأعلى سكور) للأبعد
+    return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
-# -------------------------
-# 3. بناء الرسم البياني (Pyvis)
-# -------------------------
-def create_styled_graph(selected_id, source_text, mappings):
-    net = Network(height="600px", width="100%", bgcolor="#ffffff", directed=False)
+def create_graph(selected_id, source_text, mappings):
+    net = Network(height="700px", width="100%", bgcolor="#ffffff", font_color="#333")
+    
+    # إعدادات الفيزياء لجعل التوزيع دائرياً ومنظماً
     net.set_options("""
     {
-      "physics": {
-        "forceAtlas2Based": { "gravitationalConstant": -60, "centralGravity": 0.01, "springLength": 120, "springConstant": 0.08 },
-        "solver": "forceAtlas2Based", "stabilization": { "iterations": 100 }
+      "nodes": { "font": { "size": 18, "face": "arial" }, "borderWidth": 2 },
+      "edges": { 
+        "font": { "size": 16, "align": "middle", "color": "#1476d4", "strokeWidth": 4, "strokeColor": "#ffffff" },
+        "color": { "color": "#d3dbe3" },
+        "smooth": { "type": "continuous" }
       },
-      "nodes": { "font": { "face": "arial" }, "borderWidth": 2 },
-      "edges": { "smooth": false }
+      "physics": {
+        "forceAtlas2Based": { "gravitationalConstant": -120, "springLength": 180 },
+        "solver": "forceAtlas2Based"
+      }
     }
     """)
-    
-    # العقدة المركزية (الضابط المختار)
-    net.add_node(selected_id, label=selected_id, title=html.escape(source_text), 
-                 color="#1687d9", size=45, font={'size': 25, 'color': 'white', 'bold': True})
 
-    for item in mappings:
-        # العقد المحيطة
-        net.add_node(item["mapping"], label=item["mapping"], title=html.escape(item["text"]), 
-                     color="#328a36", size=30, font={'size': 18, 'color': 'white'})
+    # العقدة المركزية
+    net.add_node(selected_id, label=selected_id, title=html.escape(source_text), 
+                 color="#1687d9", size=45, shape="circle", font={'color':'white', 'bold':True})
+
+    for idx, item in enumerate(mappings):
+        rank_label = f"#{idx + 1}" # الترقيم من #1 إلى #10
         
-        # السهم مع رقم الترتيب (مثل #1, #2 كما في الصورة)
-        net.add_edge(selected_id, item["mapping"], label=f"#{item['rank']}", 
-                     width=2, color="#dcd2d2", 
-                     font={'align': 'middle', 'size': 16, 'color': '#1476d4', 'strokeWidth': 2, 'strokeColor': '#ffffff'})
+        # التحكم في سمك السهم بناءً على الترتيب (الأول أسمك)
+        edge_thickness = 8 - (idx * 0.7) 
+        
+        # العقدة الفرعية
+        net.add_node(item["mapping"], label=item["mapping"], title=html.escape(item["text"]), 
+                     color="#328a36", size=30, shape="circle", font={'color':'white'})
+        
+        # ربط السهم مع الترقيم والسمك المطلوب
+        net.add_edge(selected_id, item["mapping"], label=rank_label, width=edge_thickness)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
         return open(tmp.name, 'r', encoding='utf-8').read()
 
 # -------------------------
-# 4. الواجهة الرئيسية
+# MAIN LOGIC
 # -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
-
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
     
-    # القائمة الجانبية للاختيار
-    st.sidebar.title("Controls List")
-    search = st.sidebar.text_input("Search ID:", placeholder="e.g. 1.1")
-    
-    filtered_df = df
-    if search:
-        filtered_df = df[df["ECC id control"].astype(str).str.contains(search)]
-
-    # إدارة الحالة لاختيار الضابط
-    if "selected_id" not in st.session_state:
+    if "selected_id" not in st.session_state: 
         st.session_state.selected_id = str(df["ECC id control"].iloc[0])
 
-    for _, r in filtered_df.iterrows():
-        label = f"ID: {r['ECC id control']}\n{str(r['Source Text'])[:50]}..."
-        if st.sidebar.button(label, key=f"btn_{r['ECC id control']}"):
-            st.session_state.selected_id = str(r["ECC id control"])
+    st.title("Control Mapping Viewer")
+    
+    # اختيار التحكم من القائمة الجانبية
+    st.sidebar.title("ECC Controls List")
+    search = st.sidebar.text_input("🔍 Search ID...", "")
+    filtered_df = df[df["ECC id control"].astype(str).str.contains(search)] if search else df
+    
+    with st.sidebar.container(height=600):
+        for cid in filtered_df["ECC id control"].unique():
+            if st.button(f"📌 {cid}", key=f"btn_{cid}"):
+                st.session_state.selected_id = str(cid)
+                st.rerun()
 
-    # جلب بيانات الضابط المختار
-    current_id = st.session_state.selected_id
-    row_data = df[df["ECC id control"].astype(str) == current_id].iloc[0]
-    mappings = extract_mappings(row_data, df)
+    # معالجة البيانات للعنصر المختار
+    row = df[df["ECC id control"].astype(str) == st.session_state.selected_id].iloc[0]
+    mappings = extract_mappings(row, df)
 
-    # العرض الرئيسي
-    st.markdown(f'<div class="main-title">Control Mapping Viewer</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="subtitle">Viewing: <b>{current_id}</b></div>', unsafe_allow_html=True)
-
-    col_graph, col_info = st.columns([1.5, 1])
+    col_graph, col_list = st.columns([7, 3])
 
     with col_graph:
-        st.write("### Visual Mapping")
-        graph_html = create_styled_graph(current_id, str(row_data["Source Text"]), mappings)
-        components.html(graph_html, height=620)
+        st.subheader(f"Visual Mapping for: {st.session_state.selected_id}")
+        graph_html = create_graph(st.session_state.selected_id, str(row["Source Text"]), mappings)
+        components.html(graph_html, height=750)
 
-    with col_info:
-        st.write("### 🤖 AI Explanations")
-        info_container = st.container(height=600)
-        with info_container:
-            for m in mappings:
-                with st.expander(f"**#{m['rank']} - {m['mapping']}**", expanded=(m['rank'] == 1)):
-                    st.markdown(f"""
-                    <div class="explanation-box">
-                        <span class="exp-label">Commonality:</span>
-                        <p class="exp-content">{m['commonality']}</p>
-                        
-                        <span class="exp-label">Justification:</span>
-                        <p class="exp-content">{m['justification']}</p>
-                        
-                        <span class="exp-label">Differences:</span>
-                        <p class="exp-content">{m['differences']}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+    with col_list:
+        st.subheader("Recommendations")
+        with st.container(height=720):
+            for idx, m in enumerate(mappings):
+                st.markdown(f"""
+                <div class="mapping-card">
+                    <span class="rank-pill">#{idx+1}</span> <b>{m['mapping']}</b>
+                    <p style='font-size:13px; color:#444; margin-top:5px;'>{m['text'][:200]}...</p>
+                </div>
+                """, unsafe_allow_html=True)
 else:
-    st.error(f"File '{DATA_FILE}' not found. Please upload it to the directory.")
+    st.error("Data file not found.")
