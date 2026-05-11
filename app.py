@@ -10,25 +10,6 @@ import os
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 # -------------------------
-# CSS STYLE - لتطابق شكل التفسيرات في الصورة
-# -------------------------
-st.markdown("""
-<style>
-    .explanation-box {
-        background-color: #1a1c24;
-        color: #e0e0e0;
-        border: 1px solid #3d3f4b;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 15px;
-    }
-    .exp-title { color: #ffffff; font-weight: bold; font-size: 1.1em; margin-bottom: 10px; }
-    .exp-label { color: #9da0a9; font-weight: bold; margin-top: 10px; display: block; }
-    .exp-text { margin-bottom: 10px; line-height: 1.6; }
-</style>
-""", unsafe_allow_html=True)
-
-# -------------------------
 # وظائف معالجة البيانات
 # -------------------------
 def get_mapping_columns(i):
@@ -55,8 +36,8 @@ def extract_mappings(row, df, top_k=10):
             score = 0.0
         
         # Commonality و Justification من الملف مباشرة
-        commonality_val = row.get(cols["commonality"], "N/A")
-        justification_val = row.get(cols["justification"], "N/A")
+        commonality_val = row.get(cols["commonality"], "")
+        justification_val = row.get(cols["justification"], "")
         
         # فقط Differences له قيمة افتراضية
         differences_val = row.get(cols["differences"], "")
@@ -67,8 +48,8 @@ def extract_mappings(row, df, top_k=10):
             "mapping": str(row.get(cols["mapping"], "")),
             "text": str(row.get(cols["text"], "")),
             "final": score,
-            "commonality": str(commonality_val),
-            "justification": str(justification_val),
+            "commonality": str(commonality_val) if not pd.isna(commonality_val) else "N/A",
+            "justification": str(justification_val) if not pd.isna(justification_val) else "N/A",
             "differences": str(differences_val)
         })
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
@@ -86,7 +67,7 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
     
-    # العقدة المركزية بدون رقم (label=" ") كما في الكود الأصلي
+    # العقدة المركزية بدون رقم
     net.add_node(selected_id, label=" ", title=html.escape(source_text), 
                  color="#1687d9", size=45, shape="circle")
 
@@ -109,12 +90,6 @@ if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
     
-    # دالة الفلتر (يمكنك تعديلها حسب رغبتك)
-    def remove_parent_controls(df):
-        return df
-    
-    df = remove_parent_controls(df)
-    
     st.sidebar.title("Controls List")
     selected_id = st.sidebar.selectbox("Select Control ID:", df["ECC id control"].unique())
     
@@ -127,21 +102,18 @@ if os.path.exists(DATA_FILE):
     graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
     components.html(graph_html, height=680)
 
-    # عرض التفسيرات
+    # عرض التفسيرات - باستخدام Markdown فقط (بدون HTML)
     st.markdown("## AI Explanations")
-    for idx, m in enumerate(mappings):
-        with st.expander(f"#{idx+1} - {m['mapping']}", expanded=(idx == 0)):
-            st.markdown(f"""
-            <div class="explanation-box">
-                <span class="exp-label">Commonality:</span>
-                <div class="exp-text">{m['commonality']}</div>
-                
-                <span class="exp-label">Justification:</span>
-                <div class="exp-text">{m['justification']}</div>
-                
-                <span class="exp-label">Differences:</span>
-                <div class="exp-text">{m['differences']}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    
+    if mappings:
+        for idx, m in enumerate(mappings):
+            with st.expander(f"#{idx+1} - {m['mapping']}"):
+                st.markdown(f"**Commonality:** {m['commonality']}")
+                st.markdown(f"**Justification:** {m['justification']}")
+                st.markdown(f"**Differences:** {m['differences']}")
+                st.divider()
+    else:
+        st.info("No mappings found for this control.")
+
 else:
     st.error("Data file not found. Please ensure the CSV is in the same directory.")
