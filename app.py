@@ -6,10 +6,10 @@ import tempfile
 import html
 import os
 
-# --- 1. إعداد الصفحة ---
+# --- 1. إعدادات الصفحة ---
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
-# --- 2. وظائف استخراج البيانات ---
+# --- 2. استخراج البيانات من CSV ---
 def get_mapping_columns(i):
     suffix = "" if i == 1 else f" {i}"
     return {
@@ -51,11 +51,12 @@ def create_styled_graph(selected_id, source_text, mappings):
       "edges": { "font": { "size": 14, "align": "middle", "color": "#1476d4" }, "color": "#d3dbe3", "smooth": false }
     }
     """)
-    # الدائرة المركزية فارغة
+    # مركز الرسم (بدون رقم داخلي)
     net.add_node(selected_id, label=" ", title=html.escape(source_text), color="#1687d9", size=45, shape="circle")
 
     for idx, item in enumerate(mappings):
         rank = idx + 1
+        # تدرج سمك الخط
         edge_thickness = 10 - idx if (10 - idx) > 1 else 1
         net.add_node(item["mapping"], label=item["mapping"], color="#328a36", size=32, shape="circle", font={'color':'white'})
         net.add_edge(selected_id, item["mapping"], label=f"#{rank}", width=edge_thickness)
@@ -64,32 +65,34 @@ def create_styled_graph(selected_id, source_text, mappings):
         net.save_graph(tmp.name)
         return open(tmp.name, 'r', encoding='utf-8').read()
 
-# --- 4. العرض الرئيسي ---
+# --- 4. العرض الرئيسي للمتصفح ---
+# تأكد من تسمية ملف البيانات بنفس هذا الاسم
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
     
-    selected_id = st.sidebar.selectbox("Select ID:", df["ECC id control"].unique())
+    selected_id = st.sidebar.selectbox("Select Control ID:", df["ECC id control"].unique())
     row_data = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     all_mappings = extract_all_data(row_data, df)
 
     st.title("Control Mapping Viewer")
-    
-    # عرض الرسم البياني
+    st.write(f"Viewing Context for: **{selected_id}**")
+
+    # أ- عرض الرسم البياني (Visual Mapping)
     graph_html = create_styled_graph(str(selected_id), str(row_data["Source Text"]), all_mappings)
     components.html(graph_html, height=620)
 
-    # عرض قسم التفسيرات بشكل نظيف وبدون تكرار أكواد الـ HTML
-    st.markdown("## AI Explanations")
+    # ب- عرض قسم التفسيرات (AI Explanations)
+    st.markdown("---")
+    st.header("AI Explanations")
     
     for idx, m in enumerate(all_mappings):
+        # استخدام expander كما في الصور لتنظيم العرض
         with st.expander(f"#{idx+1} - {m['mapping']}", expanded=(idx == 0)):
-            # عرض العنوان الداخلي
             st.markdown(f"### #{idx+1} - {m['mapping']}")
             
-            # عرض البيانات بأسلوب واضح ومباشر
             st.markdown("**Commonality:**")
             st.write(m['commonality'])
             
@@ -99,4 +102,4 @@ if os.path.exists(DATA_FILE):
             st.markdown("**Differences:**")
             st.write(m['differences'])
 else:
-    st.error("Data file not found.")
+    st.error("ملف البيانات CSV غير موجود. يرجى التأكد من رفعه.")
