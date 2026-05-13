@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 # -------------------------
-# CSS STYLE
+# CSS STYLE - مع تحسين القائمة الجانبية
 # -------------------------
 st.markdown("""
 <style>
@@ -26,38 +26,144 @@ body {
     padding-right: 1rem;
 }
 
+/* ========== تحسين القائمة الجانبية ========== */
 [data-testid="stSidebar"] {
-    min-width: 430px;
-    max-width: 430px;
+    min-width: 320px;
+    max-width: 320px;
+    background-color: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
 }
 
-div[data-baseweb="select"] {
-    font-size: 14px;
+@media (max-width: 1200px) {
+    [data-testid="stSidebar"] {
+        min-width: 280px;
+        max-width: 280px;
+    }
 }
 
-[data-testid="stSidebar"] {
+/* تحسين محتوى القائمة الجانبية */
+[data-testid="stSidebar"] .element-container {
+    margin-bottom: 0.5rem;
+}
+
+/* تحسين حقل البحث */
+[data-testid="stSidebar"] [data-testid="stTextInput"] {
+    margin-bottom: 1rem;
+}
+
+[data-testid="stSidebar"] [data-testid="stTextInput"] input {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    padding: 8px 12px;
+    font-size: 13px;
+    background-color: white;
+}
+
+[data-testid="stSidebar"] [data-testid="stTextInput"] input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+}
+
+/* تحسين عناصر التحكم (الأزرار) */
+[data-testid="stSidebar"] div.stButton > button {
+    width: 100%;
+    height: auto;
+    min-height: 70px;
+    text-align: left;
+    justify-content: flex-start;
+    align-items: flex-start;
+    white-space: normal;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
     background-color: #ffffff;
-    border-right: 1px solid #ddd;
+    color: #1e293b;
+    margin-bottom: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    transition: all 0.2s ease;
+    cursor: pointer;
 }
 
+[data-testid="stSidebar"] div.stButton > button:hover {
+    background-color: #eff6ff;
+    border-color: #3b82f6;
+    transform: translateX(2px);
+}
+
+/* نمط العنصر المحدد */
+.selected-control-card button {
+    background-color: #dbeafe !important;
+    border: 1px solid #3b82f6 !important;
+    border-left: 3px solid #3b82f6 !important;
+}
+
+/* تحسين شريط التمرير في القائمة الجانبية */
+[data-testid="stSidebar"] ::-webkit-scrollbar {
+    width: 6px;
+}
+
+[data-testid="stSidebar"] ::-webkit-scrollbar-track {
+    background: #e2e8f0;
+    border-radius: 3px;
+}
+
+[data-testid="stSidebar"] ::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 3px;
+}
+
+[data-testid="stSidebar"] ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* تحسين عناوين القائمة الجانبية */
+.sidebar-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+/* تحسين الـ Select Box */
+[data-testid="stSidebar"] [data-baseweb="select"] {
+    margin-bottom: 1rem;
+}
+
+[data-testid="stSidebar"] [data-baseweb="select"] div {
+    font-size: 13px;
+}
+
+/* تحسين الـ Radio buttons */
+[data-testid="stSidebar"] [data-testid="stRadio"] {
+    margin-bottom: 1rem;
+}
+
+[data-testid="stSidebar"] [data-testid="stRadio"] label {
+    font-size: 13px;
+}
+
+/* تحسين الـ Slider */
+[data-testid="stSidebar"] [data-testid="stSlider"] {
+    margin-bottom: 1rem;
+}
+
+/* ========== باقي التنسيقات ========== */
 .main-title {
-    font-size: 64px;
+    font-size: 48px;
     font-weight: 800;
-    color: #2f2f2f;
+    color: #0f172a;
     margin-bottom: 0;
 }
 
 .subtitle {
-    font-size: 22px;
-    color: #111827;
+    font-size: 18px;
+    color: #475569;
     margin-top: -8px;
-}
-
-.sidebar-title {
-    font-size: 22px;
-    font-weight: 800;
-    color: #1f2937;
-    margin-bottom: 12px;
+    margin-bottom: 20px;
 }
 
 .control-card {
@@ -100,7 +206,7 @@ div[data-baseweb="select"] {
 }
 
 .mapping-title {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 800;
     color: #1476d4;
 }
@@ -109,15 +215,16 @@ div[data-baseweb="select"] {
     background-color: #1476d4;
     color: white;
     border-radius: 18px;
-    padding: 5px 10px;
+    padding: 4px 8px;
     font-weight: 700;
+    font-size: 12px;
     margin-right: 10px;
 }
 
 .score-line {
     float: right;
-    font-size: 14px;
-    font-weight: 800;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .score-green {
@@ -135,9 +242,9 @@ div[data-baseweb="select"] {
 .mapping-text {
     clear: both;
     color: #555;
-    font-size: 15px;
-    line-height: 1.5;
-    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    margin-top: 10px;
 }
 
 .graph-box {
@@ -147,19 +254,9 @@ div[data-baseweb="select"] {
     padding: 0px;
 }
 
-div.stButton > button {
-    width: 100%;
-    text-align: left;
-    border-radius: 0;
-    border: none;
-    background-color: white;
-    color: #444;
-    padding: 16px;
-}
-
-div.stButton > button:hover {
-    background-color: #dff0ff;
-    color: #1476d4;
+/* تحسين عرض الأعمدة */
+[data-testid="column"] {
+    gap: 1rem;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -235,7 +332,6 @@ def create_graph(selected_control, source_text, mappings):
         height="580px",
         width="100%",
         bgcolor="#ffffff",
-        # font_color="#f31c1c",
         directed=False
     )
 
@@ -373,7 +469,7 @@ def create_graph(selected_control, source_text, mappings):
 # -------------------------
 # SIDEBAR
 # -------------------------
-st.sidebar.markdown('<div class="sidebar-title">Select Standard:</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="sidebar-title">📋 Select Standard</div>', unsafe_allow_html=True)
 
 standard = st.sidebar.selectbox(
     "",
@@ -381,17 +477,21 @@ standard = st.sidebar.selectbox(
     label_visibility="collapsed"
 )
 
+st.sidebar.markdown('<div class="sidebar-title">📊 View Mode</div>', unsafe_allow_html=True)
+
 tab_choice = st.sidebar.radio(
     "",
     ["📊 Mappings", "📈 Analytics"],
     horizontal=True
 )
 
+st.sidebar.markdown('<div class="sidebar-title">📁 Upload Data</div>', unsafe_allow_html=True)
+
 uploaded_file = st.file_uploader("Custom CSV for ECC:", type=["csv"])
 
 if uploaded_file is None:
-    st.markdown('<div class="main-title">Control Mapping Viewer</div>', unsafe_allow_html=True)
-    st.info("Upload your CSV file to view the mapping graph.")
+    st.markdown('<div class="main-title">🎯 Control Mapping Viewer</div>', unsafe_allow_html=True)
+    st.info("📂 Please upload your CSV file to view the mapping graph.")
     st.stop()
 
 
@@ -404,20 +504,19 @@ control_col = "ECC id control"
 source_col = "Source Text"
 
 if control_col not in df.columns or source_col not in df.columns:
-    st.error("Your CSV must contain: ECC id control and Source Text")
+    st.error("❌ Your CSV must contain: 'ECC id control' and 'Source Text' columns")
     st.stop()
 
 controls_df = df[[control_col, source_col]].dropna().copy()
 controls_df[control_col] = controls_df[control_col].astype(str)
 
-st.sidebar.markdown(
-    f'<div class="sidebar-title">Controls ({len(controls_df)})</div>',
-    unsafe_allow_html=True
-)
+st.sidebar.markdown(f'<div class="sidebar-title">🎮 Controls ({len(controls_df)})</div>', unsafe_allow_html=True)
 
+# Search box
 search = st.sidebar.text_input(
-    "",
-    placeholder="Search by control number (e.g., 2.4)"
+    "🔍",
+    placeholder="Search by control number (e.g., 2.4)",
+    label_visibility="collapsed"
 )
 
 if search:
@@ -427,44 +526,9 @@ if search:
 
 control_options = controls_df[control_col].tolist()
 
-
-
 # Keep selected control
 if "selected_control" not in st.session_state:
     st.session_state.selected_control = controls_df[control_col].astype(str).iloc[0]
-
-
-# Style Streamlit buttons to look like cards
-st.sidebar.markdown("""
-<style>
-[data-testid="stSidebar"] div.stButton > button {
-    width: 100%;
-    height: auto;
-    min-height: 120px;
-    text-align: left;
-    justify-content: flex-start;
-    align-items: flex-start;
-    white-space: normal;
-    padding: 14px;
-    border-radius: 6px;
-    border: 1px solid #e5e5e5;
-    background-color: #ffffff;
-    color: #444;
-    margin-bottom: 8px;
-}
-
-[data-testid="stSidebar"] div.stButton > button:hover {
-    background-color: #eaf6ff;
-    border: 1px solid #1476d4;
-    color: #1476d4;
-}
-
-.selected-control-card button {
-    background-color: #dff0ff !important;
-    border: 2px solid #1476d4 !important;
-}
-</style>
-""", unsafe_allow_html=True)
 
 
 def count_mappings(row):
@@ -476,20 +540,19 @@ def count_mappings(row):
     return count
 
 
-st.sidebar.markdown("### Controls")
-
-# This creates a real scrollable box
-control_box = st.sidebar.container(height=520, border=True)
+# Control list container
+control_box = st.sidebar.container(height=500, border=True)
 
 with control_box:
     for i, r in controls_df.iterrows():
         cid = str(r[control_col])
-        preview = short_text(r[source_col], 160)
+        preview = short_text(r[source_col], 120)
 
         full_row = df[df[control_col].astype(str) == cid].iloc[0]
         count = count_mappings(full_row)
 
-        label = f"{cid}\n\n{preview}\n\n{count} recommended mappings"
+        # تنسيق النص المعروض في الزر
+        label = f"**{cid}**  \n{preview}  \n🔗 {count} mappings"
 
         if cid == st.session_state.selected_control:
             st.markdown('<div class="selected-control-card">', unsafe_allow_html=True)
@@ -504,27 +567,25 @@ with control_box:
 
 selected_control = st.session_state.selected_control
 
-
-
 row = df[df[control_col].astype(str) == selected_control].iloc[0]
 source_text = str(row[source_col])
 
-top_k = st.slider("Top-K:", 1, 10, 10)
-
-mappings = extract_mappings(row, df, top_k)
+st.sidebar.markdown('<div class="sidebar-title">⚙️ Settings</div>', unsafe_allow_html=True)
+top_k = st.sidebar.slider("Top-K Mappings:", 1, 10, 10)
 
 
 # -------------------------
 # MAIN HEADER
 # -------------------------
 if tab_choice == "📊 Mappings":
-    st.markdown('<div class="main-title">Control Mapping Viewer</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">🗺️ Control Mapping Viewer</div>', unsafe_allow_html=True)
     st.markdown(
-        f'<div class="subtitle">Viewing mappings for: <b>{selected_control}</b>({len(mappings)} mappings)</div>',
+        f'<div class="subtitle">🎯 Viewing mappings for: <b>{selected_control}</b> ({len(mappings)} mappings found)</div>',
         unsafe_allow_html=True
     )
 
-    st.write("")
+    # إعادة تعريف mappings هنا بعد معرفة top_k
+    mappings = extract_mappings(row, df, top_k)
 
     left, right = st.columns([3.2, 1.7])
 
@@ -571,9 +632,6 @@ if tab_choice == "📊 Mappings":
 # -------------------------
 # ANALYTICS TAB
 # -------------------------
-# -------------------------
-# ANALYTICS PAGE
-# -------------------------
 elif tab_choice == "📈 Analytics":
 
     def get_all_mappings(df):
@@ -607,7 +665,8 @@ elif tab_choice == "📈 Analytics":
 
         return pd.DataFrame(all_items)
 
-
+    # الحصول على التصنيفات الحالية
+    mappings = extract_mappings(row, df, top_k)
     analytics_all = get_all_mappings(df)
 
     total_controls = len(df)
@@ -792,7 +851,7 @@ elif tab_choice == "📈 Analytics":
     """, unsafe_allow_html=True)
 
     # OVERVIEW
-    st.markdown('<div class="analytics-card"><div class="section-title">Overview</div>', unsafe_allow_html=True)
+    st.markdown('<div class="analytics-card"><div class="section-title">📊 Overview</div>', unsafe_allow_html=True)
 
     c1, c2, c3 = st.columns(3)
 
@@ -823,7 +882,7 @@ elif tab_choice == "📈 Analytics":
     st.markdown("</div>", unsafe_allow_html=True)
 
     # GAP ANALYSIS
-    st.markdown('<div class="analytics-card"><div class="section-title">Gap Analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div class="analytics-card"><div class="section-title">⚠️ Gap Analysis</div>', unsafe_allow_html=True)
 
     g1, g2 = st.columns(2)
 
@@ -850,7 +909,7 @@ elif tab_choice == "📈 Analytics":
     st.markdown("</div>", unsafe_allow_html=True)
 
     # AVERAGE SIMILARITY SCORES
-    st.markdown('<div class="analytics-card"><div class="section-title">Average Similarity Scores</div>', unsafe_allow_html=True)
+    st.markdown('<div class="analytics-card"><div class="section-title">📈 Average Similarity Scores</div>', unsafe_allow_html=True)
 
     s1, s2, s3 = st.columns(3)
 
@@ -884,9 +943,8 @@ elif tab_choice == "📈 Analytics":
     st.markdown("</div>", unsafe_allow_html=True)
 
     # RELATIONSHIP CLASSIFICATION
-    st.markdown('<div class="analytics-card"><div class="section-title">Relationship Classification</div>', unsafe_allow_html=True)
+    st.markdown('<div class="analytics-card"><div class="section-title">🔄 Relationship Classification</div>', unsafe_allow_html=True)
 
-    # Since your CSV does not show relationship columns, this estimates from rank:
     primary_count = len(analytics_all[analytics_all["rank"] <= 3])
     secondary_count = len(analytics_all[analytics_all["rank"] > 3])
     primary_pct = primary_count / total_mappings * 100 if total_mappings else 0
@@ -937,7 +995,7 @@ elif tab_choice == "📈 Analytics":
     reciprocal_count = int(total_mappings * 0.287)
     reciprocal_pct = reciprocal_count / total_mappings * 100 if total_mappings else 0
 
-    st.markdown('<div class="analytics-card"><div class="section-title">Reciprocal Mapping Analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div class="analytics-card"><div class="section-title">🔄 Reciprocal Mapping Analysis</div>', unsafe_allow_html=True)
 
     st.markdown(f"""
     <div class="reciprocal-box">
@@ -973,7 +1031,7 @@ elif tab_choice == "📈 Analytics":
     st.markdown("</div>", unsafe_allow_html=True)
 
     # DISTRIBUTION TABLE
-    st.markdown('<div class="analytics-card"><div class="section-title">Distribution of Recommended Mappings</div>', unsafe_allow_html=True)
+    st.markdown('<div class="analytics-card"><div class="section-title">📊 Distribution of Recommended Mappings</div>', unsafe_allow_html=True)
 
     mapping_counts = []
 
@@ -1013,5 +1071,3 @@ elif tab_choice == "📈 Analytics":
         """, unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
-
-    st.stop()
