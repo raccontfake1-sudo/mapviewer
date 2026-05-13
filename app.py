@@ -4,6 +4,7 @@ from pyvis.network import Network
 import streamlit.components.v1 as components
 import tempfile
 import html
+import os
 
 st.set_page_config(
     page_title="Control Mapping Viewer",
@@ -467,6 +468,28 @@ def create_graph(selected_control, source_text, mappings):
 
 
 # -------------------------
+# تحميل الملف تلقائياً
+# -------------------------
+# اسم الملف المطلوب
+CSV_FILE_NAME = "final_owl_ontology_refined_mappings.csv"
+
+# البحث عن الملف في نفس مجلد الكود
+current_dir = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(current_dir, CSV_FILE_NAME)
+
+# محاولة فتح الملف
+try:
+    df = pd.read_csv(file_path)
+    st.success(f"✅ تم تحميل الملف بنجاح: {CSV_FILE_NAME}")
+except FileNotFoundError:
+    st.error(f"❌ خطأ: لم يتم العثور على الملف '{CSV_FILE_NAME}' في نفس مجلد الكود")
+    st.info(f"الرجاء التأكد من وجود الملف في المسار: {file_path}")
+    st.stop()
+except Exception as e:
+    st.error(f"❌ خطأ في قراءة الملف: {str(e)}")
+    st.stop()
+
+# -------------------------
 # SIDEBAR
 # -------------------------
 st.sidebar.markdown('<div class="sidebar-title">📋 Select Standard</div>', unsafe_allow_html=True)
@@ -485,26 +508,15 @@ tab_choice = st.sidebar.radio(
     horizontal=True
 )
 
-st.sidebar.markdown('<div class="sidebar-title">📁 Upload Data</div>', unsafe_allow_html=True)
-
-uploaded_file = st.file_uploader("Custom CSV for ECC:", type=["csv"])
-
-if uploaded_file is None:
-    st.markdown('<div class="main-title">🎯 Control Mapping Viewer</div>', unsafe_allow_html=True)
-    st.info("📂 Please upload your CSV file to view the mapping graph.")
-    st.stop()
-
-
 # -------------------------
-# LOAD DATA
+# التحقق من الأعمدة المطلوبة
 # -------------------------
-df = pd.read_csv(uploaded_file)
-
 control_col = "ECC id control"
 source_col = "Source Text"
 
 if control_col not in df.columns or source_col not in df.columns:
-    st.error("❌ Your CSV must contain: 'ECC id control' and 'Source Text' columns")
+    st.error(f"❌ ملف CSV يجب أن يحتوي على أعمدة: '{control_col}' و '{source_col}'")
+    st.info(f"الأعمدة الموجودة: {list(df.columns)}")
     st.stop()
 
 controls_df = df[[control_col, source_col]].dropna().copy()
@@ -523,8 +535,6 @@ if search:
     controls_df = controls_df[
         controls_df[control_col].str.contains(search, case=False, na=False)
     ]
-
-control_options = controls_df[control_col].tolist()
 
 # Keep selected control
 if "selected_control" not in st.session_state:
@@ -573,7 +583,7 @@ source_text = str(row[source_col])
 st.sidebar.markdown('<div class="sidebar-title">⚙️ Settings</div>', unsafe_allow_html=True)
 top_k = st.sidebar.slider("Top-K Mappings:", 1, 10, 10)
 
-# ========== تصحيح الخطأ: تعريف mappings هنا قبل استخدامه ==========
+# تعريف mappings قبل استخدامه
 mappings = extract_mappings(row, df, top_k)
 
 
@@ -668,8 +678,8 @@ elif tab_choice == "📈 Analytics":
     analytics_all = get_all_mappings(df)
 
     total_controls = len(df)
-    total_mappings = len(analytics_all)
-    avg_mappings = total_mappings / total_controls if total_controls else 0
+    total_mappings_count = len(analytics_all)
+    avg_mappings = total_mappings_count / total_controls if total_controls else 0
 
     controls_with_mappings = analytics_all["control"].nunique()
     controls_without_mappings = total_controls - controls_with_mappings
@@ -799,7 +809,7 @@ elif tab_choice == "📈 Analytics":
         text-align: center;
         font-size: 22px;
         font-weight: 800;
-        color: #596579;
+        color: #1e293b;
         margin-bottom: 24px;
     }
 
@@ -807,11 +817,12 @@ elif tab_choice == "📈 Analytics":
         margin-bottom: 24px;
         font-size: 18px;
         font-weight: 700;
+        color: #334155;
     }
 
     .relation-value {
         float: right;
-        color: #596579;
+        color: #64748b;
         font-weight: 600;
     }
 
@@ -823,6 +834,8 @@ elif tab_choice == "📈 Analytics":
         display: flex;
         align-items: center;
         justify-content: space-around;
+        flex-wrap: wrap;
+        gap: 20px;
     }
 
     .big-green {
@@ -845,6 +858,20 @@ elif tab_choice == "📈 Analytics":
         font-size: 18px;
         font-weight: 600;
     }
+    
+    .circular-progress {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 18px solid #e2e8f0;
+        border-top-color: #10b981;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        font-weight: 900;
+        color: #10b981;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -864,7 +891,7 @@ elif tab_choice == "📈 Analytics":
     with c2:
         st.markdown(f"""
         <div class="metric-box">
-            <div class="metric-number">{total_mappings}</div>
+            <div class="metric-number">{total_mappings_count}</div>
             <div class="metric-label">Total Recommended Mappings</div>
         </div>
         """, unsafe_allow_html=True)
@@ -889,8 +916,7 @@ elif tab_choice == "📈 Analytics":
         <div class="gap-warning">
             <div class="orange-number">{controls_without_mappings}</div>
             <div class="metric-label">Controls with 0 Mappings</div>
-            <br>
-            <div style="color:#94a3b8;font-weight:700;">{without_counts:.1f}% of total</div>
+            <div style="color:#94a3b8;font-weight:700;margin-top:10px;">{without_counts:.1f}% of total</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -899,8 +925,7 @@ elif tab_choice == "📈 Analytics":
         <div class="gap-success">
             <div class="green-number">{controls_with_mappings}</div>
             <div class="metric-label">Controls with Mappings</div>
-            <br>
-            <div style="color:#94a3b8;font-weight:700;">{with_counts:.1f}% coverage</div>
+            <div style="color:#94a3b8;font-weight:700;margin-top:10px;">{with_counts:.1f}% coverage</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -916,7 +941,7 @@ elif tab_choice == "📈 Analytics":
         <div class="metric-box">
             <div class="metric-number">{avg_embedding:.1f}%</div>
             <div class="metric-label">Avg Embedding Score</div>
-            <div class="progress-bg"><div class="progress-blue" style="width:{avg_embedding}%;"></div></div>
+            <div class="progress-bg"><div class="progress-blue" style="width:{min(avg_embedding, 100)}%;"></div></div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -925,7 +950,7 @@ elif tab_choice == "📈 Analytics":
         <div class="metric-box">
             <div class="metric-number">{avg_ontology:.1f}%</div>
             <div class="metric-label">Avg Ontology Score</div>
-            <div class="progress-bg"><div class="progress-purple" style="width:{avg_ontology}%;"></div></div>
+            <div class="progress-bg"><div class="progress-purple" style="width:{min(avg_ontology, 100)}%;"></div></div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -934,7 +959,7 @@ elif tab_choice == "📈 Analytics":
         <div class="metric-box">
             <div class="metric-number">{avg_jaccard:.1f}%</div>
             <div class="metric-label">Avg Jaccard Similarity</div>
-            <div class="progress-bg"><div class="progress-green" style="width:{avg_jaccard}%;"></div></div>
+            <div class="progress-bg"><div class="progress-green" style="width:{min(avg_jaccard, 100)}%;"></div></div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -943,88 +968,56 @@ elif tab_choice == "📈 Analytics":
     # RELATIONSHIP CLASSIFICATION
     st.markdown('<div class="analytics-card"><div class="section-title">🔄 Relationship Classification</div>', unsafe_allow_html=True)
 
-    primary_count = len(analytics_all[analytics_all["rank"] <= 3])
-    secondary_count = len(analytics_all[analytics_all["rank"] > 3])
-    primary_pct = primary_count / total_mappings * 100 if total_mappings else 0
-    secondary_pct = secondary_count / total_mappings * 100 if total_mappings else 0
-
-    subset_count = int(total_mappings * 0.557)
-    superset_count = int(total_mappings * 0.204)
-    equal_count = int(total_mappings * 0.198)
-    unrelated_count = total_mappings - subset_count - superset_count - equal_count
+    if total_mappings_count > 0:
+        primary_count = len(analytics_all[analytics_all["rank"] <= 3])
+        secondary_count = len(analytics_all[analytics_all["rank"] > 3])
+        primary_pct = (primary_count / total_mappings_count * 100) if total_mappings_count else 0
+        secondary_pct = (secondary_count / total_mappings_count * 100) if total_mappings_count else 0
+    else:
+        primary_count = secondary_count = primary_pct = secondary_pct = 0
 
     r1, r2 = st.columns(2)
 
     with r1:
         st.markdown(f"""
         <div class="relation-box">
-            <div class="relation-title">Relationship Scope</div>
-
-            <div class="relation-row">Subset <span class="relation-value">{subset_count} ({subset_count/total_mappings*100:.1f}%)</span></div>
-            <div class="progress-bg"><div class="progress-purple" style="width:{subset_count/total_mappings*100:.1f}%;"></div></div>
-
-            <div class="relation-row">Superset <span class="relation-value">{superset_count} ({superset_count/total_mappings*100:.1f}%)</span></div>
-            <div class="progress-bg"><div class="progress-orange" style="width:{superset_count/total_mappings*100:.1f}%;"></div></div>
-
-            <div class="relation-row">Equal <span class="relation-value">{equal_count} ({equal_count/total_mappings*100:.1f}%)</span></div>
-            <div class="progress-bg"><div class="progress-blue" style="width:{equal_count/total_mappings*100:.1f}%;"></div></div>
-
-            <div class="relation-row">Unrelated <span class="relation-value">{unrelated_count} ({unrelated_count/total_mappings*100:.1f}%)</span></div>
-            <div class="progress-bg"><div class="progress-red" style="width:{unrelated_count/total_mappings*100:.1f}%;"></div></div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with r2:
-        st.markdown(f"""
-        <div class="relation-box">
-            <div class="relation-title">Relationship Degree</div>
-
-            <div class="relation-row">Primary <span class="relation-value">{primary_count} ({primary_pct:.1f}%)</span></div>
+            <div class="relation-title">🎯 Primary vs Secondary</div>
+            <div class="relation-row">
+                <span>🔹 Primary (Rank 1-3)</span>
+                <span class="relation-value">{primary_count} ({primary_pct:.1f}%)</span>
+            </div>
             <div class="progress-bg"><div class="progress-green" style="width:{primary_pct:.1f}%;"></div></div>
-
-            <div class="relation-row">Secondary <span class="relation-value">{secondary_count} ({secondary_pct:.1f}%)</span></div>
+            <div class="relation-row" style="margin-top:20px;">
+                <span>🔸 Secondary (Rank 4-10)</span>
+                <span class="relation-value">{secondary_count} ({secondary_pct:.1f}%)</span>
+            </div>
             <div class="progress-bg"><div class="progress-orange" style="width:{secondary_pct:.1f}%;"></div></div>
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # RECIPROCAL MAPPING ANALYSIS
-    reciprocal_count = int(total_mappings * 0.287)
-    reciprocal_pct = reciprocal_count / total_mappings * 100 if total_mappings else 0
-
-    st.markdown('<div class="analytics-card"><div class="section-title">🔄 Reciprocal Mapping Analysis</div>', unsafe_allow_html=True)
-
-    st.markdown(f"""
-    <div class="reciprocal-box">
-        <div>
-            <div class="big-green">{reciprocal_count}</div>
-            <div style="font-size:22px;font-weight:800;color:#065f46;text-align:center;">
-                Bidirectional Mappings
+    with r2:
+        # حساب توزيع الثقة
+        confidence_counts = analytics_all["confidence"].value_counts()
+        confidence_data = ""
+        colors = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444"]
+        color_idx = 0
+        for conf, cnt in confidence_counts.items():
+            pct = (cnt / total_mappings_count * 100) if total_mappings_count else 0
+            confidence_data += f"""
+            <div class="relation-row">
+                <span>🏷️ {conf}</span>
+                <span class="relation-value">{cnt} ({pct:.1f}%)</span>
             </div>
+            <div class="progress-bg"><div class="progress-purple" style="width:{pct:.1f}%;background:{colors[color_idx % len(colors)]};"></div></div>
+            """
+            color_idx += 1
+        
+        st.markdown(f"""
+        <div class="relation-box">
+            <div class="relation-title">📊 Confidence Distribution</div>
+            {confidence_data if confidence_data else '<div class="relation-row">No confidence data available</div>'}
         </div>
-
-        <div style="
-            width:150px;
-            height:150px;
-            border-radius:50%;
-            border:18px solid #dfe3e8;
-            border-top-color:#10b981;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-size:30px;
-            font-weight:900;
-            color:#10b981;
-        ">
-            {reciprocal_pct:.1f}%
-        </div>
-
-        <div style="font-size:20px;color:#065f46;max-width:420px;text-align:center;">
-            {reciprocal_pct:.1f}% of ECC→NIST mappings have a corresponding NIST→ECC mapping
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1044,16 +1037,16 @@ elif tab_choice == "📈 Analytics":
     dist = pd.Series(mapping_counts).value_counts().sort_index()
 
     st.markdown("""
-    <div style="display:grid;grid-template-columns:2fr 1.6fr 1fr 1fr;background:#f1f3f6;">
-        <div class="table-head">Recommended Mappings</div>
-        <div class="table-head">Number of Controls</div>
-        <div class="table-head">Percentage</div>
-        <div class="table-head">Visual</div>
+    <div style="display:grid;grid-template-columns:2fr 1.6fr 1fr 1fr;background:#f1f3f6;border-radius:8px;">
+        <div class="table-head">📌 Recommended Mappings</div>
+        <div class="table-head">📈 Number of Controls</div>
+        <div class="table-head">📊 Percentage</div>
+        <div class="table-head">🎨 Visual</div>
     </div>
     """, unsafe_allow_html=True)
 
     for num_maps, count in dist.items():
-        pct = count / total_controls * 100 if total_controls else 0
+        pct = (count / total_controls * 100) if total_controls else 0
 
         st.markdown(f"""
         <div style="display:grid;grid-template-columns:2fr 1.6fr 1fr 1fr;">
@@ -1062,7 +1055,7 @@ elif tab_choice == "📈 Analytics":
             <div class="table-row">{pct:.1f}%</div>
             <div class="table-row">
                 <div class="progress-bg">
-                    <div class="progress-blue" style="width:{pct:.1f}%;"></div>
+                    <div class="progress-blue" style="width:{min(pct, 100)}%;"></div>
                 </div>
             </div>
         </div>
