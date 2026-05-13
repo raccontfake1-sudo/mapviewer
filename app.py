@@ -573,6 +573,9 @@ source_text = str(row[source_col])
 st.sidebar.markdown('<div class="sidebar-title">⚙️ Settings</div>', unsafe_allow_html=True)
 top_k = st.sidebar.slider("Top-K Mappings:", 1, 10, 10)
 
+# ========== تصحيح الخطأ: تعريف mappings هنا قبل استخدامه ==========
+mappings = extract_mappings(row, df, top_k)
+
 
 # -------------------------
 # MAIN HEADER
@@ -583,9 +586,6 @@ if tab_choice == "📊 Mappings":
         f'<div class="subtitle">🎯 Viewing mappings for: <b>{selected_control}</b> ({len(mappings)} mappings found)</div>',
         unsafe_allow_html=True
     )
-
-    # إعادة تعريف mappings هنا بعد معرفة top_k
-    mappings = extract_mappings(row, df, top_k)
 
     left, right = st.columns([3.2, 1.7])
 
@@ -665,8 +665,6 @@ elif tab_choice == "📈 Analytics":
 
         return pd.DataFrame(all_items)
 
-    # الحصول على التصنيفات الحالية
-    mappings = extract_mappings(row, df, top_k)
     analytics_all = get_all_mappings(df)
 
     total_controls = len(df)
