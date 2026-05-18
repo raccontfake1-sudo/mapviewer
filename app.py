@@ -90,17 +90,20 @@ if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
     
-    st.sidebar.title("Controls List")
-    selected_id = st.sidebar.radio("Select Control ID:", df["ECC id control"].unique())
-    
-    st.title("Control Mapping Viewer")
-    
-    row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
-    mappings = extract_mappings(row, df)
+   st.title("Control Mapping Viewer")
 
-    # عرض الرسم البياني
-    graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
-    components.html(graph_html, height=680)
+‏for _, row in df.iterrows():
+‏    selected_id = str(row["ECC id control"])
+‏    mappings = extract_mappings(row, df)
+
+‏    graph_html = create_graph(
+‏        selected_id,
+‏        str(row["Source Text"]),
+‏        mappings
+    )
+
+‏    components.html(graph_html, height=680)
+    st.divider()
 
     # عرض التفسيرات - باستخدام Markdown فقط (بدون HTML)
     st.markdown("## AI Explanations")
