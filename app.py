@@ -30,11 +30,11 @@ def get_mapping_columns(i):
         "differences": f"Differences{suffix}"
     }
 
-def extract_mappings(row, df, top_k=10):
+def extract_mappings(row, df_columns, top_k=10):
     results = []
     for i in range(1, 11):
         cols = get_mapping_columns(i)
-        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])):
+        if cols["mapping"] not in df_columns or pd.isna(row.get(cols["mapping"])):
             continue
         try:
             val = str(row.get(cols["final"], 0)).replace('%', '')
@@ -44,8 +44,8 @@ def extract_mappings(row, df, top_k=10):
         
         commonality_val = row.get(cols["commonality"], "")
         justification_val = row.get(cols["justification"], "")
-        
         differences_val = row.get(cols["differences"], "")
+        
         if pd.isna(differences_val) or differences_val == "":
             differences_val = "The controls differ in implementation focus and specific requirements."
         
@@ -57,42 +57,43 @@ def extract_mappings(row, df, top_k=10):
             "justification": str(justification_val) if not pd.isna(justification_val) else "N/A",
             "differences": str(differences_val)
         })
-    # ترتيب المابات الفرعية بناءً على السكور الأعلى
+    # فرز المابات بناءً على التقييم الأعلى (الأقوى يظهر أولاً)
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 # -------------------------
-# رسم الجراف
+# رسم الجراف (تم تعديل المعرف لمنع الاختفاء)
 # -------------------------
 def create_graph(selected_id, source_text, mappings):
-    net = Network(height="650px", width="100%", bgcolor="#ffffff")
+    net = Network(height="600px", width="100%", bgcolor="#ffffff")
     net.set_options("""
     {
       "physics": {
-        "forceAtlas2Based": { "gravitationalConstant": -120, "springLength": 220 },
-        "solver": "forceAtlas2Based", "stabilization": { "iterations": 1000 }
+        "forceAtlas2Based": { "gravitationalConstant": -120, "springLength": 200 },
+        "solver": "forceAtlas2Based", "stabilization": { "iterations": 800 }
       },
-      "nodes": { "font": { "size": 18, "face": "arial" }, "borderWidth": 2 },
+      "nodes": { "font": { "size": 16, "face": "arial" }, "borderWidth": 2 },
       "edges": { "font": { "size": 16, "align": "middle", "color": "#1476d4" }, "color": "#d3dbe3" }
     }
     """)
     
-    # التعديل: جعل الدائرة المركزية الزرقاء كبيرة بحجم ثابت (size=80) ويظهر داخلها رقم الكنترول فقط
+    # استخدام معرف ثابت "MAIN" للدائرة المركزية يمنع اختفاء الجراف بسبب النقاط والرموز في النص
     net.add_node(
-        selected_id, 
-        label=str(selected_id), # رقم الكنترول بالداخل فقط
-        title=f"<b>Source Text:</b><br>{html.escape(source_text)}", # النص الطويل يظهر عند ملامسة الماوس فقط
+        "MAIN", 
+        label=str(selected_id), # يعرض رقم الكنترول فقط بالداخل بشكل صحيح
+        title=f"<b>Source Text:</b><br>{html.escape(source_text)}", 
         color="#1687d9", 
-        size=80, # حجم كبير وثابت لكل الكنترولز
-        shape="dot", # لضمان توسط النص داخل الدائرة تماماً
-        font={"color": "white", "size": 26, "bold": True} # خط عريض وواضح بالمنتصف
+        size=75, # حجم كبير وثابت
+        shape="dot", 
+        font={"color": "white", "size": 24, "bold": True}
     )
 
+    # إضافة العقد الخضراء الفرعية والخطوط بالترتيب من 1 إلى 10
     for idx, item in enumerate(mappings):
-        edge_width = max(1, 10 - idx)
+        node_id = f"NIST_{item['mapping']}_{idx}" # معرف فريد وآمن لكل عقدة فرعية
+        edge_width = max(2, 8 - idx)
         
-        # العقد الخضراء الفرعية (NIST) بحجم ثابت (size=35) وعليها الكود الخاص بها
         net.add_node(
-            item["mapping"], 
+            node_id, 
             label=item["mapping"], 
             title=html.escape(item["text"]), 
             color="#328a36", 
@@ -101,8 +102,8 @@ def create_graph(selected_id, source_text, mappings):
             font={'color': 'white'}
         )
         
-        # الخط الرابط يوضح الترتيب التصاعدي من #1 إلى #10
-        net.add_edge(selected_id, item["mapping"], label=f"#{idx+1}", width=edge_width)
+        # الخط الرابط يعرض الرقم متسلسلاً ومرتباً من #1 إلى #10 تماماً
+        net.add_edge("MAIN", node_id, label=f"#{idx+1}", width=edge_width)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html", mode="w", encoding="utf-8") as tmp:
         net.save_graph(tmp.name)
@@ -121,34 +122,51 @@ if os.path.exists(DATA_FILE):
     st.title("Control Mapping Viewer")
     st.write("---")
     
-    # تقسيم الصفحة إلى 3 أعمدة منسقة
-    menu_col, graph_col, explain_col = st.columns([1, 2, 1.2])
+    # تقسيم الصفحة لثلاثة أقسام متناسقة (أزرار الكنترول | الجراف | الشروحات الجانبية)
+    menu_col, graph_col, explain_col = st.columns([1.2, 2, 1.5])
     
-    # قائمة الكنترولز (أزرار راديو تحت بعضها مرتبة ترتيباً طبيعياً ذكياً)
     with menu_col:
         st.markdown("### 📋 Controls List")
         
-        # جلب الكنترولز وعمل الترتيب الذكي المتسلسل
         raw_controls = df["ECC id control"].dropna().unique()
         sorted_controls = sorted([str(c) for c in raw_controls], key=natural_sort_key)
         
-        # الأزرار تظهر تحت بعضها وتختار منها بنقرة واحدة مباشرة
+        # كود ذكي لحصر أزرار الراديو داخل صندوق أنيق ومتحرك بالماوس (Scrollbar)
+        # هذا يمنع وجود مساحات بيضاء فارغة بالأسفل ويجعل التصميم احترافياً
+        st.markdown(
+            """
+            <style>
+            div[data-testid="stRadio"] > div {
+                max-height: 500px;
+                overflow-y: auto;
+                border: 1px solid #e6e9ef;
+                padding: 12px;
+                border-radius: 8px;
+                background-color: #f8f9fa;
+            }
+            </style>
+            """, 
+            unsafe_allow_html=True
+        )
+        
+        # أزرار اختيار فورية تحت بعضها وبدون خانة بحث
         selected_id = st.radio(
             "Select Control ID:",
-            sorted_controls
+            sorted_controls,
+            label_visibility="collapsed" # يخفي النصوص الزائدة لجمالية التصميم
         )
     
     # جلب بيانات السطر المختار
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
-    mappings = extract_mappings(row, df)
+    mappings = extract_mappings(row, df.columns)
 
-    # عمود عرض الرسم البياني (الجراف)
+    # عمود عرض الرسم البياني (الجراف الثابت والمستقر)
     with graph_col:
         st.markdown("### 🕸️ Mapping Visualization")
-        graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
-        components.html(graph_html, height=650)
+        graph_html = create_graph(str(selected_id), str(row.get("Source Text", "")), mappings)
+        components.html(graph_html, height=620)
         
-    # عمود تفاصيل تفاسير الذكاء الاصطناعي مرتبة بالتسلسل من 1 إلى 10
+    # عمود الشروحات على اليمين مرتبة بالتسلسل من 1 إلى 10
     with explain_col:
         st.markdown("### 🤖 AI Explanations")
         for idx, item in enumerate(mappings):
