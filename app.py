@@ -25,6 +25,7 @@ def get_mapping_columns(i):
 
 def extract_mappings(row, df, top_k=10):
     results = []
+
     for i in range(1, 11):
         cols = get_mapping_columns(i)
 
@@ -37,20 +38,13 @@ def extract_mappings(row, df, top_k=10):
         except:
             score = 0.0
 
-        commonality_val = row.get(cols["commonality"], "")
-        justification_val = row.get(cols["justification"], "")
-
-        differences_val = row.get(cols["differences"], "")
-        if pd.isna(differences_val) or differences_val == "":
-            differences_val = "The controls differ in implementation focus and specific requirements."
-
         results.append({
             "mapping": str(row.get(cols["mapping"], "")),
             "text": str(row.get(cols["text"], "")),
             "final": score,
-            "commonality": str(commonality_val) if not pd.isna(commonality_val) else "N/A",
-            "justification": str(justification_val) if not pd.isna(justification_val) else "N/A",
-            "differences": str(differences_val)
+            "commonality": str(row.get(cols["commonality"], "N/A")),
+            "justification": str(row.get(cols["justification"], "N/A")),
+            "differences": str(row.get(cols["differences"], "")) if not pd.isna(row.get(cols["differences"])) else "No differences provided"
         })
 
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
@@ -76,7 +70,7 @@ def create_graph(selected_id, source_text, mappings):
         "borderWidth": 2
       },
       "edges": {
-        "font": { "size": 16, "align": "middle", "color": "#1476d4" },
+        "font": { "size": 14, "align": "middle", "color": "#1476d4" },
         "color": "#d3dbe3"
       }
     }
@@ -85,26 +79,40 @@ def create_graph(selected_id, source_text, mappings):
     # 🔵 العقدة المركزية (الكنترول)
     net.add_node(
         selected_id,
-        label=str(selected_id),   # رقم الكنترول داخل الدائرة
+        label=str(selected_id),
         title=html.escape(source_text),
         color="#1687d9",
-        size=90,                  # تكبير الدائرة الزرقاء
+        size=95,
         shape="circle",
-        font={
-            "color": "white",
-            "size": 26,
-            "bold": True
-        }
+        font={"color": "white", "size": 26, "bold": True}
     )
 
-    # العقد الفرعية
+    # العقد الثانوية
     for idx, item in enumerate(mappings):
         edge_width = max(1, 10 - idx)
+
+        # 🟢 Tooltip فيه (الشرح + الاختلاف)
+        tooltip = f"""
+        Mapping: {item['mapping']}
+        --------------------------------
+        Text: {item['text']}
+
+        Score: {item['final']}
+
+        Commonality:
+        {item['commonality']}
+
+        Justification:
+        {item['justification']}
+
+        Differences:
+        {item['differences']}
+        """
 
         net.add_node(
             item["mapping"],
             label=item["mapping"],
-            title=html.escape(item["text"]),
+            title=html.escape(tooltip),   # 👈 هنا الشرح والاختلاف
             color="#328a36",
             size=32,
             shape="circle",
@@ -132,6 +140,7 @@ if os.path.exists(DATA_FILE):
     df.columns = [c.strip() for c in df.columns]
 
     st.sidebar.title("Controls List")
+
     selected_id = st.sidebar.selectbox(
         "Select Control ID:",
         df["ECC id control"].unique()
