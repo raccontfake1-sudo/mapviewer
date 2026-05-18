@@ -91,7 +91,7 @@ if os.path.exists(DATA_FILE):
     df.columns = [c.strip() for c in df.columns]
     
     st.sidebar.title("Controls List")
-    selected_id = st.sidebar.selectbox("Select Control ID:", df["ECC id control"].unique())
+    selected_id = st.sidebar.radio("Select Control ID:", df["ECC id control"].unique())
     
     st.title("Control Mapping Viewer")
     
