@@ -123,7 +123,7 @@ def create_graph(
 ):
 
     net = Network(
-        height="900px",
+        height="850px",
         width="100%",
         bgcolor="#ffffff"
     )
@@ -131,16 +131,15 @@ def create_graph(
     net.set_options("""
     {
       "physics": {
-        "enabled": false
-      },
+        "forceAtlas2Based": {
+          "gravitationalConstant": -100,
+          "springLength": 180
+        },
 
-      "layout": {
-        "hierarchical": {
-          "enabled": true,
-          "direction": "UD",
-          "sortMethod": "directed",
-          "nodeSpacing": 180,
-          "levelSeparation": 150
+        "solver": "forceAtlas2Based",
+
+        "stabilization": {
+          "iterations": 1000
         }
       },
 
@@ -167,21 +166,22 @@ def create_graph(
     }
     """)
 
-    # الدائرة الزرقاء الرئيسية
+    # العقدة الرئيسية الزرقاء
     net.add_node(
         selected_id,
         label=str(selected_id),
         title=html.escape(source_text),
         color="#1687d9",
-        size=45,
+        size=55,
         shape="dot",
+
         font={
             "color": "white",
-            "size": 22
+            "size": 24
         }
     )
 
-    # الكنترولز المرتبة
+    # الكنترولز الخضراء
     for idx, item in enumerate(mappings):
 
         node_id = (
@@ -199,7 +199,7 @@ def create_graph(
 
             color="#328a36",
 
-            size=30,
+            size=32,
 
             shape="circle",
 
@@ -208,7 +208,7 @@ def create_graph(
             }
         )
 
-        # الهاشتاقات المرتبة
+        # الهاشتاقات
         net.add_edge(
             selected_id,
             node_id,
@@ -278,7 +278,7 @@ if os.path.exists(DATA_FILE):
 
         components.html(
             graph_html,
-            height=950
+            height=900
         )
 
         st.divider()
