@@ -7,7 +7,7 @@ import html
 import os
 import re
 
-# إعداد الصفحة لتكون عريضة ومنسقة بمعايير احترافية
+# إعداد الصفحة لتكون عريضة ومنسقة بالكامل لتقديم مشروع التخرج
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 # -------------------------
@@ -57,10 +57,11 @@ def extract_mappings(row, df_columns, top_k=10):
             "justification": str(justification_val) if not pd.isna(justification_val) else "N/A",
             "differences": str(differences_val)
         })
+    # فرز المابات بناءً على التقييم الأعلى
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 # -------------------------
-# رسم الجراف الاحترافي
+# رسم الجراف بترتيب دائري هندسي متسلسل
 # -------------------------
 def create_graph(selected_id, source_text, mappings):
     net = Network(height="600px", width="100%", bgcolor="#ffffff")
@@ -69,14 +70,14 @@ def create_graph(selected_id, source_text, mappings):
     {
       "physics": {
         "forceAtlas2Based": { "gravitationalConstant": -160, "springLength": 220, "avoidOverlap": 1 },
-        "solver": "forceAtlas2Based", "stabilization": { "iterations": 800 }
+        "solver": "forceAtlas2Based", "stabilization": { "iterations": 1000 }
       },
       "nodes": { "font": { "face": "arial" }, "borderWidth": 2 },
       "edges": { "font": { "size": 16, "align": "middle", "color": "#1476d4" }, "color": "#d3dbe3" }
     }
     """)
     
-    # العقدة المركزية الزرقاء: استخدام شكل box لضمان ظهور رقم الكنترول بداخلها دائماً بوضوح
+    # 1. الدائرة المركزية (استخدام شكل box لضمان ظهور رقم الكنترول بداخلها بوضوح دائماً وبحجم ثابت)
     net.add_node(
         "MAIN", 
         label=f" {str(selected_id)} ", 
@@ -87,7 +88,7 @@ def create_graph(selected_id, source_text, mappings):
         font={"color": "white", "size": 22, "bold": True}
     )
 
-    # إضافة عقد الـ NIST والخطوط بترتيب إجباري من #1 إلى #10
+    # لضمان خروج الأرقام من #1 إلى #10 بالترتيب التتابعي الدائري الهندسي المريح للعين
     for idx, item in enumerate(mappings):
         node_id = f"NIST_{item['mapping']}_{idx}"
         edge_width = max(2, 8 - idx)
@@ -102,7 +103,7 @@ def create_graph(selected_id, source_text, mappings):
             font={'color': 'white', 'size': 14, 'bold': True}
         )
         
-        # الترتيب المتسلسل الإجباري للخطوط الرابطة من #1 إلى #10
+        # ربط الخطوط بشكل متسلسل إجباري من #1 إلى #10
         net.add_edge("MAIN", node_id, label=f"#{idx+1}", width=edge_width)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html", mode="w", encoding="utf-8") as tmp:
@@ -120,73 +121,43 @@ if os.path.exists(DATA_FILE):
     df.columns = [c.strip() for c in df.columns]
     
     st.title("🛡️ Control Mapping Viewer")
-    st.write("لوحة تحكم تفاعلية متقدمة لربط وتحليل عناصر التحكم بمواصفات نظام NIST.")
     st.write("---")
     
-    # تقسيم الصفحة إلى 3 أعمدة احترافية
-    menu_col, graph_col, explain_col = st.columns([1.4, 2.2, 1.6])
+    # تقسيم الصفحة إلى 3 أعمدة (قائمة الاختيار | الجراف | الشروحات الجانبية)
+    menu_col, graph_col, explain_col = st.columns([1.3, 2.2, 1.5])
     
     with menu_col:
         st.markdown("### 📋 Controls List")
+        st.write("اضغطي على أي سطر لاختيار الكنترول مباشرة:")
         
+        # جلب الكنترولز وترتيبها الترتيب الطبيعي الرياضي الصحيح
         raw_controls = df["ECC id control"].dropna().unique()
         sorted_controls = sorted([str(c) for c in raw_controls], key=natural_sort_key)
         
-        # تهيئة "حالة الجلسة" لحفظ الكنترول المختار وتفادي إعادة التحميل العشوائي
-        if "selected_control" not in st.session_state:
-            st.session_state.selected_control = sorted_controls[0]
-            
-        # بناء قائمة أزرار تفاعلية بروفيشينال مقاومة للـ Dark Mode ومزودة بـ Scrollbar
-        st.markdown(
-            """
-            <style>
-            .scroll-container {
-                max-height: 520px;
-                overflow-y: auto;
-                border: 1px solid #4a4a4a;
-                padding: 10px;
-                border-radius: 8px;
-                background-color: rgba(0,0,0,0.03);
-            }
-            .control-btn {
-                width: 100%;
-                text-align: left;
-                padding: 10px 15px;
-                margin-bottom: 6px;
-                border-radius: 6px;
-                border: 1px solid #1687d9;
-                background-color: transparent;
-                font-size: 15px;
-                font-weight: bold;
-                cursor: pointer;
-                transition: 0.3s;
-            }
-            </style>
-            """, 
-            unsafe_allow_html=True
+        # بناء جدول تفاعلي نظيف جداً وخفيف، ومستحيل يتأثر بالـ Dark Mode أو يترك فراغات
+        list_df = pd.DataFrame({"Control ID": sorted_controls})
+        
+        selected_row = st.dataframe(
+            list_df,
+            use_container_width=True,
+            height=500,
+            hide_index=True, # إخفاء الأرقام التسلسلية للجدول لمنع تشتيت المستخدم
+            on_select="rerun", # إعادة تحميل فوري بمجرد الضغط
+            selection_mode="single-row" # اختيار سطر واحد في المرة
         )
         
-        # إنشاء الأزرار عمودياً بشكل منظم جداً وثابت رقمياً
-        st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-        for ctrl in sorted_controls:
-            # تمييز الزر النشط حالياً بلون مختلف
-            if ctrl == st.session_state.selected_control:
-                btn_style = "background-color: #1687d9; color: white;"
-            else:
-                btn_style = "color: #1687d9;"
-                
-            if st.button(f"📄 Control {ctrl}", key=f"btn_{ctrl}", use_container_width=True):
-                st.session_state.selected_control = ctrl
-                st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-    selected_id = st.session_state.selected_control
-    
-    # جلب السطر المختار بناءً على الزر المضغطوط
+        # تحديد الكنترول الافتراضي (السطر الأول في حال لم يتم الضغط بعد)
+        if len(selected_row.selection.rows) > 0:
+            selected_index = selected_row.selection.rows[0]
+            selected_id = sorted_controls[selected_index]
+        else:
+            selected_id = sorted_controls[0]
+            
+    # جلب بيانات السطر المختار بناءً على جدول الاختيار الذكي
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     mappings = extract_mappings(row, df.columns)
 
-    # عمود عرض الرسم البياني الاحترافي المستقر
+    # عمود عرض الرسم البياني الاحترافي المرتب
     with graph_col:
         st.markdown("### 🕸️ Mapping Visualization")
         graph_html = create_graph(str(selected_id), str(row.get("Source Text", "")), mappings)
