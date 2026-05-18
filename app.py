@@ -6,13 +6,10 @@ import tempfile
 import html
 import os
 
-# -------------------------
-# إعداد الصفحة
-# -------------------------
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 # -------------------------
-# معالجة الأعمدة
+# الأعمدة
 # -------------------------
 def get_mapping_columns(i):
     suffix = "" if i == 1 else f" {i}"
@@ -26,36 +23,48 @@ def get_mapping_columns(i):
     }
 
 # -------------------------
-# استخراج المابينق
+# استخراج البيانات (مع حماية الفراغات)
 # -------------------------
+def clean(val):
+    if pd.isna(val) or val is None:
+        return "N/A"
+    val = str(val).strip()
+    return val if val != "" else "N/A"
+
 def extract_mappings(row, df, top_k=10):
     results = []
 
     for i in range(1, 11):
         cols = get_mapping_columns(i)
 
-        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])):
+        if cols["mapping"] not in df.columns:
             continue
 
+        mapping_val = row.get(cols["mapping"])
+
+        if pd.isna(mapping_val) or str(mapping_val).strip() == "":
+            continue
+
+        # score
         try:
             val = str(row.get(cols["final"], 0)).replace('%', '')
-            score = float(val) / 100.0 if float(val) > 1.0 else float(val)
+            score = float(val) / 100.0 if float(val) > 1 else float(val)
         except:
             score = 0.0
 
         results.append({
-            "mapping": str(row.get(cols["mapping"], "")),
-            "text": str(row.get(cols["text"], "")),
+            "mapping": clean(mapping_val),
+            "text": clean(row.get(cols["text"])),
             "final": score,
-            "commonality": str(row.get(cols["commonality"], "N/A")),
-            "justification": str(row.get(cols["justification"], "N/A")),
-            "differences": str(row.get(cols["differences"], "No differences provided"))
+            "commonality": clean(row.get(cols["commonality"])),
+            "justification": clean(row.get(cols["justification"])),
+            "differences": clean(row.get(cols["differences"]))
         })
 
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 # -------------------------
-# بناء الجراف
+# الرسم
 # -------------------------
 def create_graph(selected_id, source_text, mappings):
     net = Network(height="650px", width="100%", bgcolor="#ffffff")
@@ -71,101 +80,81 @@ def create_graph(selected_id, source_text, mappings):
         "stabilization": { "iterations": 1000 }
       },
       "nodes": {
-        "font": { "size": 22, "face": "arial" },
-        "borderWidth": 2
-      },
-      "edges": {
-        "font": { "size": 14, "align": "middle", "color": "#1476d4" },
-        "color": "#d3dbe3"
+        "font": { "size": 22, "face": "arial" }
       }
     }
     """)
 
-    # 🔵 العقدة المركزية (الكنترول)
+    # 🔵 الكنترول الرئيسي
     net.add_node(
         selected_id,
         label=str(selected_id),
-        title=f"<b>Source Text</b><br>{html.escape(source_text)}",
+        title=html.escape(source_text),
         color="#1687d9",
         size=95,
         shape="circle",
-        font={"color": "white", "size": 26, "bold": True}
+        font={"color": "white", "size": 26}
     )
 
-    # 🟢 العقد الفرعية
+    # 🟢 المابينق
     for idx, item in enumerate(mappings):
-        edge_width = max(1, 10 - idx)
-
-        tooltip_html = f"""
+        tooltip = f"""
         <div style="width:320px">
-            <h4>Mapping: {item['mapping']}</h4>
-            <hr>
+        <b>Mapping:</b> {item['mapping']}<br><br>
 
-            <b>Text:</b><br>
-            {html.escape(item['text'])}<br><br>
+        <b>Text:</b><br>{item['text']}<br><br>
 
-            <b>Score:</b> {item['final']}<br><br>
+        <b>Score:</b> {item['final']}<br><br>
 
-            <b>Commonality (الشرح):</b><br>
-            {html.escape(item['commonality'])}<br><br>
+        <b>Commonality (شرح):</b><br>{item['commonality']}<br><br>
 
-            <b>Justification:</b><br>
-            {html.escape(item['justification'])}<br><br>
+        <b>Justification:</b><br>{item['justification']}<br><br>
 
-            <b>Differences (الاختلاف):</b><br>
-            {html.escape(item['differences'])}
+        <b>Differences (اختلاف):</b><br>{item['differences']}
         </div>
         """
 
         net.add_node(
             item["mapping"],
             label=item["mapping"],
-            title=tooltip_html,
-            color="#328a36",
+            title=tooltip,
+            color="#2e8b57",
             size=32,
             shape="circle",
-            font={'color': 'white'}
+            font={"color": "white", "size": 14}
         )
 
-        net.add_edge(
-            selected_id,
-            item["mapping"],
-            label=f"#{idx+1}",
-            width=edge_width
-        )
+        net.add_edge(selected_id, item["mapping"], label=f"#{idx+1}")
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
-        return open(tmp.name, 'r', encoding='utf-8').read()
+        return open(tmp.name, "r", encoding="utf-8").read()
 
 # -------------------------
-# الواجهة الرئيسية
+# الواجهة
 # -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
-    df.columns = [c.strip() for c in df.columns]
+    df.columns = df.columns.str.strip()
 
     st.sidebar.title("Controls List")
 
     selected_id = st.sidebar.selectbox(
         "Select Control ID:",
-        df["ECC id control"].unique()
+        df["ECC id control"].astype(str).unique()
     )
 
     st.title("Control Mapping Viewer")
 
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
+
     mappings = extract_mappings(row, df)
 
-    graph_html = create_graph(
-        str(selected_id),
-        str(row["Source Text"]),
-        mappings
-    )
+    graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
 
-    components.html(graph_html, height=680)
+    components.html(graph_html, height=700)
 
 else:
-    st.error("CSV file not found.")
+    st.error("CSV file not found")
