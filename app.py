@@ -90,11 +90,11 @@ if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
     
-   st.title("Control Mapping Viewer")
+       st.title("Control Mapping Viewer")
 
-‏for _, row in df.iterrows():
-‏    selected_id = str(row["ECC id control"])
-‏    mappings = extract_mappings(row, df)
+‏       for _, row in df.iterrows():
+‏            selected_id = str(row["ECC id control"])
+‏            mappings = extract_mappings(row, df)
 
 ‏    graph_html = create_graph(
 ‏        selected_id,
