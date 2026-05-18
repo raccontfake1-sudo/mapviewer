@@ -92,7 +92,7 @@ if os.path.exists(DATA_FILE):
     
     st.title("Control Mapping Viewer")
 
- for _, row in df.iterrows():
+    for _, row in df.iterrows():
 ‏            selected_id = str(row["ECC id control"])
 ‏            mappings = extract_mappings(row, df)
 
@@ -100,7 +100,7 @@ if os.path.exists(DATA_FILE):
 ‏            selected_id,
 ‏            str(row["Source Text"]),
 ‏            mappings
-    )
+                )
 
 ‏            components.html(graph_html, height=680)
     st.divider()
