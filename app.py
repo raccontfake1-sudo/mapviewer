@@ -46,42 +46,6 @@ def extract_mappings(row, df, top_k=10):
         if pd.isna(row.get(cols["mapping"])):
             continue
 
-        try:
-
-            val = str(
-                row.get(cols["final"], 0)
-            ).replace("%", "")
-
-            score = float(val)
-
-            if score > 1:
-                score = score / 100.0
-
-        except:
-            score = 0.0
-
-        commonality_val = row.get(
-            cols["commonality"],
-            ""
-        )
-
-        justification_val = row.get(
-            cols["justification"],
-            ""
-        )
-
-        differences_val = row.get(
-            cols["differences"],
-            ""
-        )
-
-        if pd.isna(differences_val) or differences_val == "":
-
-            differences_val = (
-                "The controls differ in implementation "
-                "focus and specific requirements."
-            )
-
         results.append({
 
             "mapping": str(
@@ -92,30 +56,18 @@ def extract_mappings(row, df, top_k=10):
                 row.get(cols["text"], "")
             ),
 
-            "final": score,
-
-            "commonality": (
-                str(commonality_val)
-                if not pd.isna(commonality_val)
-                else "N/A"
+            "commonality": str(
+                row.get(cols["commonality"], "N/A")
             ),
 
-            "justification": (
-                str(justification_val)
-                if not pd.isna(justification_val)
-                else "N/A"
+            "justification": str(
+                row.get(cols["justification"], "N/A")
             ),
 
             "differences": str(
-                differences_val
+                row.get(cols["differences"], "N/A")
             )
         })
-
-    results = sorted(
-        results,
-        key=lambda x: x["final"],
-        reverse=True
-    )
 
     return results[:top_k]
 
@@ -130,36 +82,7 @@ def create_graph(selected_id, source_text, mappings):
         bgcolor="#ffffff"
     )
 
-    net.set_options("""
-    {
-      "physics": {
-        "enabled": false
-      },
-
-      "nodes": {
-        "borderWidth": 2,
-
-        "font": {
-          "size": 18,
-          "face": "arial"
-        }
-      },
-
-      "edges": {
-        "smooth": {
-          "type": "continuous"
-        },
-
-        "font": {
-          "size": 18,
-          "align": "middle",
-          "color": "#1476d4"
-        },
-
-        "color": "#d3dbe3"
-      }
-    }
-    """)
+    net.barnes_hut()
 
     # ---------------------------------
     # الدائرة الزرقاء الرئيسية
@@ -180,34 +103,16 @@ def create_graph(selected_id, source_text, mappings):
 
         shape="dot",
 
-        x=0,
-        y=0,
-
-        fixed=True,
-
         font={
             "color": "white",
-            "size": 30,
-            "face": "arial"
+            "size": 30
         }
     )
 
     # ---------------------------------
-    # توزيع الكنترولز حول الدائرة
+    # الكنترولز حول الدائرة
     # ---------------------------------
-    total = len(mappings)
-
-    radius = 350
-
     for idx, item in enumerate(mappings):
-
-        angle = (
-            2 * math.pi * idx
-        ) / total
-
-        x_pos = radius * math.cos(angle)
-
-        y_pos = radius * math.sin(angle)
 
         node_id = (
             f"{item['mapping']}_{idx}"
@@ -229,20 +134,13 @@ def create_graph(selected_id, source_text, mappings):
 
             shape="circle",
 
-            x=x_pos,
-            y=y_pos,
-
-            fixed=True,
-
             font={
                 "color": "white",
                 "size": 18
             }
         )
 
-        # ---------------------------------
         # الهاشتاقات مرتبة
-        # ---------------------------------
         net.add_edge(
 
             "MAIN",
