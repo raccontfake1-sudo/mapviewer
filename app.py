@@ -6,11 +6,13 @@ import tempfile
 import html
 import os
 
+# -------------------------
 # إعداد الصفحة
+# -------------------------
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 # -------------------------
-# وظائف معالجة البيانات
+# معالجة الأعمدة
 # -------------------------
 def get_mapping_columns(i):
     suffix = "" if i == 1 else f" {i}"
@@ -23,6 +25,9 @@ def get_mapping_columns(i):
         "differences": f"Differences{suffix}"
     }
 
+# -------------------------
+# استخراج المابينق
+# -------------------------
 def extract_mappings(row, df, top_k=10):
     results = []
 
@@ -44,13 +49,13 @@ def extract_mappings(row, df, top_k=10):
             "final": score,
             "commonality": str(row.get(cols["commonality"], "N/A")),
             "justification": str(row.get(cols["justification"], "N/A")),
-            "differences": str(row.get(cols["differences"], "")) if not pd.isna(row.get(cols["differences"])) else "No differences provided"
+            "differences": str(row.get(cols["differences"], "No differences provided"))
         })
 
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 # -------------------------
-# الرسم البياني
+# بناء الجراف
 # -------------------------
 def create_graph(selected_id, source_text, mappings):
     net = Network(height="650px", width="100%", bgcolor="#ffffff")
@@ -80,39 +85,42 @@ def create_graph(selected_id, source_text, mappings):
     net.add_node(
         selected_id,
         label=str(selected_id),
-        title=html.escape(source_text),
+        title=f"<b>Source Text</b><br>{html.escape(source_text)}",
         color="#1687d9",
         size=95,
         shape="circle",
         font={"color": "white", "size": 26, "bold": True}
     )
 
-    # العقد الثانوية
+    # 🟢 العقد الفرعية
     for idx, item in enumerate(mappings):
         edge_width = max(1, 10 - idx)
 
-        # 🟢 Tooltip فيه (الشرح + الاختلاف)
-        tooltip = f"""
-        Mapping: {item['mapping']}
-        --------------------------------
-        Text: {item['text']}
+        tooltip_html = f"""
+        <div style="width:320px">
+            <h4>Mapping: {item['mapping']}</h4>
+            <hr>
 
-        Score: {item['final']}
+            <b>Text:</b><br>
+            {html.escape(item['text'])}<br><br>
 
-        Commonality:
-        {item['commonality']}
+            <b>Score:</b> {item['final']}<br><br>
 
-        Justification:
-        {item['justification']}
+            <b>Commonality (الشرح):</b><br>
+            {html.escape(item['commonality'])}<br><br>
 
-        Differences:
-        {item['differences']}
+            <b>Justification:</b><br>
+            {html.escape(item['justification'])}<br><br>
+
+            <b>Differences (الاختلاف):</b><br>
+            {html.escape(item['differences'])}
+        </div>
         """
 
         net.add_node(
             item["mapping"],
             label=item["mapping"],
-            title=html.escape(tooltip),   # 👈 هنا الشرح والاختلاف
+            title=tooltip_html,
             color="#328a36",
             size=32,
             shape="circle",
