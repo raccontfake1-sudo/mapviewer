@@ -23,15 +23,18 @@ def get_mapping_columns(i):
     }
 
 # -------------------------
-# استخراج البيانات (مع حماية الفراغات)
+# تنظيف البيانات
 # -------------------------
-def clean(val):
-    if pd.isna(val) or val is None:
+def clean(x):
+    if pd.isna(x) or x is None:
         return "N/A"
-    val = str(val).strip()
-    return val if val != "" else "N/A"
+    x = str(x).strip()
+    return x if x != "" else "N/A"
 
-def extract_mappings(row, df, top_k=10):
+# -------------------------
+# استخراج
+# -------------------------
+def extract_mappings(row, df):
     results = []
 
     for i in range(1, 11):
@@ -40,20 +43,19 @@ def extract_mappings(row, df, top_k=10):
         if cols["mapping"] not in df.columns:
             continue
 
-        mapping_val = row.get(cols["mapping"])
-
-        if pd.isna(mapping_val) or str(mapping_val).strip() == "":
+        mapping = row.get(cols["mapping"])
+        if pd.isna(mapping) or str(mapping).strip() == "":
             continue
 
-        # score
         try:
-            val = str(row.get(cols["final"], 0)).replace('%', '')
-            score = float(val) / 100.0 if float(val) > 1 else float(val)
+            score = float(str(row.get(cols["final"], 0)).replace("%", ""))
+            if score > 1:
+                score = score / 100
         except:
             score = 0.0
 
         results.append({
-            "mapping": clean(mapping_val),
+            "mapping": clean(mapping),
             "text": clean(row.get(cols["text"])),
             "final": score,
             "commonality": clean(row.get(cols["commonality"])),
@@ -61,26 +63,29 @@ def extract_mappings(row, df, top_k=10):
             "differences": clean(row.get(cols["differences"]))
         })
 
-    return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
+    return sorted(results, key=lambda x: x["final"], reverse=True)
 
 # -------------------------
-# الرسم
+# الرسم (FIXED)
 # -------------------------
 def create_graph(selected_id, source_text, mappings):
-    net = Network(height="650px", width="100%", bgcolor="#ffffff")
+    net = Network(height="700px", width="100%", bgcolor="#ffffff")
 
     net.set_options("""
     {
       "physics": {
         "forceAtlas2Based": {
-          "gravitationalConstant": -120,
-          "springLength": 200
+          "gravitationalConstant": -140,
+          "springLength": 220
         },
-        "solver": "forceAtlas2Based",
-        "stabilization": { "iterations": 1000 }
+        "solver": "forceAtlas2Based"
       },
       "nodes": {
-        "font": { "size": 22, "face": "arial" }
+        "font": { "size": 20, "face": "arial" }
+      },
+      "edges": {
+        "color": "#aaa",
+        "font": { "size": 14 }
       }
     }
     """)
@@ -89,49 +94,45 @@ def create_graph(selected_id, source_text, mappings):
     net.add_node(
         selected_id,
         label=str(selected_id),
-        title=html.escape(source_text),
-        color="#1687d9",
-        size=95,
+        title="Control Node",
+        color="#1f77b4",
+        size=110,
         shape="circle",
-        font={"color": "white", "size": 26}
+        font={"color": "white", "size": 28, "bold": True}
     )
 
     # 🟢 المابينق
     for idx, item in enumerate(mappings):
+
+        # 🔥 مهم: نعرض الشرح داخل label نفسه (مو tooltip فقط)
+        label_text = f"{item['mapping']}\nScore:{item['final']:.2f}"
+
         tooltip = f"""
-        <div style="width:320px">
-        <b>Mapping:</b> {item['mapping']}<br><br>
-
-        <b>Text:</b><br>{item['text']}<br><br>
-
-        <b>Score:</b> {item['final']}<br><br>
-
-        <b>Commonality (شرح):</b><br>{item['commonality']}<br><br>
-
-        <b>Justification:</b><br>{item['justification']}<br><br>
-
-        <b>Differences (اختلاف):</b><br>{item['differences']}
-        </div>
+        Mapping: {item['mapping']}<br>
+        Text: {item['text']}<br><br>
+        Commonality:<br>{item['commonality']}<br><br>
+        Justification:<br>{item['justification']}<br><br>
+        Differences:<br>{item['differences']}
         """
 
         net.add_node(
             item["mapping"],
-            label=item["mapping"],
+            label=label_text,   # 👈 هنا أهم إصلاح
             title=tooltip,
             color="#2e8b57",
-            size=32,
+            size=38,
             shape="circle",
             font={"color": "white", "size": 14}
         )
 
-        net.add_edge(selected_id, item["mapping"], label=f"#{idx+1}")
+        net.add_edge(selected_id, item["mapping"], label=str(idx+1))
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
         return open(tmp.name, "r", encoding="utf-8").read()
 
 # -------------------------
-# الواجهة
+# UI
 # -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
@@ -139,10 +140,10 @@ if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = df.columns.str.strip()
 
-    st.sidebar.title("Controls List")
+    st.sidebar.title("Controls")
 
     selected_id = st.sidebar.selectbox(
-        "Select Control ID:",
+        "Select Control ID",
         df["ECC id control"].astype(str).unique()
     )
 
@@ -152,9 +153,13 @@ if os.path.exists(DATA_FILE):
 
     mappings = extract_mappings(row, df)
 
-    graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
+    graph_html = create_graph(
+        str(selected_id),
+        str(row["Source Text"]),
+        mappings
+    )
 
-    components.html(graph_html, height=700)
+    components.html(graph_html, height=720)
 
 else:
     st.error("CSV file not found")
