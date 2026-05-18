@@ -92,7 +92,7 @@ if os.path.exists(DATA_FILE):
     
     st.title("Control Mapping Viewer")
 
-  if uploaded_file is not None:
+if uploaded_file is not None:
     df = pd.read_excel(uploaded_file)
 
     for _, row in df.iterrows():
