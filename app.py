@@ -57,11 +57,10 @@ def extract_mappings(row, df_columns, top_k=10):
             "justification": str(justification_val) if not pd.isna(justification_val) else "N/A",
             "differences": str(differences_val)
         })
-    # فرز المابات بناءً على التقييم الأعلى (الأقوى يظهر أولاً)
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 # -------------------------
-# رسم الجراف (تم تعديل المعرف لمنع الاختفاء)
+# رسم الجراف
 # -------------------------
 def create_graph(selected_id, source_text, mappings):
     net = Network(height="600px", width="100%", bgcolor="#ffffff")
@@ -76,20 +75,20 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
     
-    # استخدام معرف ثابت "MAIN" للدائرة المركزية يمنع اختفاء الجراف بسبب النقاط والرموز في النص
+    # الدائرة المركزية الزرقاء (كبيرة وبداخلها رقم الكنترول فقط)
     net.add_node(
         "MAIN", 
-        label=str(selected_id), # يعرض رقم الكنترول فقط بالداخل بشكل صحيح
+        label=str(selected_id), 
         title=f"<b>Source Text:</b><br>{html.escape(source_text)}", 
         color="#1687d9", 
-        size=75, # حجم كبير وثابت
+        size=75, 
         shape="dot", 
         font={"color": "white", "size": 24, "bold": True}
     )
 
     # إضافة العقد الخضراء الفرعية والخطوط بالترتيب من 1 إلى 10
     for idx, item in enumerate(mappings):
-        node_id = f"NIST_{item['mapping']}_{idx}" # معرف فريد وآمن لكل عقدة فرعية
+        node_id = f"NIST_{item['mapping']}_{idx}"
         edge_width = max(2, 8 - idx)
         
         net.add_node(
@@ -102,7 +101,7 @@ def create_graph(selected_id, source_text, mappings):
             font={'color': 'white'}
         )
         
-        # الخط الرابط يعرض الرقم متسلسلاً ومرتباً من #1 إلى #10 تماماً
+        # الخط الرابط يعرض الأرقام مرتبة تصاعدياً من #1 إلى #10
         net.add_edge("MAIN", node_id, label=f"#{idx+1}", width=edge_width)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html", mode="w", encoding="utf-8") as tmp:
@@ -122,7 +121,7 @@ if os.path.exists(DATA_FILE):
     st.title("Control Mapping Viewer")
     st.write("---")
     
-    # تقسيم الصفحة لثلاثة أقسام متناسقة (أزرار الكنترول | الجراف | الشروحات الجانبية)
+    # تقسيم الصفحة (أزرار الكنترول | الجراف | الشروحات الجانبية على اليمين)
     menu_col, graph_col, explain_col = st.columns([1.2, 2, 1.5])
     
     with menu_col:
@@ -131,8 +130,7 @@ if os.path.exists(DATA_FILE):
         raw_controls = df["ECC id control"].dropna().unique()
         sorted_controls = sorted([str(c) for c in raw_controls], key=natural_sort_key)
         
-        # كود ذكي لحصر أزرار الراديو داخل صندوق أنيق ومتحرك بالماوس (Scrollbar)
-        # هذا يمنع وجود مساحات بيضاء فارغة بالأسفل ويجعل التصميم احترافياً
+        # تصميم الصندوق المتحرك (Scrollbar) للأزرار
         st.markdown(
             """
             <style>
@@ -149,18 +147,17 @@ if os.path.exists(DATA_FILE):
             unsafe_allow_html=True
         )
         
-        # أزرار اختيار فورية تحت بعضها وبدون خانة بحث
+        # التعديل هنا: تم إرجاع الأرقام لتظهر واضحة تماماً بجانب كل زر دائري
         selected_id = st.radio(
-            "Select Control ID:",
-            sorted_controls,
-            label_visibility="collapsed" # يخفي النصوص الزائدة لجمالية التصميم
+            "Select Control ID from the list below:", # نص توضيحي بسيط للعنوان
+            sorted_controls
         )
     
     # جلب بيانات السطر المختار
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     mappings = extract_mappings(row, df.columns)
 
-    # عمود عرض الرسم البياني (الجراف الثابت والمستقر)
+    # عمود عرض الرسم البياني (الجراف)
     with graph_col:
         st.markdown("### 🕸️ Mapping Visualization")
         graph_html = create_graph(str(selected_id), str(row.get("Source Text", "")), mappings)
