@@ -69,7 +69,7 @@ def create_graph(selected_id, source_text, mappings):
     
     # العقدة المركزية بدون رقم
     net.add_node(selected_id, label=" ", title=html.escape(source_text), 
-                 color="#1687d9", size=120, shape="circle")
+                 color="#1687d9", size=300, shape="circle")
 
     for idx, item in enumerate(mappings):
         edge_width = max(1, 10 - idx)
