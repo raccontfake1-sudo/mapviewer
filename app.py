@@ -92,7 +92,7 @@ if os.path.exists(DATA_FILE):
     
     st.title("Control Mapping Viewer")
 
-   for _, row in df.iterrows():
+  for _, row in df.iterrows():
     selected_id = row["ECC id control"]
     mappings = extract_mappings(row, df)
 
