@@ -96,13 +96,13 @@ if os.path.exists(DATA_FILE):
 ‏            selected_id = str(row["ECC id control"])
 ‏            mappings = extract_mappings(row, df)
 
-‏    graph_html = create_graph(
-‏        selected_id,
-‏        str(row["Source Text"]),
-‏        mappings
+‏            graph_html = create_graph(
+‏            selected_id,
+‏            str(row["Source Text"]),
+‏            mappings
     )
 
-‏    components.html(graph_html, height=680)
+‏            components.html(graph_html, height=680)
     st.divider()
 
     # عرض التفسيرات - باستخدام Markdown فقط (بدون HTML)
