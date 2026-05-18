@@ -100,7 +100,7 @@ def create_graph(
 ):
 
     net = Network(
-        height="700px",
+        height="720px",
         width="100%",
         bgcolor="#ffffff"
     )
@@ -145,11 +145,14 @@ def create_graph(
     }
     """)
 
+    # ---------------------------------
     # العقدة الرئيسية الزرقاء
+    # ---------------------------------
     net.add_node(
+
         "MAIN",
 
-        label=str(selected_id),
+        label=f"ECC\\n{selected_id}",
 
         title=html.escape(
             source_text
@@ -157,17 +160,21 @@ def create_graph(
 
         color="#1687d9",
 
-        size=60,
+        size=75,
 
         shape="dot",
 
         font={
             "color": "white",
-            "size": 24
+            "size": 28,
+            "face": "arial",
+            "multi": True
         }
     )
 
+    # ---------------------------------
     # العقد الخضراء
+    # ---------------------------------
     for item in mappings:
 
         node_id = (
@@ -175,6 +182,7 @@ def create_graph(
         )
 
         net.add_node(
+
             node_id,
 
             label=item["mapping"],
@@ -195,8 +203,9 @@ def create_graph(
             }
         )
 
-        # الأرقام مرتبة 1-10
+        # الأرقام مرتبة
         net.add_edge(
+
             "MAIN",
 
             node_id,
@@ -250,15 +259,21 @@ if os.path.exists(DATA_FILE):
         "Control Mapping Viewer"
     )
 
+    # ---------------------------------
     # تقسيم الصفحة
+    # ---------------------------------
     menu_col, graph_col, explain_col = st.columns(
         [1, 2, 1]
     )
 
+    # ---------------------------------
     # قائمة الكنترولز
+    # ---------------------------------
     with menu_col:
 
-        st.markdown("## Controls")
+        st.markdown(
+            "## Control List"
+        )
 
         control_list = df[
             "ECC id control"
@@ -269,7 +284,9 @@ if os.path.exists(DATA_FILE):
             control_list
         )
 
+    # ---------------------------------
     # الكنترول المختار
+    # ---------------------------------
     selected_row = df[
         df["ECC id control"]
         == selected_control
@@ -280,10 +297,13 @@ if os.path.exists(DATA_FILE):
         df
     )
 
+    # ---------------------------------
     # الجراف
+    # ---------------------------------
     with graph_col:
 
         graph_html = create_graph(
+
             selected_control,
 
             str(
@@ -297,10 +317,12 @@ if os.path.exists(DATA_FILE):
 
         components.html(
             graph_html,
-            height=750
+            height=760
         )
 
+    # ---------------------------------
     # الشرح
+    # ---------------------------------
     with explain_col:
 
         st.markdown(
