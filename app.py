@@ -7,7 +7,7 @@ import html
 import os
 import re
 
-# إعداد الصفحة لتكون عريضة ومنسقة
+# إعداد الصفحة لتكون عريضة ومنسقة بالكامل
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 # -------------------------
@@ -76,21 +76,21 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
     
-    # التعديل: الدائرة المركزية الزرقاء الحين يظهر داخلها رقم الكنترول (selected_id) فقط
+    # التعديل: جعل الدائرة المركزية الزرقاء كبيرة بحجم ثابت (size=80) ويظهر داخلها رقم الكنترول فقط
     net.add_node(
         selected_id, 
-        label=str(selected_id), # يعرض رقم الكنترول فقط بالداخل
-        title=html.escape(source_text), 
+        label=str(selected_id), # رقم الكنترول بالداخل فقط
+        title=f"<b>Source Text:</b><br>{html.escape(source_text)}", # النص الطويل يظهر عند ملامسة الماوس فقط
         color="#1687d9", 
-        size=55, 
-        shape="dot", # تم تغييرها إلى dot ليتناسق النص بالمنتصف تماماً
-        font={"color": "white", "size": 20, "bold": True}
+        size=80, # حجم كبير وثابت لكل الكنترولز
+        shape="dot", # لضمان توسط النص داخل الدائرة تماماً
+        font={"color": "white", "size": 26, "bold": True} # خط عريض وواضح بالمنتصف
     )
 
     for idx, item in enumerate(mappings):
         edge_width = max(1, 10 - idx)
         
-        # العقد الخضراء (NIST)
+        # العقد الخضراء الفرعية (NIST) بحجم ثابت (size=35) وعليها الكود الخاص بها
         net.add_node(
             item["mapping"], 
             label=item["mapping"], 
@@ -101,7 +101,7 @@ def create_graph(selected_id, source_text, mappings):
             font={'color': 'white'}
         )
         
-        # الخط الرابط يوضح الترتيب من #1 إلى #10
+        # الخط الرابط يوضح الترتيب التصاعدي من #1 إلى #10
         net.add_edge(selected_id, item["mapping"], label=f"#{idx+1}", width=edge_width)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html", mode="w", encoding="utf-8") as tmp:
@@ -110,7 +110,7 @@ def create_graph(selected_id, source_text, mappings):
             return f.read()
 
 # -------------------------
-# الواجهة الرئيسية
+# الواجهة الرئيسية للمشروع
 # -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
@@ -121,18 +121,18 @@ if os.path.exists(DATA_FILE):
     st.title("Control Mapping Viewer")
     st.write("---")
     
-    # تقسيم الصفحة إلى أعمدة: عمود للأزرار وعمود للجراف وعمود للشروحات
+    # تقسيم الصفحة إلى 3 أعمدة منسقة
     menu_col, graph_col, explain_col = st.columns([1, 2, 1.2])
     
-    # التعديل: قائمة الكنترولز أزرار تحت بعضها في الصفحة الرئيسية ومرتبة تسلسلياً
+    # قائمة الكنترولز (أزرار راديو تحت بعضها مرتبة ترتيباً طبيعياً ذكياً)
     with menu_col:
         st.markdown("### 📋 Controls List")
         
-        # جلب الكنترولز وعمل ترتيب طبيعي وذكي لها (1.1 -> 1.1.1 -> 1.1.2)
+        # جلب الكنترولز وعمل الترتيب الذكي المتسلسل
         raw_controls = df["ECC id control"].dropna().unique()
         sorted_controls = sorted([str(c) for c in raw_controls], key=natural_sort_key)
         
-        # الأزرار تظهر تحت بعضها وتختار منها مباشرة بنقرة واحدة
+        # الأزرار تظهر تحت بعضها وتختار منها بنقرة واحدة مباشرة
         selected_id = st.radio(
             "Select Control ID:",
             sorted_controls
@@ -148,7 +148,7 @@ if os.path.exists(DATA_FILE):
         graph_html = create_graph(str(selected_id), str(row["Source Text"]), mappings)
         components.html(graph_html, height=650)
         
-    # عمود تفاصيل تفاسير الذكاء الاصطناعي مرتبة من 1 إلى 10
+    # عمود تفاصيل تفاسير الذكاء الاصطناعي مرتبة بالتسلسل من 1 إلى 10
     with explain_col:
         st.markdown("### 🤖 AI Explanations")
         for idx, item in enumerate(mappings):
