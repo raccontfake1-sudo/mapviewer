@@ -89,11 +89,8 @@ DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
-    
-    st.title("Control Mapping Viewer")
 
-if uploaded_file is not None:
-    df = pd.read_excel(uploaded_file)
+    st.title("Control Mapping Viewer")
 
     for _, row in df.iterrows():
         selected_id = row["ECC id control"]
@@ -106,20 +103,20 @@ if uploaded_file is not None:
         )
 
         components.html(graph_html, height=680)
-    st.divider()
 
-    # عرض التفسيرات - باستخدام Markdown فقط (بدون HTML)
-    st.markdown("## AI Explanations")
-    
-    if mappings:
-        for idx, m in enumerate(mappings):
-            with st.expander(f"#{idx+1} - {m['mapping']}"):
-                st.markdown(f"**Commonality:** {m['commonality']}")
-                st.markdown(f"**Justification:** {m['justification']}")
-                st.markdown(f"**Differences:** {m['differences']}")
-                st.divider()
-    else:
-        st.info("No mappings found for this control.")
+        st.divider()
+
+        st.markdown("## AI Explanations")
+
+        if mappings:
+            for idx, m in enumerate(mappings):
+                with st.expander(f"#{idx+1} - {m['mapping']}"):
+                    st.markdown(f"**Commonality:** {m['commonality']}")
+                    st.markdown(f"**Justification:** {m['justification']}")
+                    st.markdown(f"**Differences:** {m['differences']}")
+                    st.divider()
+        else:
+            st.info("No mappings found for this control.")
 
 else:
     st.error("Data file not found. Please ensure the CSV is in the same directory.")
