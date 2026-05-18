@@ -43,6 +43,7 @@ def extract_mappings(row, df, top_k=10):
             continue
 
         try:
+
             val = str(
                 row.get(cols["final"], 0)
             ).replace("%", "")
@@ -71,13 +72,15 @@ def extract_mappings(row, df, top_k=10):
         )
 
         if pd.isna(differences_val) or differences_val == "":
+
             differences_val = (
                 "The controls differ in "
-                "implementation focus and "
-                "specific requirements."
+                "implementation focus "
+                "and specific requirements."
             )
 
         results.append({
+
             "mapping": str(
                 row.get(cols["mapping"], "")
             ),
@@ -132,8 +135,8 @@ def create_graph(
     {
       "physics": {
         "forceAtlas2Based": {
-          "gravitationalConstant": -100,
-          "springLength": 180
+          "gravitationalConstant": -120,
+          "springLength": 220
         },
 
         "solver": "forceAtlas2Based",
@@ -153,10 +156,12 @@ def create_graph(
       },
 
       "edges": {
-        "smooth": false,
+        "smooth": {
+          "type": "dynamic"
+        },
 
         "font": {
-          "size": 16,
+          "size": 18,
           "align": "middle",
           "color": "#1476d4"
         },
@@ -166,13 +171,20 @@ def create_graph(
     }
     """)
 
-    # العقدة الرئيسية الزرقاء
+    # العقدة الزرقاء الرئيسية
     net.add_node(
         selected_id,
+
         label=str(selected_id),
-        title=html.escape(source_text),
+
+        title=html.escape(
+            source_text
+        ),
+
         color="#1687d9",
-        size=55,
+
+        size=60,
+
         shape="dot",
 
         font={
@@ -181,8 +193,11 @@ def create_graph(
         }
     )
 
-    # الكنترولز الخضراء
-    for idx, item in enumerate(mappings):
+    # الكنترولز الدائرية المرتبة
+    for idx, item in enumerate(
+        mappings,
+        start=1
+    ):
 
         node_id = (
             f"{item['mapping']}_{idx}"
@@ -199,25 +214,27 @@ def create_graph(
 
             color="#328a36",
 
-            size=32,
+            size=34,
 
             shape="circle",
 
             font={
-                "color": "white"
+                "color": "white",
+                "size": 18
             }
         )
 
-        # الهاشتاقات
+        # الأرقام المرتبة
         net.add_edge(
             selected_id,
+
             node_id,
 
-            label=f"#{idx + 1}",
+            label=str(idx),
 
             width=max(
-                1,
-                10 - idx
+                2,
+                12 - idx
             )
         )
 
@@ -290,11 +307,12 @@ if os.path.exists(DATA_FILE):
         if mappings:
 
             for idx, m in enumerate(
-                mappings
+                mappings,
+                start=1
             ):
 
                 with st.expander(
-                    f"#{idx + 1} - "
+                    f"#{idx} - "
                     f"{m['mapping']}"
                 ):
 
