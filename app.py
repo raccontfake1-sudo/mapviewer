@@ -7,7 +7,7 @@ import html
 import os
 import re
 
-# إعداد الصفحة لتكون عريضة ومنسقة بالكامل
+# إعداد الصفحة لتكون عريضة ومنسقة بمعايير احترافية
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 # -------------------------
@@ -60,33 +60,34 @@ def extract_mappings(row, df_columns, top_k=10):
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 # -------------------------
-# رسم الجراف
+# رسم الجراف الاحترافي
 # -------------------------
 def create_graph(selected_id, source_text, mappings):
     net = Network(height="600px", width="100%", bgcolor="#ffffff")
+    
     net.set_options("""
     {
       "physics": {
-        "forceAtlas2Based": { "gravitationalConstant": -120, "springLength": 200 },
+        "forceAtlas2Based": { "gravitationalConstant": -160, "springLength": 220, "avoidOverlap": 1 },
         "solver": "forceAtlas2Based", "stabilization": { "iterations": 800 }
       },
-      "nodes": { "font": { "size": 16, "face": "arial" }, "borderWidth": 2 },
+      "nodes": { "font": { "face": "arial" }, "borderWidth": 2 },
       "edges": { "font": { "size": 16, "align": "middle", "color": "#1476d4" }, "color": "#d3dbe3" }
     }
     """)
     
-    # الدائرة المركزية الزرقاء (كبيرة وبداخلها رقم الكنترول فقط)
+    # العقدة المركزية الزرقاء: استخدام شكل box لضمان ظهور رقم الكنترول بداخلها دائماً بوضوح
     net.add_node(
         "MAIN", 
-        label=str(selected_id), 
+        label=f" {str(selected_id)} ", 
         title=f"<b>Source Text:</b><br>{html.escape(source_text)}", 
-        color="#1687d9", 
-        size=75, 
-        shape="dot", 
-        font={"color": "white", "size": 24, "bold": True}
+        color={"background": "#1687d9", "border": "#106ba9"}, 
+        shape="box", 
+        margin=15,
+        font={"color": "white", "size": 22, "bold": True}
     )
 
-    # إضافة العقد الخضراء الفرعية والخطوط بالترتيب من 1 إلى 10
+    # إضافة عقد الـ NIST والخطوط بترتيب إجباري من #1 إلى #10
     for idx, item in enumerate(mappings):
         node_id = f"NIST_{item['mapping']}_{idx}"
         edge_width = max(2, 8 - idx)
@@ -95,13 +96,13 @@ def create_graph(selected_id, source_text, mappings):
             node_id, 
             label=item["mapping"], 
             title=html.escape(item["text"]), 
-            color="#328a36", 
-            size=35, 
-            shape="circle", 
-            font={'color': 'white'}
+            color={"background": "#328a36", "border": "#226025"}, 
+            shape="box", 
+            margin=10,
+            font={'color': 'white', 'size': 14, 'bold': True}
         )
         
-        # الخط الرابط يعرض الأرقام مرتبة تصاعدياً من #1 إلى #10
+        # الترتيب المتسلسل الإجباري للخطوط الرابطة من #1 إلى #10
         net.add_edge("MAIN", node_id, label=f"#{idx+1}", width=edge_width)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html", mode="w", encoding="utf-8") as tmp:
@@ -118,11 +119,12 @@ if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
     
-    st.title("Control Mapping Viewer")
+    st.title("🛡️ Control Mapping Viewer")
+    st.write("لوحة تحكم تفاعلية متقدمة لربط وتحليل عناصر التحكم بمواصفات نظام NIST.")
     st.write("---")
     
-    # تقسيم الصفحة (أزرار الكنترول | الجراف | الشروحات الجانبية على اليمين)
-    menu_col, graph_col, explain_col = st.columns([1.2, 2, 1.5])
+    # تقسيم الصفحة إلى 3 أعمدة احترافية
+    menu_col, graph_col, explain_col = st.columns([1.4, 2.2, 1.6])
     
     with menu_col:
         st.markdown("### 📋 Controls List")
@@ -130,34 +132,61 @@ if os.path.exists(DATA_FILE):
         raw_controls = df["ECC id control"].dropna().unique()
         sorted_controls = sorted([str(c) for c in raw_controls], key=natural_sort_key)
         
-        # تصميم الصندوق المتحرك (Scrollbar) للأزرار
+        # تهيئة "حالة الجلسة" لحفظ الكنترول المختار وتفادي إعادة التحميل العشوائي
+        if "selected_control" not in st.session_state:
+            st.session_state.selected_control = sorted_controls[0]
+            
+        # بناء قائمة أزرار تفاعلية بروفيشينال مقاومة للـ Dark Mode ومزودة بـ Scrollbar
         st.markdown(
             """
             <style>
-            div[data-testid="stRadio"] > div {
-                max-height: 500px;
+            .scroll-container {
+                max-height: 520px;
                 overflow-y: auto;
-                border: 1px solid #e6e9ef;
-                padding: 12px;
+                border: 1px solid #4a4a4a;
+                padding: 10px;
                 border-radius: 8px;
-                background-color: #f8f9fa;
+                background-color: rgba(0,0,0,0.03);
+            }
+            .control-btn {
+                width: 100%;
+                text-align: left;
+                padding: 10px 15px;
+                margin-bottom: 6px;
+                border-radius: 6px;
+                border: 1px solid #1687d9;
+                background-color: transparent;
+                font-size: 15px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: 0.3s;
             }
             </style>
             """, 
             unsafe_allow_html=True
         )
         
-        # التعديل هنا: تم إرجاع الأرقام لتظهر واضحة تماماً بجانب كل زر دائري
-        selected_id = st.radio(
-            "Select Control ID from the list below:", # نص توضيحي بسيط للعنوان
-            sorted_controls
-        )
+        # إنشاء الأزرار عمودياً بشكل منظم جداً وثابت رقمياً
+        st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+        for ctrl in sorted_controls:
+            # تمييز الزر النشط حالياً بلون مختلف
+            if ctrl == st.session_state.selected_control:
+                btn_style = "background-color: #1687d9; color: white;"
+            else:
+                btn_style = "color: #1687d9;"
+                
+            if st.button(f"📄 Control {ctrl}", key=f"btn_{ctrl}", use_container_width=True):
+                st.session_state.selected_control = ctrl
+                st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+    selected_id = st.session_state.selected_control
     
-    # جلب بيانات السطر المختار
+    # جلب السطر المختار بناءً على الزر المضغطوط
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     mappings = extract_mappings(row, df.columns)
 
-    # عمود عرض الرسم البياني (الجراف)
+    # عمود عرض الرسم البياني الاحترافي المستقر
     with graph_col:
         st.markdown("### 🕸️ Mapping Visualization")
         graph_html = create_graph(str(selected_id), str(row.get("Source Text", "")), mappings)
