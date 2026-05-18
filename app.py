@@ -146,13 +146,13 @@ def create_graph(
     """)
 
     # ---------------------------------
-    # العقدة الرئيسية الزرقاء
+    # الدائرة الزرقاء الرئيسية
     # ---------------------------------
     net.add_node(
 
         "MAIN",
 
-        label=f"ECC\\n{selected_id}",
+        label=str(selected_id),
 
         title=html.escape(
             source_text
@@ -160,15 +160,15 @@ def create_graph(
 
         color="#1687d9",
 
-        size=75,
+        size=90,
 
         shape="dot",
 
         font={
             "color": "white",
-            "size": 28,
+            "size": 35,
             "face": "arial",
-            "multi": True
+            "bold": True
         }
     )
 
