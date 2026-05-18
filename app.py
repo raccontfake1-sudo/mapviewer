@@ -6,12 +6,8 @@ import tempfile
 import html
 import os
 
-# إعداد الصفحة
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
-# -------------------------
-# وظائف معالجة البيانات
-# -------------------------
 def get_mapping_columns(i):
     suffix = "" if i == 1 else f" {i}"
     return {
@@ -25,8 +21,10 @@ def get_mapping_columns(i):
 
 def extract_mappings(row, df, top_k=10):
     results = []
+
     for i in range(1, 11):
         cols = get_mapping_columns(i)
+
         if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])):
             continue
 
@@ -56,29 +54,49 @@ def extract_mappings(row, df, top_k=10):
 
 def create_graph(selected_id, source_text, mappings):
     net = Network(height="650px", width="100%", bgcolor="#ffffff")
+
     net.set_options("""
     {
       "physics": {
-        "forceAtlas2Based": { "gravitationalConstant": -100, "springLength": 200 },
-        "solver": "forceAtlas2Based", "stabilization": { "iterations": 1000 }
+        "forceAtlas2Based": {
+          "gravitationalConstant": -100,
+          "springLength": 200
+        },
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+          "iterations": 1000
+        }
       },
-      "nodes": { "font": { "size": 18, "face": "arial" }, "borderWidth": 2 },
-      "edges": { "font": { "size": 16, "align": "middle", "color": "#1476d4" }, "color": "#d3dbe3" }
+      "nodes": {
+        "font": {
+          "size": 18,
+          "face": "arial"
+        },
+        "borderWidth": 2
+      },
+      "edges": {
+        "font": {
+          "size": 16,
+          "align": "middle",
+          "color": "#1476d4"
+        },
+        "color": "#d3dbe3"
+      }
     }
     """)
 
-    # العقدة المركزية بدون رقم
     net.add_node(
         selected_id,
-        label=" ",
+        label=str(selected_id),
         title=html.escape(source_text),
         color="#1687d9",
         size=70,
-        shape="dot"
+        shape="dot",
+        font={"color": "white", "size": 18}
     )
 
     for idx, item in enumerate(mappings):
-        edge_width = max(1, 10 - idx)
+        edge_width = 3
 
         net.add_node(
             item["mapping"],
@@ -93,7 +111,7 @@ def create_graph(selected_id, source_text, mappings):
         net.add_edge(
             selected_id,
             item["mapping"],
-            label=f"#{idx+1}",
+            label=f"{idx + 1}",
             width=edge_width
         )
 
@@ -101,40 +119,47 @@ def create_graph(selected_id, source_text, mappings):
         net.save_graph(tmp.name)
         return open(tmp.name, "r", encoding="utf-8").read()
 
-# -------------------------
-# الواجهة الرئيسية
-# -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
 
+    st.sidebar.title("Controls List")
+
+    control_ids = sorted(
+        df["ECC id control"].astype(str).unique(),
+        key=lambda x: int("".join(filter(str.isdigit, x))) if any(c.isdigit() for c in x) else 0
+    )
+
+    selected_id = st.sidebar.radio(
+        "Select Control ID:",
+        control_ids
+    )
+
     st.title("Control Mapping Viewer")
 
-    for _, row in df.iterrows():
-        selected_id = row["ECC id control"]
-        mappings = extract_mappings(row, df)
+    row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
+    mappings = extract_mappings(row, df)
 
-        graph_html = create_graph(
-            selected_id,
-            str(row["Source Text"]),
-            mappings
-        )
+    graph_html = create_graph(
+        str(selected_id),
+        str(row["Source Text"]),
+        mappings
+    )
 
-        components.html(graph_html, height=680)
-        st.divider()
+    components.html(graph_html, height=680)
 
-        st.markdown("## AI Explanations")
+    st.markdown("## AI Explanations")
 
-        if mappings:
-            for idx, m in enumerate(mappings):
-                with st.expander(f"#{idx+1} - {m['mapping']}"):
-                    st.markdown(f"**Commonality:** {m['commonality']}")
-                    st.markdown(f"**Justification:** {m['justification']}")
-                    st.markdown(f"**Differences:** {m['differences']}")
-        else:
-            st.info("No mappings found for this control.")
+    if mappings:
+        for idx, m in enumerate(mappings):
+            with st.expander(f"{idx + 1} - {m['mapping']}"):
+                st.markdown(f"**Commonality:** {m['commonality']}")
+                st.markdown(f"**Justification:** {m['justification']}")
+                st.markdown(f"**Differences:** {m['differences']}")
+    else:
+        st.info("No mappings found for this control.")
 
 else:
     st.error("Data file not found. Please ensure the CSV is in the same directory.")
