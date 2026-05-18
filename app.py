@@ -250,15 +250,24 @@ if os.path.exists(DATA_FILE):
         "Control Mapping Viewer"
     )
 
-    # ليست الكنترولز بدون بحث
-    control_list = df[
-        "ECC id control"
-    ].dropna().unique()
-
-    selected_control = st.radio(
-        "Controls List",
-        control_list
+    # تقسيم الصفحة
+    menu_col, graph_col, explain_col = st.columns(
+        [1, 2, 1]
     )
+
+    # قائمة الكنترولز
+    with menu_col:
+
+        st.markdown("## Controls")
+
+        control_list = df[
+            "ECC id control"
+        ].dropna().unique()
+
+        selected_control = st.radio(
+            "",
+            control_list
+        )
 
     # الكنترول المختار
     selected_row = df[
@@ -271,13 +280,8 @@ if os.path.exists(DATA_FILE):
         df
     )
 
-    # تقسيم الشاشة
-    left_col, right_col = st.columns(
-        [2, 1]
-    )
-
-    # الجراف يسار
-    with left_col:
+    # الجراف
+    with graph_col:
 
         graph_html = create_graph(
             selected_control,
@@ -296,8 +300,8 @@ if os.path.exists(DATA_FILE):
             height=750
         )
 
-    # الشرح يمين
-    with right_col:
+    # الشرح
+    with explain_col:
 
         st.markdown(
             "## AI Explanations"
