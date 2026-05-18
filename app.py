@@ -92,17 +92,20 @@ if os.path.exists(DATA_FILE):
     
     st.title("Control Mapping Viewer")
 
-  for _, row in df.iterrows():
-    selected_id = row["ECC id control"]
-    mappings = extract_mappings(row, df)
+  if uploaded_file is not None:
+    df = pd.read_excel(uploaded_file)
 
-    graph_html = create_graph(
-        selected_id,
-        str(row["Source Text"]),
-        mappings
-    )
+    for _, row in df.iterrows():
+        selected_id = row["ECC id control"]
+        mappings = extract_mappings(row, df)
 
-    components.html(graph_html, height=680)
+        graph_html = create_graph(
+            selected_id,
+            str(row["Source Text"]),
+            mappings
+        )
+
+        components.html(graph_html, height=680)
     st.divider()
 
     # عرض التفسيرات - باستخدام Markdown فقط (بدون HTML)
