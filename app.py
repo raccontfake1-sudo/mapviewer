@@ -6,15 +6,17 @@ import tempfile
 import html
 import os
 
+# ---------------------------------
 # إعداد الصفحة
+# ---------------------------------
 st.set_page_config(
     page_title="Control Mapping Viewer",
     layout="wide"
 )
 
-# -------------------------
-# وظائف معالجة البيانات
-# -------------------------
+# ---------------------------------
+# وظائف الأعمدة
+# ---------------------------------
 def get_mapping_columns(i):
 
     suffix = "" if i == 1 else f" {i}"
@@ -28,6 +30,9 @@ def get_mapping_columns(i):
         "differences": f"Differences{suffix}"
     }
 
+# ---------------------------------
+# استخراج المابات
+# ---------------------------------
 def extract_mappings(row, df, top_k=10):
 
     results = []
@@ -56,30 +61,9 @@ def extract_mappings(row, df, top_k=10):
         except:
             score = 0.0
 
-        commonality_val = row.get(
-            cols["commonality"],
-            ""
-        )
-
-        justification_val = row.get(
-            cols["justification"],
-            ""
-        )
-
-        differences_val = row.get(
-            cols["differences"],
-            ""
-        )
-
-        if pd.isna(differences_val) or differences_val == "":
-
-            differences_val = (
-                "The controls differ in "
-                "implementation focus "
-                "and specific requirements."
-            )
-
         results.append({
+
+            "rank": i,
 
             "mapping": str(
                 row.get(cols["mapping"], "")
@@ -91,34 +75,24 @@ def extract_mappings(row, df, top_k=10):
 
             "final": score,
 
-            "commonality": (
-                str(commonality_val)
-                if not pd.isna(commonality_val)
-                else "N/A"
+            "commonality": str(
+                row.get(cols["commonality"], "N/A")
             ),
 
-            "justification": (
-                str(justification_val)
-                if not pd.isna(justification_val)
-                else "N/A"
+            "justification": str(
+                row.get(cols["justification"], "N/A")
             ),
 
             "differences": str(
-                differences_val
+                row.get(cols["differences"], "N/A")
             )
         })
 
-    results = sorted(
-        results,
-        key=lambda x: x["final"],
-        reverse=True
-    )
-
     return results[:top_k]
 
-# -------------------------
-# رسم الـ Graph
-# -------------------------
+# ---------------------------------
+# رسم الجراف
+# ---------------------------------
 def create_graph(
     selected_id,
     source_text,
@@ -126,7 +100,7 @@ def create_graph(
 ):
 
     net = Network(
-        height="850px",
+        height="700px",
         width="100%",
         bgcolor="#ffffff"
     )
@@ -171,9 +145,9 @@ def create_graph(
     }
     """)
 
-    # العقدة الزرقاء الرئيسية
+    # العقدة الرئيسية الزرقاء
     net.add_node(
-        selected_id,
+        "MAIN",
 
         label=str(selected_id),
 
@@ -193,14 +167,11 @@ def create_graph(
         }
     )
 
-    # الكنترولز الدائرية المرتبة
-    for idx, item in enumerate(
-        mappings,
-        start=1
-    ):
+    # العقد الخضراء
+    for item in mappings:
 
         node_id = (
-            f"{item['mapping']}_{idx}"
+            f"{item['mapping']}_{item['rank']}"
         )
 
         net.add_node(
@@ -214,7 +185,7 @@ def create_graph(
 
             color="#328a36",
 
-            size=34,
+            size=35,
 
             shape="circle",
 
@@ -224,17 +195,17 @@ def create_graph(
             }
         )
 
-        # الأرقام المرتبة
+        # الأرقام مرتبة 1-10
         net.add_edge(
-            selected_id,
+            "MAIN",
 
             node_id,
 
-            label=str(idx),
+            label=str(item["rank"]),
 
             width=max(
                 2,
-                12 - idx
+                12 - item["rank"]
             )
         )
 
@@ -255,14 +226,17 @@ def create_graph(
 
     return html_content
 
-# -------------------------
-# الواجهة الرئيسية
-# -------------------------
+# ---------------------------------
+# الملف
+# ---------------------------------
 DATA_FILE = (
     "final_ontology_refined_"
     "mappings_with_explanations.csv"
 )
 
+# ---------------------------------
+# تشغيل البرنامج
+# ---------------------------------
 if os.path.exists(DATA_FILE):
 
     df = pd.read_csv(DATA_FILE)
@@ -276,29 +250,54 @@ if os.path.exists(DATA_FILE):
         "Control Mapping Viewer"
     )
 
-    for _, row in df.iterrows():
+    # ليست الكنترولز بدون بحث
+    control_list = df[
+        "ECC id control"
+    ].dropna().unique()
 
-        selected_id = row[
-            "ECC id control"
-        ]
+    selected_control = st.radio(
+        "Controls List",
+        control_list
+    )
 
-        mappings = extract_mappings(
-            row,
-            df
-        )
+    # الكنترول المختار
+    selected_row = df[
+        df["ECC id control"]
+        == selected_control
+    ].iloc[0]
+
+    mappings = extract_mappings(
+        selected_row,
+        df
+    )
+
+    # تقسيم الشاشة
+    left_col, right_col = st.columns(
+        [2, 1]
+    )
+
+    # الجراف يسار
+    with left_col:
 
         graph_html = create_graph(
-            selected_id,
-            str(row["Source Text"]),
+            selected_control,
+
+            str(
+                selected_row[
+                    "Source Text"
+                ]
+            ),
+
             mappings
         )
 
         components.html(
             graph_html,
-            height=900
+            height=750
         )
 
-        st.divider()
+    # الشرح يمين
+    with right_col:
 
         st.markdown(
             "## AI Explanations"
@@ -306,44 +305,38 @@ if os.path.exists(DATA_FILE):
 
         if mappings:
 
-            for idx, m in enumerate(
-                mappings,
-                start=1
-            ):
+            for item in mappings:
 
-                with st.expander(
-                    f"#{idx} - "
-                    f"{m['mapping']}"
-                ):
+                st.markdown(
+                    f"### #{item['rank']} "
+                    f"{item['mapping']}"
+                )
 
-                    st.markdown(
-                        f"**Commonality:** "
-                        f"{m['commonality']}"
-                    )
+                st.markdown(
+                    f"**Commonality:** "
+                    f"{item['commonality']}"
+                )
 
-                    st.markdown(
-                        f"**Justification:** "
-                        f"{m['justification']}"
-                    )
+                st.markdown(
+                    f"**Justification:** "
+                    f"{item['justification']}"
+                )
 
-                    st.markdown(
-                        f"**Differences:** "
-                        f"{m['differences']}"
-                    )
+                st.markdown(
+                    f"**Differences:** "
+                    f"{item['differences']}"
+                )
 
-                    st.divider()
+                st.divider()
 
         else:
 
             st.info(
-                "No mappings found "
-                "for this control."
+                "No mappings found."
             )
 
 else:
 
     st.error(
-        "Data file not found. "
-        "Please ensure the CSV "
-        "is in the same directory."
+        "Data file not found."
     )
