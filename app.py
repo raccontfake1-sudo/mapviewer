@@ -94,7 +94,7 @@ if os.path.exists(DATA_FILE):
 
     for _, row in df.iterrows():
             selected_id = row["ECC id control"]
-‏            mappings = extract_mappings(row, df)
+            mappings = extract_mappings(row, df)
 
 ‏            graph_html = create_graph(
 ‏            selected_id,
