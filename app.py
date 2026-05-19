@@ -9,6 +9,8 @@ import os
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 # -------------------------
+# Columns
+# -------------------------
 def get_mapping_columns(i):
     suffix = "" if i == 1 else f" {i}"
     return {
@@ -21,11 +23,15 @@ def get_mapping_columns(i):
     }
 
 # -------------------------
+# Clean
+# -------------------------
 def clean(x):
     if pd.isna(x) or x is None:
         return "N/A"
     return str(x).strip() or "N/A"
 
+# -------------------------
+# Extract mappings
 # -------------------------
 def extract_mappings(row, df):
     results = []
@@ -51,26 +57,28 @@ def extract_mappings(row, df):
     return results
 
 # -------------------------
-# 🔥 FIXED GRAPH (CLEAN STRUCTURE)
+# GRAPH (FIXED + CLEAN CIRCLE LAYOUT)
 # -------------------------
 def create_graph(selected_id, source_text, mappings):
 
     net = Network(height="700px", width="100%", bgcolor="#ffffff")
 
-    # 🚫 مهم جداً: نوقف الفيزياء (تسبب الفوضى)
+    # 🔥 مهم: نستخدم physics خفيف + تجنب hierarchical
     net.set_options("""
     {
-      "layout": {
-        "hierarchical": {
-          "enabled": true,
-          "direction": "UD",
-          "sortMethod": "directed",
-          "levelSeparation": 150,
-          "nodeSpacing": 120
-        }
-      },
       "physics": {
-        "enabled": false
+        "enabled": true,
+        "solver": "repulsion",
+        "repulsion": {
+          "nodeDistance": 200,
+          "centralGravity": 0.15,
+          "springLength": 140,
+          "springConstant": 0.05
+        },
+        "stabilization": {
+          "enabled": true,
+          "iterations": 300
+        }
       },
       "nodes": {
         "shape": "circle",
@@ -78,10 +86,12 @@ def create_graph(selected_id, source_text, mappings):
           "face": "arial",
           "color": "#000000",
           "size": 22
-        }
+        },
+        "borderWidth": 2
       },
       "edges": {
-        "color": "#999999",
+        "color": "#888888",
+        "width": 2,
         "font": {
           "size": 18,
           "color": "#000000",
@@ -97,11 +107,12 @@ def create_graph(selected_id, source_text, mappings):
         label=str(selected_id),
         title=html.escape(source_text),
         color="#1e88e5",
-        size=80,
-        font={"color": "#000000", "size": 28}
+        size=110,
+        font={"color": "#000000", "size": 30},
+        physics=False
     )
 
-    # 🟢 حوله بشكل مرتب
+    # 🟢 nodes حول المركز
     for idx, item in enumerate(mappings, start=1):
 
         node_id = item["mapping"]
@@ -117,8 +128,8 @@ def create_graph(selected_id, source_text, mappings):
                 f"Differences: {item['differences']}"
             ),
             color="#2ecc71",
-            size=40,
-            font={"color": "#000000", "size": 20}
+            size=55,
+            font={"color": "#000000", "size": 24}
         )
 
         net.add_edge(
@@ -128,10 +139,13 @@ def create_graph(selected_id, source_text, mappings):
             width=2
         )
 
+    # حفظ HTML
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
         return open(tmp.name, "r", encoding="utf-8").read()
 
+# -------------------------
+# MAIN APP
 # -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
@@ -141,12 +155,17 @@ if os.path.exists(DATA_FILE):
 
     st.title("Control Mapping Viewer")
 
+    # أول كنترول فقط (بدون search box)
     selected_id = str(df["ECC id control"].iloc[0])
     row = df[df["ECC id control"].astype(str) == selected_id].iloc[0]
 
     mappings = extract_mappings(row, df)
 
-    graph_html = create_graph(selected_id, str(row["Source Text"]), mappings)
+    graph_html = create_graph(
+        selected_id,
+        str(row["Source Text"]),
+        mappings
+    )
 
     components.html(graph_html, height=720)
 
