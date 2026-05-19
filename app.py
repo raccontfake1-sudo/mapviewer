@@ -127,7 +127,7 @@ def create_graph(selected_id, source_text, mappings):
         color="#1687d9",
         size=120,
         shape="circle",
-        font={"color": "white", "size": 30}
+        font={"color": "white", "size": 40}
     )
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
