@@ -88,17 +88,15 @@ def create_graph(selected_id, source_text, mappings):
       "edges": {
         "color": "#c9d2dc",
         "font": {
-          "size": 28,
+          "size": 20,
           "align": "middle",
-          "color": "#001f5c",
-          "strokeWidth": 5,
-          "strokeColor": "#ffffff"
+          "color": "#001f5c"
         }
       }
     }
     """)
 
-    # 🔵 Blue main node
+    # 🔵 center node (blue big)
     net.add_node(
         selected_id,
         label=str(selected_id),
@@ -110,35 +108,38 @@ def create_graph(selected_id, source_text, mappings):
         font={"color": "white", "size": 40}
     )
 
-    # 🟢 Green nodes
+    # 🟢 green nodes
     n = len(mappings)
 
-   for idx, item in enumerate(mappings):
+    for idx, item in enumerate(mappings):
 
-    angle = (2 * math.pi / n) * idx
-    x = 400 * math.cos(angle)
-    y = 400 * math.sin(angle)
+        angle = (2 * math.pi / n) * idx
+        x = 400 * math.cos(angle)
+        y = 400 * math.sin(angle)
 
-    net.add_node(
-        item["mapping"],
-        label=f"{idx + 1}\n{item['mapping']}",  # 🔥 رقم + كنترول
-        title=f"Control: {item['mapping']}",
-        color="#2e7d32",
-        size=110,   # 🔥 كبرناها فعليًا
-        shape="circle",
-        x=x,
-        y=y,
-        physics=False,
-        font={"color": "white", "size": 16}
-    )
+        net.add_node(
+            item["mapping"],
+            label=f"{idx+1}\n{item['mapping']}",
+            title=f"Control: {item['mapping']}",
+            color="#2e7d32",
+            size=120,
+            shape="circle",
+            x=x,
+            y=y,
+            physics=False,
+            font={"color": "white", "size": 14}
+        )
 
-    net.add_edge(
-        selected_id,
-        item["mapping"],
-        label=str(idx + 1),
-        width=2
-    )
+        net.add_edge(
+            selected_id,
+            item["mapping"],
+            label=str(idx + 1),
+            width=2
+        )
 
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+        net.save_graph(tmp.name)
+        return open(tmp.name, "r", encoding="utf-8").read()
 
 # -------------------------
 # Load data
