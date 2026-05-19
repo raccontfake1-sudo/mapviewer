@@ -5,7 +5,7 @@ import streamlit.components.v1 as components
 import tempfile
 import html
 import os
-
+import math
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 def get_mapping_columns(i):
@@ -101,10 +101,34 @@ def create_graph(selected_id, source_text, mappings):
     )
 
     # الدوائر الخضراء
-    for idx, item in enumerate(mappings):
+ for idx, item in enumerate(mappings):
 
-        net.add_node(
-            item["mapping"],
+    angle = (2 * math.pi / len(mappings)) * idx
+    x = 400 * math.cos(angle)
+    y = 400 * math.sin(angle)
+
+    net.add_node(
+        item["mapping"],
+        label=item["mapping"],
+        title=html.escape(item["text"]),
+        color="#328a36",
+        size=45,
+        shape="circle",
+        x=x,
+        y=y,
+        physics=False,
+        font={
+            "color": "white",
+            "size": 20
+        }
+    )
+
+    net.add_edge(
+        selected_id,
+        item["mapping"],
+        label=f"{idx + 1}",
+        width=3
+    )
             label=item["mapping"],
             title=html.escape(item["text"]),
             color="#328a36",
