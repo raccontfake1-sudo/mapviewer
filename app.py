@@ -55,11 +55,36 @@ def parse_score(value):
         return 0.0
 
 
-def format_score(score):
+def format_score_decimal(score):
     try:
         return f"{float(score):.2f}"
     except:
         return "N/A"
+
+
+def format_score_percent(score):
+    try:
+        return f"{int(round(float(score) * 100))}%"
+    except:
+        return "N/A"
+
+
+def short_mapping_label(mapping):
+    """
+    Makes the green circle label clean.
+    Example:
+    GV.RR-03 -> GV.RR-03
+    Cybersecurity Governance : Something -> Cybersecurity Governance
+    """
+    mapping = str(mapping).strip()
+
+    if ":" in mapping:
+        return mapping.split(":")[0].strip()
+
+    if len(mapping) > 12:
+        return mapping[:12] + "..."
+
+    return mapping
 
 
 def extract_mappings(row, df, top_k=10):
@@ -73,8 +98,17 @@ def extract_mappings(row, df, top_k=10):
 
         final_score = parse_score(row.get(cols["final"], 0))
 
-        embedding_score = parse_score(row.get(cols["embedding"], 0)) if cols["embedding"] in df.columns else 0.0
-        ontology_score = parse_score(row.get(cols["ontology"], 0)) if cols["ontology"] in df.columns else 0.0
+        embedding_score = (
+            parse_score(row.get(cols["embedding"], 0))
+            if cols["embedding"] in df.columns
+            else 0.0
+        )
+
+        ontology_score = (
+            parse_score(row.get(cols["ontology"], 0))
+            if cols["ontology"] in df.columns
+            else 0.0
+        )
 
         differences_val = safe_value(
             row.get(cols["differences"], ""),
@@ -84,6 +118,7 @@ def extract_mappings(row, df, top_k=10):
         results.append({
             "rank": i,
             "mapping": safe_value(row.get(cols["mapping"], "")),
+            "short_label": short_mapping_label(row.get(cols["mapping"], "")),
             "text": safe_value(row.get(cols["text"], "")),
             "final": final_score,
             "embedding": embedding_score,
@@ -115,21 +150,26 @@ def create_graph(selected_id, source_text, mappings):
       },
       "interaction": {
         "hover": true,
-        "selectConnectedEdges": true
+        "selectConnectedEdges": true,
+        "dragNodes": false,
+        "dragView": true,
+        "zoomView": true
       },
       "nodes": {
-        "borderWidth": 3,
+        "borderWidth": 1,
         "font": {
           "size": 18,
           "face": "arial"
         }
       },
       "edges": {
-        "color": "#7d8fa6",
+        "color": "#b8c1cc",
+        "width": 2,
         "font": {
-          "size": 26,
-          "align": "middle",
-          "color": "#001f5c"
+          "size": 16,
+          "align": "top",
+          "color": "#3366cc",
+          "face": "arial"
         },
         "smooth": {
           "enabled": true,
@@ -139,16 +179,23 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
 
-    # Center ECC node
+    # -------------------------
+    # Blue center ECC node
+    # -------------------------
     net.add_node(
         selected_id,
         label=str(selected_id),
         title=html.escape(source_text),
-        color="#1687d9",
-        size=90,
+        color="#0b72d9",
+        size=65,
         shape="circle",
         physics=False,
-        font={"color": "white", "size": 34}
+        font={
+            "color": "white",
+            "size": 22,
+            "face": "arial",
+            "bold": True
+        }
     )
 
     n = len(mappings)
@@ -156,36 +203,55 @@ def create_graph(selected_id, source_text, mappings):
     for idx, item in enumerate(mappings):
 
         angle = (2 * math.pi / n) * idx
-        x = 520 * math.cos(angle)
-        y = 520 * math.sin(angle)
+
+        # Distance from blue center circle
+        x = 300 * math.cos(angle)
+        y = 300 * math.sin(angle)
 
         tooltip = f"""
         <b>NIST Control:</b> {html.escape(item["mapping"])}<br>
-        <b>Final Score:</b> {format_score(item["final"])}<br>
-        <b>Embedding Score:</b> {format_score(item["embedding"])}<br>
-        <b>Ontology Score:</b> {format_score(item["ontology"])}<br><br>
+        <b>Final Score:</b> {format_score_decimal(item["final"])}<br>
+        <b>Embedding Score:</b> {format_score_decimal(item["embedding"])}<br>
+        <b>Ontology Score:</b> {format_score_decimal(item["ontology"])}<br><br>
         <b>Text:</b><br>{html.escape(item["text"])}
         """
 
+        # -------------------------
+        # Green NIST mapping nodes
+        # -------------------------
         net.add_node(
             item["mapping"],
-            label=f"{idx + 1}\\n{item['mapping']}\\nFinal: {format_score(item['final'])}",
+            label=item["short_label"],
             title=tooltip,
-            color="#2e7d32",
-            size=75,
+            color="#2e9d50",
+            size=42,
             shape="circle",
             x=x,
             y=y,
             physics=False,
-            font={"color": "white", "size": 16}
+            font={
+                "color": "white",
+                "size": 17,
+                "face": "arial",
+                "bold": True
+            }
         )
 
+        # -------------------------
+        # Edge with percentage score
+        # -------------------------
         net.add_edge(
             selected_id,
             item["mapping"],
-            label=str(idx + 1),
-            color="#1f4e79",
-            width=4
+            label=format_score_percent(item["final"]),
+            color="#b8c1cc",
+            width=2,
+            font={
+                "size": 16,
+                "color": "#3366cc",
+                "align": "top",
+                "face": "arial"
+            }
         )
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
@@ -197,10 +263,14 @@ def create_graph(selected_id, source_text, mappings):
     mapping_data = {
         item["mapping"]: {
             "mapping": item["mapping"],
+            "short_label": item["short_label"],
             "text": item["text"],
-            "final": format_score(item["final"]),
-            "embedding": format_score(item["embedding"]),
-            "ontology": format_score(item["ontology"]),
+            "final": format_score_decimal(item["final"]),
+            "final_percent": format_score_percent(item["final"]),
+            "embedding": format_score_decimal(item["embedding"]),
+            "embedding_percent": format_score_percent(item["embedding"]),
+            "ontology": format_score_decimal(item["ontology"]),
+            "ontology_percent": format_score_percent(item["ontology"]),
             "commonality": item["commonality"],
             "justification": item["justification"],
             "differences": item["differences"]
@@ -216,6 +286,7 @@ def create_graph(selected_id, source_text, mappings):
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
+            background-color: white;
         }}
 
         #main-container {{
@@ -225,19 +296,20 @@ def create_graph(selected_id, source_text, mappings):
         }}
 
         #graph-container {{
-            width: 70%;
+            width: 68%;
             height: 720px;
-            border-right: 1px solid #d9d9d9;
+            border-right: 1px solid #e0e0e0;
+            background-color: white;
         }}
 
         #details-panel {{
-            width: 30%;
+            width: 32%;
             height: 720px;
             overflow-y: auto;
-            padding: 24px;
+            padding: 22px;
             box-sizing: border-box;
             background-color: #f8fafc;
-            border-left: 1px solid #d9d9d9;
+            border-left: 1px solid #e0e0e0;
         }}
 
         .panel-title {{
@@ -248,7 +320,7 @@ def create_graph(selected_id, source_text, mappings):
         }}
 
         .sub-title {{
-            font-size: 18px;
+            font-size: 17px;
             font-weight: bold;
             color: #2e7d32;
             margin-top: 18px;
@@ -276,7 +348,7 @@ def create_graph(selected_id, source_text, mappings):
         }}
 
         .score-value {{
-            color: #001f5c;
+            color: #0b72d9;
             font-weight: bold;
         }}
 
@@ -289,6 +361,7 @@ def create_graph(selected_id, source_text, mappings):
             line-height: 1.5;
             font-size: 15px;
             color: #222222;
+            white-space: pre-wrap;
         }}
 
         .placeholder {{
@@ -318,7 +391,7 @@ def create_graph(selected_id, source_text, mappings):
                 panel.innerHTML = `
                     <div class="panel-title">AI Explanations</div>
                     <div class="placeholder">
-                        Click on a green NIST mapping circle to view its explanation, final score, embedding score, and ontology score.
+                        Click on a green NIST mapping circle to view its explanation, scores, commonality, justification, and differences.
                     </div>
                 `;
                 return;
@@ -336,20 +409,17 @@ def create_graph(selected_id, source_text, mappings):
                 <div class="score-box">
                     <div class="score-row">
                         <span class="score-label">Final Score</span>
-                        <span class="score-value">${{escapeHtml(item.final)}}</span>
+                        <span class="score-value">${{escapeHtml(item.final)}} / ${{escapeHtml(item.final_percent)}}</span>
                     </div>
                     <div class="score-row">
                         <span class="score-label">Embedding Score</span>
-                        <span class="score-value">${{escapeHtml(item.embedding)}}</span>
+                        <span class="score-value">${{escapeHtml(item.embedding)}} / ${{escapeHtml(item.embedding_percent)}}</span>
                     </div>
                     <div class="score-row">
                         <span class="score-label">Ontology Score</span>
-                        <span class="score-value">${{escapeHtml(item.ontology)}}</span>
+                        <span class="score-value">${{escapeHtml(item.ontology)}} / ${{escapeHtml(item.ontology_percent)}}</span>
                     </div>
                 </div>
-
-                <div class="sub-title">Mapped Control Text</div>
-                <div class="content-box">${{escapeHtml(item.text)}}</div>
 
                 <div class="sub-title">Commonality</div>
                 <div class="content-box">${{escapeHtml(item.commonality)}}</div>
@@ -359,26 +429,31 @@ def create_graph(selected_id, source_text, mappings):
 
                 <div class="sub-title">Differences</div>
                 <div class="content-box">${{escapeHtml(item.differences)}}</div>
+
+                <div class="sub-title">Mapped Control Text</div>
+                <div class="content-box">${{escapeHtml(item.text)}}</div>
             `;
         }}
     </script>
     """
 
     graph_html = graph_html.replace(
-        '<body>',
-        '<body>' + custom_panel + '<div id="main-container"><div id="graph-container">'
+        "<body>",
+        "<body>" + custom_panel + '<div id="main-container"><div id="graph-container">'
     )
 
     graph_html = graph_html.replace(
-        '</body>',
-        '''
+        "</body>",
+        """
         </div>
+
         <div id="details-panel">
             <div class="panel-title">AI Explanations</div>
             <div class="placeholder">
-                Click on a green NIST mapping circle to view its explanation, final score, embedding score, and ontology score.
+                Click on a green NIST mapping circle to view its explanation, scores, commonality, justification, and differences.
             </div>
         </div>
+
         </div>
 
         <script>
@@ -389,8 +464,9 @@ def create_graph(selected_id, source_text, mappings):
                 }
             });
         </script>
+
         </body>
-        '''
+        """
     )
 
     return graph_html
