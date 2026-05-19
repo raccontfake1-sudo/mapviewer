@@ -100,15 +100,15 @@ def create_graph(selected_id, source_text, mappings):
     for idx, item in enumerate(mappings):
         edge_width = 3
 
-        net.add_node(
-            item["mapping"],
-            label=item["mapping"],
-            title=html.escape(item["text"]),
-            color="#328a36",
-            size=32,
-            shape="circle",
-            font={"color": "white"}
-        )
+      net.add_node(
+    selected_id,
+    label=str(selected_id),
+    title=html.escape(source_text),
+    color="#1687d9",
+    size=120,
+    shape="circle",
+    font={"color": "white", "size": 30}
+)
 
         net.add_edge(
             selected_id,
