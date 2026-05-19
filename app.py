@@ -98,52 +98,46 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
 
-    # 🔵 Main node (bigger blue circle)
-   net.add_node(
-    selected_id,
-    label=str(selected_id),
-    title=html.escape(source_text),
-    color="#1687d9",
-    size=200,
-    shape="circle",
-    physics=False,
-    font={"color": "white", "size": 40}
-)
+    # 🔵 Main node (blue big circle)
+    net.add_node(
+        selected_id,
+        label=str(selected_id),
+        title=html.escape(source_text),
+        color="#1687d9",
+        size=200,
+        shape="circle",
+        physics=False,
+        font={"color": "white", "size": 40}
     )
 
     # 🟢 Green mapping nodes
     n = len(mappings)
 
-   for idx, item in enumerate(mappings):
+    for idx, item in enumerate(mappings):
 
-    angle = (2 * math.pi / n) * idx
-    x = 400 * math.cos(angle)
-    y = 400 * math.sin(angle)
-
-    net.add_node(
-        item["mapping"],
-        label=str(idx + 1),
-        title=f"Control: {item['mapping']}",
-        color="#2e7d32",
-        size=55,
-        shape="circle",
-        x=x,
-        y=y,
-        physics=False,
-        font={"color": "white", "size": 22}
-    )
-
-    net.add_edge(
-        selected_id,
-        item["mapping"],
-        label=str(idx + 1),
-        width=2
-    )
+        angle = (2 * math.pi / n) * idx
+        x = 400 * math.cos(angle)
+        y = 400 * math.sin(angle)
 
         net.add_node(
             item["mapping"],
-            label=str(idx + 1),   # 🔥 ترتيب 1 → 10 يرجع هنا
-            title=f"""
+            label=str(idx + 1),
+            title=f"Control: {item['mapping']}",
+            color="#2e7d32",
+            size=55,
+            shape="circle",
+            x=x,
+            y=y,
+            physics=False,
+            font={"color": "white", "size": 22}
+        )
+
+        net.add_edge(
+            selected_id,
+            item["mapping"],
+            label=str(idx + 1),
+            width=2
+        )
 
     # Save graph
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
