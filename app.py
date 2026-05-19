@@ -7,7 +7,7 @@ import html
 import os
 import math
 
-st.set_page_config(page_title="Control Mapping Viewer2 ", layout="wide")
+st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 
 # -------------------------
