@@ -67,13 +67,17 @@ def create_graph(selected_id, source_text, mappings):
           "iterations": 1000
         }
       },
-      "nodes": {
-        "font": {
-          "size": 18,
-          "face": "arial"
-        },
-        "borderWidth": 2
-      },
+     "nodes": {
+  "scaling": {
+    "min": 220,
+    "max": 220
+  },
+  "font": {
+    "size": 18,
+    "face": "arial"
+  },
+  "borderWidth": 2
+},
       "edges": {
         "font": {
           "size": 16,
