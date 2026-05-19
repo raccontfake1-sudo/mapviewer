@@ -69,68 +69,79 @@ def extract_mappings(row, df):
 # الرسم (FIXED)
 # -------------------------
 def create_graph(selected_id, source_text, mappings):
-    net = Network(height="700px", width="100%", bgcolor="#ffffff")
+    net = Network(height="650px", width="100%", bgcolor="#ffffff")
 
     net.set_options("""
     {
       "physics": {
         "forceAtlas2Based": {
-          "gravitationalConstant": -140,
-          "springLength": 220
+          "gravitationalConstant": -100,
+          "springLength": 200
         },
-        "solver": "forceAtlas2Based"
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+          "iterations": 1000
+        }
       },
       "nodes": {
-        "font": { "size": 20, "face": "arial" }
+        "font": {
+          "size": 18,
+          "face": "arial"
+        },
+        "borderWidth": 2
       },
       "edges": {
-        "color": "#aaa",
-        "font": { "size": 14 }
+        "font": {
+          "size": 16,
+          "align": "middle",
+          "color": "#1476d4"
+        },
+        "color": "#d3dbe3"
       }
     }
     """)
 
-    # 🔵 الكنترول الرئيسي
+    # الدائرة الزرقاء الرئيسية
     net.add_node(
         selected_id,
         label=str(selected_id),
-        title="Control Node",
-        color="#1f77b4",
-        size=110,
+        title=html.escape(source_text),
+        color="#1687d9",
+        size=180,
         shape="circle",
-        font={"color": "white", "size": 28, "bold": True}
+        physics=False,
+        font={
+            "color": "white",
+            "size": 50
+        }
     )
 
-    # 🟢 المابينق
+    # الدوائر الخضراء
     for idx, item in enumerate(mappings):
-
-        # 🔥 مهم: نعرض الشرح داخل label نفسه (مو tooltip فقط)
-        label_text = f"{item['mapping']}\nScore:{item['final']:.2f}"
-
-        tooltip = f"""
-        Mapping: {item['mapping']}<br>
-        Text: {item['text']}<br><br>
-        Commonality:<br>{item['commonality']}<br><br>
-        Justification:<br>{item['justification']}<br><br>
-        Differences:<br>{item['differences']}
-        """
 
         net.add_node(
             item["mapping"],
-            label=label_text,   # 👈 هنا أهم إصلاح
-            title=tooltip,
-            color="#2e8b57",
-            size=38,
+            label=item["mapping"],
+            title=html.escape(item["text"]),
+            color="#328a36",
+            size=45,
             shape="circle",
-            font={"color": "white", "size": 14}
+            font={
+                "color": "white",
+                "size": 20
+            }
         )
 
-        net.add_edge(selected_id, item["mapping"], label=str(idx+1))
+        net.add_edge(
+            selected_id,
+            item["mapping"],
+            label=f"{idx + 1}",
+            width=3
+        )
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
         return open(tmp.name, "r", encoding="utf-8").read()
-
 # -------------------------
 # UI
 # -------------------------
