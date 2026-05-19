@@ -85,17 +85,47 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
 
+    # الدائرة الزرقاء الرئيسية
     net.add_node(
         selected_id,
         label=str(selected_id),
         title=html.escape(source_text),
         color="#1687d9",
-        value=3000,
-        shape="dot",
+        size=180,
+        shape="circle",
         physics=False,
-        font={"color": "white", "size": 80}
-)
+        font={
+            "color": "white",
+            "size": 50
+        }
+    )
 
+    # الدوائر الخضراء
+    for idx, item in enumerate(mappings):
+
+        net.add_node(
+            item["mapping"],
+            label=item["mapping"],
+            title=html.escape(item["text"]),
+            color="#328a36",
+            size=45,
+            shape="circle",
+            font={
+                "color": "white",
+                "size": 20
+            }
+        )
+
+        net.add_edge(
+            selected_id,
+            item["mapping"],
+            label=f"{idx + 1}",
+            width=3
+        )
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+        net.save_graph(tmp.name)
+        return open(tmp.name, "r", encoding="utf-8").read()
     # دوائر الـ mappings
     for idx, item in enumerate(mappings):
 
