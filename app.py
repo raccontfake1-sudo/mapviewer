@@ -86,15 +86,11 @@ def create_graph(selected_id, source_text, mappings):
         }
       },
       "edges": {
-          "color": {
-            "color": "#000000"
-          },
-          "width": 5,
-          "smooth": false,
+          "color": "#c9d2dc",
           "font": {
             "size": 20,
             "align": "middle",
-            "color": "#000000"
+            "color": "#001f5c"
           }
         }
     }
