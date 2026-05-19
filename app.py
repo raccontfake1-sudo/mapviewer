@@ -5,33 +5,27 @@ import streamlit.components.v1 as components
 import tempfile
 import html
 import os
+import math
 
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
-# -------------------------
-# Columns
 # -------------------------
 def get_mapping_columns(i):
     suffix = "" if i == 1 else f" {i}"
     return {
         "mapping": f"NIST mapping{suffix}",
         "text": f"Text{suffix}",
-        "final": f"Final Score{suffix}",
         "commonality": f"Commonality{suffix}",
         "justification": f"Justification{suffix}",
         "differences": f"Differences{suffix}"
     }
 
 # -------------------------
-# Clean
-# -------------------------
 def clean(x):
     if pd.isna(x) or x is None:
         return "N/A"
     return str(x).strip() or "N/A"
 
-# -------------------------
-# Extract mappings
 # -------------------------
 def extract_mappings(row, df):
     results = []
@@ -57,27 +51,24 @@ def extract_mappings(row, df):
     return results
 
 # -------------------------
-# GRAPH (FIXED + CLEAN CIRCLE LAYOUT)
+# 🔥 FIXED RADIAL GRAPH (NO CHAOS)
 # -------------------------
 def create_graph(selected_id, source_text, mappings):
 
-    net = Network(height="700px", width="100%", bgcolor="#ffffff")
+    net = Network(height="750px", width="100%", bgcolor="#ffffff")
 
-    # 🔥 مهم: نستخدم physics خفيف + تجنب hierarchical
+    # ❌ مهم: إيقاف الفيزياء بالكامل
     net.set_options("""
     {
       "physics": {
-        "enabled": true,
-        "solver": "repulsion",
-        "repulsion": {
-          "nodeDistance": 200,
-          "centralGravity": 0.15,
-          "springLength": 140,
-          "springConstant": 0.05
-        },
-        "stabilization": {
-          "enabled": true,
-          "iterations": 300
+        "enabled": false
+      },
+      "edges": {
+        "color": "#888888",
+        "width": 2,
+        "font": {
+          "size": 16,
+          "color": "#000000"
         }
       },
       "nodes": {
@@ -85,35 +76,35 @@ def create_graph(selected_id, source_text, mappings):
         "font": {
           "face": "arial",
           "color": "#000000",
-          "size": 22
-        },
-        "borderWidth": 2
-      },
-      "edges": {
-        "color": "#888888",
-        "width": 2,
-        "font": {
-          "size": 18,
-          "color": "#000000",
-          "align": "horizontal"
+          "size": 20
         }
       }
     }
     """)
 
-    # 🔵 المركز
+    # 🔵 المركز (ثابت)
     net.add_node(
         selected_id,
         label=str(selected_id),
         title=html.escape(source_text),
         color="#1e88e5",
-        size=110,
-        font={"color": "#000000", "size": 30},
-        physics=False
+        size=120,
+        x=0,
+        y=0,
+        fixed=True,
+        font={"size": 28, "color": "#000000"}
     )
 
-    # 🟢 nodes حول المركز
+    # 🟢 توزيع دائري مضبوط (IMPORTANT FIX)
+    radius = 300
+
+    n = len(mappings)
+
     for idx, item in enumerate(mappings, start=1):
+
+        angle = (2 * math.pi * (idx - 1)) / n
+        x = radius * math.cos(angle)
+        y = radius * math.sin(angle)
 
         node_id = item["mapping"]
 
@@ -129,7 +120,10 @@ def create_graph(selected_id, source_text, mappings):
             ),
             color="#2ecc71",
             size=55,
-            font={"color": "#000000", "size": 24}
+            x=x,
+            y=y,
+            fixed=True,
+            font={"size": 22, "color": "#000000"}
         )
 
         net.add_edge(
@@ -139,13 +133,10 @@ def create_graph(selected_id, source_text, mappings):
             width=2
         )
 
-    # حفظ HTML
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
         return open(tmp.name, "r", encoding="utf-8").read()
 
-# -------------------------
-# MAIN APP
 # -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
@@ -155,19 +146,14 @@ if os.path.exists(DATA_FILE):
 
     st.title("Control Mapping Viewer")
 
-    # أول كنترول فقط (بدون search box)
     selected_id = str(df["ECC id control"].iloc[0])
     row = df[df["ECC id control"].astype(str) == selected_id].iloc[0]
 
     mappings = extract_mappings(row, df)
 
-    graph_html = create_graph(
-        selected_id,
-        str(row["Source Text"]),
-        mappings
-    )
+    graph_html = create_graph(selected_id, str(row["Source Text"]), mappings)
 
-    components.html(graph_html, height=720)
+    components.html(graph_html, height=750)
 
 else:
     st.error("CSV file not found")
