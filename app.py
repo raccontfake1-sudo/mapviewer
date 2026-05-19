@@ -101,7 +101,7 @@ def create_graph(selected_id, source_text, mappings):
     )
 
     # الدوائر الخضراء
-     for idx, item in enumerate(mappings):
+    for idx, item in enumerate(mappings):
 
         angle = (2 * math.pi / len(mappings)) * idx
         x = 400 * math.cos(angle)
