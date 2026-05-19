@@ -93,10 +93,10 @@ net.add_node(
     label=str(selected_id),
     title=html.escape(source_text),
     color="#1687d9",
-    value=500,
+    value=3000,
     shape="dot",
     physics=False,
-    font={"color": "white", "size": 60}
+    font={"color": "white", "size": 80}
 )
    
 
