@@ -97,22 +97,28 @@ def create_graph(selected_id, source_text, mappings):
    font={"color": "white", "size": 30}
 )
 
-    # دوائر الـ mappings
+       # دوائر الـ mappings
     for idx, item in enumerate(mappings):
+
         edge_width = 3
 
-    
-def create_graph(selected_id, source_text, mappings):
+        net.add_node(
+            item["mapping"],
+            label=item["mapping"],
+            title=html.escape(item["text"]),
+            color="#328a36",
+            size=32,
+            shape="circle",
+            font={"color": "white"}
+        )
 
-    net = Network(height="650px", width="100%", bgcolor="#ffffff")
-
-    # هنا يبدأ الكود
         net.add_edge(
             selected_id,
             item["mapping"],
             label=f"{idx + 1}",
             width=edge_width
-        )
+        ) 
+  
           # الدائرة الزرقاء الرئيسية
     net.add_node(
         selected_id,
