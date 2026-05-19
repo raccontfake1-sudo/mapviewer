@@ -134,8 +134,8 @@ def create_graph(selected_id, source_text, mappings):
             selected_id,
             item["mapping"],
             label=str(idx + 1),
-            color="black",
-            width=5
+            color="blue",
+            width=3
         )
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
