@@ -55,35 +55,7 @@ def extract_mappings(row, df, top_k=10):
 def create_graph(selected_id, source_text, mappings):
     net = Network(height="650px", width="100%", bgcolor="#ffffff")
 
-    net.set_options("""
-    {
-      "physics": {
-        "forceAtlas2Based": {
-          "gravitationalConstant": -100,
-          "springLength": 200
-        },
-        "solver": "forceAtlas2Based",
-        "stabilization": {
-          "iterations": 1000
-        }
-      },
-      "nodes": {
-        "font": {
-          "size": 18,
-          "face": "arial"
-        },
-        "borderWidth": 2
-      },
-      "edges": {
-        "font": {
-          "size": 16,
-          "align": "middle",
-          "color": "#1476d4"
-        },
-        "color": "#d3dbe3"
-      }
-    }
-    """)
+    net.set_options(""" ... """)
 
     # الدائرة الزرقاء الرئيسية
     net.add_node(
@@ -94,14 +66,11 @@ def create_graph(selected_id, source_text, mappings):
         size=180,
         shape="circle",
         physics=False,
-        font={
-            "color": "white",
-            "size": 50
-        }
+        font={"color": "white", "size": 50}
     )
 
-    # الدوائر الخضراء
-     for idx, item in enumerate(mappings):
+    # الدوائر الخضراء 👇 (IMPORTANT: نفس مستوى indentation)
+    for idx, item in enumerate(mappings):
 
         angle = (2 * math.pi / len(mappings)) * idx
         x = 400 * math.cos(angle)
@@ -117,50 +86,7 @@ def create_graph(selected_id, source_text, mappings):
             x=x,
             y=y,
             physics=False,
-            font={
-                "color": "white",
-                "size": 20
-            }
-        )
-
-        net.add_edge(
-            selected_id,
-            item["mapping"],
-            label=f"{idx + 1}",
-            width=3
-        )
-            label=item["mapping"],
-            title=html.escape(item["text"]),
-            color="#328a36",
-            size=45,
-            shape="circle",
-            font={
-                "color": "white",
-                "size": 20
-            }
-        )
-
-        net.add_edge(
-            selected_id,
-            item["mapping"],
-            label=f"{idx + 1}",
-            width=3
-        )
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-        net.save_graph(tmp.name)
-        return open(tmp.name, "r", encoding="utf-8").read()
-    # دوائر الـ mappings
-    for idx, item in enumerate(mappings):
-
-        net.add_node(
-            item["mapping"],
-            label=item["mapping"],
-            title=html.escape(item["text"]),
-            color="#328a36",
-            size=32,
-            shape="dot",
-            font={"color": "white"}
+            font={"color": "white", "size": 20}
         )
 
         net.add_edge(
