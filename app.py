@@ -119,27 +119,26 @@ def create_graph(selected_id, source_text, mappings):
         x = 400 * math.cos(angle)
         y = 400 * math.sin(angle)
 
-        control_label = str(item["mapping"])
+        net.add_node(
+            item["mapping"],
+            label=str(idx + 1),   # 🔥 ترتيب 1 → 10 يرجع هنا
+            title=f"""
+Control: {item['mapping']}<br>
+Text: {html.escape(item['text'])}
+""",
+            color="#2e7d32",
+            size=55,
+            shape="circle",
+            x=x,
+            y=y,
+            physics=False,
+            font={"color": "white", "size": 22}
+        )
 
-      net.add_node(
-    item["mapping"],
-    label=str(idx + 1),   # 🔥 يرجّع الترتيب 1 → 10
-    title=f"""
-    Control: {item['mapping']}<br>
-    Text: {html.escape(item['text'])}
-    """,
-    color="#2e7d32",
-    size=55,
-    shape="circle",
-    x=x,
-    y=y,
-    physics=False,
-    font={"color": "white", "size": 22}
-)
         net.add_edge(
             selected_id,
             item["mapping"],
-            label=control_label,
+            label=str(idx + 1),
             width=2
         )
 
