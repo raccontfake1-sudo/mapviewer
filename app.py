@@ -119,16 +119,16 @@ def create_graph(selected_id, source_text, mappings):
             width=edge_width
         ) 
   
-          # الدائرة الزرقاء الرئيسية
-    net.add_node(
-        selected_id,
-        label=str(selected_id),
-        title=html.escape(source_text),
-        color="#1687d9",
-        size=220,
-        shape="circle",
-        font={"color": "white", "size": 40}
-    )
+         net.add_node(
+    selected_id,
+    label=str(selected_id),
+    title=html.escape(source_text),
+    color="#1687d9",
+    size=220,
+    shape="circle",
+    physics=False,
+    font={"color": "white", "size": 40}
+)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
