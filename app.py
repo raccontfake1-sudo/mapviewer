@@ -68,7 +68,7 @@ def create_graph(selected_id, source_text, mappings):
         },
         "borderWidth": 2
       },
-     "edges": {
+   "edges": {
   "font": {
     "size": 35,
     "align": "middle",
@@ -76,6 +76,8 @@ def create_graph(selected_id, source_text, mappings):
     "strokeWidth": 5,
     "strokeColor": "#ffffff"
   },
+  "color": "#d3dbe3"
+} 
       }
     }
     """)
