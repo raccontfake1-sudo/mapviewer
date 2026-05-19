@@ -157,7 +157,7 @@ if os.path.exists(DATA_FILE):
 
     selected_id = st.sidebar.radio("Select Control ID", control_ids)
 
-    st.title("Control Mapping Viewer")
+    st.title("Control Mapping Viewer 2")
 
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     mappings = extract_mappings(row, df)
