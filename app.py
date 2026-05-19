@@ -53,19 +53,13 @@ def extract_mappings(row, df, top_k=10):
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 def create_graph(selected_id, source_text, mappings):
+
     net = Network(height="650px", width="100%", bgcolor="#ffffff")
 
     net.set_options("""
     {
       "physics": {
-        "forceAtlas2Based": {
-          "gravitationalConstant": -100,
-          "springLength": 200
-        },
-        "solver": "forceAtlas2Based",
-        "stabilization": {
-          "iterations": 1000
-        }
+        "enabled": false
       },
       "nodes": {
         "font": {
@@ -85,7 +79,7 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
 
-    # الدائرة الزرقاء الرئيسية
+    # الدائرة الزرقاء الرئيسية بالنص
     net.add_node(
         selected_id,
         label=str(selected_id),
@@ -93,6 +87,8 @@ def create_graph(selected_id, source_text, mappings):
         color="#1687d9",
         size=180,
         shape="circle",
+        x=0,
+        y=0,
         physics=False,
         font={
             "color": "white",
@@ -100,12 +96,13 @@ def create_graph(selected_id, source_text, mappings):
         }
     )
 
-    # الدوائر الخضراء
+    # الدوائر الخضراء مرتبة
     for idx, item in enumerate(mappings):
 
         angle = (2 * math.pi / len(mappings)) * idx
-        x = 400 * math.cos(angle)
-        y = 400 * math.sin(angle)
+
+        x = 450 * math.cos(angle)
+        y = 450 * math.sin(angle)
 
         net.add_node(
             item["mapping"],
@@ -126,24 +123,7 @@ def create_graph(selected_id, source_text, mappings):
         net.add_edge(
             selected_id,
             item["mapping"],
-            label=f"{idx + 1}",
-            width=3
-        )
-            label=item["mapping"],
-            title=html.escape(item["text"]),
-            color="#328a36",
-            size=45,
-            shape="circle",
-            font={
-                "color": "white",
-                "size": 20
-            }
-        )
-
-        net.add_edge(
-            selected_id,
-            item["mapping"],
-            label=f"{idx + 1}",
+            label=str(idx + 1),
             width=3
         )
 
