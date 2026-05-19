@@ -123,7 +123,7 @@ def create_graph(selected_id, source_text, mappings):
             title=f"Control: {item['mapping']}",
             color="#2e7d32",
             size=1500,
-            shape="circle",
+            shape="box",
             x=x,
             y=y,
             physics=False,
