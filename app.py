@@ -102,7 +102,7 @@ def create_graph(selected_id, source_text, mappings):
         label=str(selected_id),
         title=html.escape(source_text),
         color="#1687d9",
-        size=200,
+        size=300,
         shape="circle",
         physics=False,
         font={"color": "white", "size": 40}
@@ -122,7 +122,7 @@ def create_graph(selected_id, source_text, mappings):
             label=f"{idx+1}\n{item['mapping']}",
             title=f"Control: {item['mapping']}",
             color="#2e7d32",
-            size=120,
+            size=220,
             shape="circle",
             x=x,
             y=y,
@@ -157,7 +157,7 @@ if os.path.exists(DATA_FILE):
 
     selected_id = st.sidebar.radio("Select Control ID", control_ids)
 
-    st.title("Control Mapping Viewer 2")
+    st.title("Control Mapping Viewer")
 
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     mappings = extract_mappings(row, df)
