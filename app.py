@@ -113,35 +113,31 @@ def create_graph(selected_id, source_text, mappings):
     # 🟢 Green nodes
     n = len(mappings)
 
-    for idx, item in enumerate(mappings):
+   for idx, item in enumerate(mappings):
 
-        angle = (2 * math.pi / n) * idx
-        x = 400 * math.cos(angle)
-        y = 400 * math.sin(angle)
+    angle = (2 * math.pi / n) * idx
+    x = 400 * math.cos(angle)
+    y = 400 * math.sin(angle)
 
-        net.add_node(
-            item["mapping"],
-            label=str(idx + 1),
-            title=f"Control: {item['mapping']}",
-            color="#2e7d32",
-            size=90,   # 🔥 كبرنا الدائرة الخضراء
-            shape="circle",
-            x=x,
-            y=y,
-            physics=False,
-            font={"color": "white", "size": 22}
-        )
+    net.add_node(
+        item["mapping"],
+        label=f"{idx + 1}\n{item['mapping']}",  # 🔥 رقم + كنترول
+        title=f"Control: {item['mapping']}",
+        color="#2e7d32",
+        size=110,   # 🔥 كبرناها فعليًا
+        shape="circle",
+        x=x,
+        y=y,
+        physics=False,
+        font={"color": "white", "size": 16}
+    )
 
-        net.add_edge(
-            selected_id,
-            item["mapping"],
-            label=str(idx + 1),
-            width=2
-        )
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-        net.save_graph(tmp.name)
-        return open(tmp.name, "r", encoding="utf-8").read()
+    net.add_edge(
+        selected_id,
+        item["mapping"],
+        label=str(idx + 1),
+        width=2
+    )
 
 
 # -------------------------
