@@ -121,19 +121,21 @@ def create_graph(selected_id, source_text, mappings):
 
         control_label = str(item["mapping"])
 
-        net.add_node(
-            item["mapping"],
-            label=control_label,
-            title=html.escape(item["text"]),
-            color="#2e7d32",
-            size=65,
-            shape="circle",
-            x=x,
-            y=y,
-            physics=False,
-            font={"color": "white", "size": 18}
-        )
-
+      net.add_node(
+    item["mapping"],
+    label=str(idx + 1),   # 🔥 يرجّع الترتيب 1 → 10
+    title=f"""
+    Control: {item['mapping']}<br>
+    Text: {html.escape(item['text'])}
+    """,
+    color="#2e7d32",
+    size=55,
+    shape="circle",
+    x=x,
+    y=y,
+    physics=False,
+    font={"color": "white", "size": 22}
+)
         net.add_edge(
             selected_id,
             item["mapping"],
