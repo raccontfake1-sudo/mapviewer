@@ -168,15 +168,19 @@ if os.path.exists(DATA_FILE):
         mappings
     )
 
-    components.html(graph_html, height=680)
+    col1, col2 = st.columns([2, 1])
 
-    st.markdown("## AI Explanations")
-
-    for idx, m in enumerate(mappings):
-        with st.expander(f"{idx + 1} - {m['mapping']}"):
-            st.write("**Commonality:**", m["commonality"])
-            st.write("**Justification:**", m["justification"])
-            st.write("**Differences:**", m["differences"])
+    with col1:
+        components.html(graph_html, height=680)
+    
+    with col2:
+        st.markdown("## AI Explanations")
+    
+        for idx, m in enumerate(mappings):
+            with st.expander(f"{idx + 1} - {m['mapping']}"):
+                st.write("**Commonality:**", m["commonality"])
+                st.write("**Justification:**", m["justification"])
+                st.write("**Differences:**", m["differences"])
 
 else:
     st.error("CSV file not found")
