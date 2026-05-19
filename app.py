@@ -23,16 +23,16 @@ def get_mapping_columns(i):
     }
 
 # -------------------------
-# تنظيف البيانات
+# تنظيف
 # -------------------------
 def clean(x):
     if pd.isna(x) or x is None:
         return "N/A"
     x = str(x).strip()
-    return x if x != "" else "N/A"
+    return x if x else "N/A"
 
 # -------------------------
-# استخراج
+# استخراج المابينق
 # -------------------------
 def extract_mappings(row, df):
     results = []
@@ -66,82 +66,77 @@ def extract_mappings(row, df):
     return sorted(results, key=lambda x: x["final"], reverse=True)
 
 # -------------------------
-# الرسم (FIXED)
+# الرسم
 # -------------------------
 def create_graph(selected_id, source_text, mappings):
-    net = Network(height="650px", width="100%", bgcolor="#ffffff")
+
+    net = Network(height="700px", width="100%", bgcolor="#ffffff")
 
     net.set_options("""
     {
       "physics": {
-        "forceAtlas2Based": {
-          "gravitationalConstant": -100,
-          "springLength": 200
-        },
-        "solver": "forceAtlas2Based",
-        "stabilization": {
-          "iterations": 1000
-        }
+        "enabled": true,
+        "solver": "forceAtlas2Based"
       },
       "nodes": {
+        "shape": "circle",
         "font": {
-          "size": 18,
-          "face": "arial"
+          "face": "arial",
+          "color": "#000000",
+          "size": 30
         },
-        "borderWidth": 2
+        "borderWidth": 3
       },
       "edges": {
+        "color": "#999999",
         "font": {
-          "size": 16,
-          "align": "middle",
-          "color": "#1476d4"
-        },
-        "color": "#d3dbe3"
+          "size": 22,
+          "color": "#000000",
+          "bold": true
+        }
       }
     }
     """)
 
-    # الدائرة الزرقاء الرئيسية
+    # 🔵 العقدة الرئيسية
     net.add_node(
         selected_id,
         label=str(selected_id),
         title=html.escape(source_text),
-        color="#1687d9",
-        size=180,
-        shape="circle",
-        physics=False,
-        font={
-            "color": "white",
-            "size": 50
-        }
+        color="#1e90ff",
+        size=220,
+        font={"color": "#000000", "size": 45},
+        physics=False
     )
 
-    # الدوائر الخضراء
-    for idx, item in enumerate(mappings):
+    # 🟢 العقد الفرعية
+    for idx, item in enumerate(mappings, start=1):
 
         net.add_node(
             item["mapping"],
-            label=item["mapping"],
-            title=html.escape(item["text"]),
-            color="#328a36",
-            size=45,
-            shape="circle",
-            font={
-                "color": "white",
-                "size": 20
-            }
+            label=f"{idx}",
+            title=f"""
+Text: {item['text']}
+Commonality: {item['commonality']}
+Justification: {item['justification']}
+Differences: {item['differences']}
+""",
+            color="#2ecc71",
+            size=60,
+            font={"color": "#000000", "size": 28}
         )
 
         net.add_edge(
             selected_id,
             item["mapping"],
-            label=f"{idx + 1}",
+            label=str(idx),
             width=3
         )
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
         return open(tmp.name, "r", encoding="utf-8").read()
+
 # -------------------------
 # UI
 # -------------------------
@@ -151,26 +146,35 @@ if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE)
     df.columns = df.columns.str.strip()
 
-    st.sidebar.title("Controls")
-
-    selected_id = st.sidebar.selectbox(
-        "Select Control ID",
-        df["ECC id control"].astype(str).unique()
-    )
-
     st.title("Control Mapping Viewer")
 
-    row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
+    # ❌ بدون search box — ناخذ أول كنترول تلقائياً
+    selected_id = str(df["ECC id control"].iloc[0])
+    row = df[df["ECC id control"].astype(str) == selected_id].iloc[0]
 
     mappings = extract_mappings(row, df)
 
     graph_html = create_graph(
-        str(selected_id),
+        selected_id,
         str(row["Source Text"]),
         mappings
     )
 
-    components.html(graph_html, height=720)
+    components.html(graph_html, height=750)
+
+    # -------------------------
+    # 📊 شرح الكنترول
+    # -------------------------
+    st.markdown("## 📌 Control Explanation")
+
+    for i, m in enumerate(mappings, start=1):
+        st.markdown(f"""
+### {i}. {m['mapping']}
+
+- **Commonality:** {m['commonality']}
+- **Justification:** {m['justification']}
+- **Differences:** {m['differences']}
+""")
 
 else:
     st.error("CSV file not found")
