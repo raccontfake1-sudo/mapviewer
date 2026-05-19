@@ -122,7 +122,7 @@ def create_graph(selected_id, source_text, mappings):
             label=f"{idx+1}\n{item['mapping']}",
             title=f"Control: {item['mapping']}",
             color="#2e7d32",
-            size=820,
+            size=1000,
             shape="circle",
             x=x,
             y=y,
