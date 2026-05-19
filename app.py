@@ -1,18 +1,16 @@
 import streamlit as st
 import pandas as pd
-from pyvis.network import Network
 import streamlit.components.v1 as components
-import tempfile
-import html
 import os
 import math
 import json
+import html
 
-st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
+st.set_page_config(page_title="NCA-NIST Control Mapping Viewer", layout="wide")
 
 
 # -------------------------
-# Mapping columns helper
+# Helpers
 # -------------------------
 def get_mapping_columns(i):
     suffix = "" if i == 1 else f" {i}"
@@ -50,19 +48,18 @@ def parse_score(value):
             return value / 100.0
 
         return value
-
     except:
         return 0.0
 
 
-def format_score_decimal(score):
+def format_decimal(score):
     try:
         return f"{float(score):.2f}"
     except:
         return "N/A"
 
 
-def format_score_percent(score):
+def format_percent(score):
     try:
         return f"{int(round(float(score) * 100))}%"
     except:
@@ -70,19 +67,13 @@ def format_score_percent(score):
 
 
 def short_mapping_label(mapping):
-    """
-    Makes the green circle label clean.
-    Example:
-    GV.RR-03 -> GV.RR-03
-    Cybersecurity Governance : Something -> Cybersecurity Governance
-    """
     mapping = str(mapping).strip()
 
     if ":" in mapping:
-        return mapping.split(":")[0].strip()
+        mapping = mapping.split(":")[0].strip()
 
-    if len(mapping) > 12:
-        return mapping[:12] + "..."
+    if len(mapping) > 9:
+        return mapping[:9]
 
     return mapping
 
@@ -93,7 +84,10 @@ def extract_mappings(row, df, top_k=10):
     for i in range(1, 11):
         cols = get_mapping_columns(i)
 
-        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])):
+        if cols["mapping"] not in df.columns:
+            continue
+
+        if pd.isna(row.get(cols["mapping"])):
             continue
 
         final_score = parse_score(row.get(cols["final"], 0))
@@ -110,13 +104,7 @@ def extract_mappings(row, df, top_k=10):
             else 0.0
         )
 
-        differences_val = safe_value(
-            row.get(cols["differences"], ""),
-            "The controls differ in implementation focus and specific requirements."
-        )
-
         results.append({
-            "rank": i,
             "mapping": safe_value(row.get(cols["mapping"], "")),
             "short_label": short_mapping_label(row.get(cols["mapping"], "")),
             "text": safe_value(row.get(cols["text"], "")),
@@ -125,351 +113,354 @@ def extract_mappings(row, df, top_k=10):
             "ontology": ontology_score,
             "commonality": safe_value(row.get(cols["commonality"], "")),
             "justification": safe_value(row.get(cols["justification"], "")),
-            "differences": differences_val
+            "differences": safe_value(
+                row.get(cols["differences"], ""),
+                "The controls differ in implementation focus and specific requirements."
+            )
         })
 
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 
 # -------------------------
-# Create graph
+# SVG Viewer
 # -------------------------
-def create_graph(selected_id, source_text, mappings):
+def create_svg_viewer(selected_id, source_text, mappings):
 
-    net = Network(
-        height="720px",
-        width="100%",
-        bgcolor="#ffffff",
-        directed=False
-    )
+    width = 620
+    height = 420
 
-    net.set_options("""
-    {
-      "physics": {
-        "enabled": false
-      },
-      "interaction": {
-        "hover": true,
-        "selectConnectedEdges": true,
-        "dragNodes": false,
-        "dragView": true,
-        "zoomView": true
-      },
-      "nodes": {
-        "borderWidth": 1,
-        "font": {
-          "size": 18,
-          "face": "arial"
-        }
-      },
-      "edges": {
-        "color": "#b8c1cc",
-        "width": 2,
-        "font": {
-          "size": 16,
-          "align": "top",
-          "color": "#3366cc",
-          "face": "arial"
-        },
-        "smooth": {
-          "enabled": true,
-          "type": "continuous"
-        }
-      }
-    }
-    """)
+    center_x = 310
+    center_y = 210
 
-    # -------------------------
-    # Blue center ECC node
-    # -------------------------
-    net.add_node(
-        selected_id,
-        label=str(selected_id),
-        title=html.escape(source_text),
-        color="#0b72d9",
-        size=65,
-        shape="circle",
-        physics=False,
-        font={
-            "color": "white",
-            "size": 22,
-            "face": "arial",
-            "bold": True
-        }
-    )
+    blue_radius = 45
+    green_radius = 34
+    graph_radius = 145
+
+    mapping_data = {}
+
+    svg_lines = ""
+    svg_nodes = ""
+    svg_numbers = ""
 
     n = len(mappings)
 
     for idx, item in enumerate(mappings):
+        angle = (2 * math.pi / n) * idx - (math.pi / 2)
 
-        angle = (2 * math.pi / n) * idx
+        x = center_x + graph_radius * math.cos(angle)
+        y = center_y + graph_radius * math.sin(angle)
 
-        # Distance from blue center circle
-        x = 300 * math.cos(angle)
-        y = 300 * math.sin(angle)
+        rank = idx + 1
+        node_id = f"node_{rank}"
 
-        tooltip = f"""
-        <b>NIST Control:</b> {html.escape(item["mapping"])}<br>
-        <b>Final Score:</b> {format_score_decimal(item["final"])}<br>
-        <b>Embedding Score:</b> {format_score_decimal(item["embedding"])}<br>
-        <b>Ontology Score:</b> {format_score_decimal(item["ontology"])}<br><br>
-        <b>Text:</b><br>{html.escape(item["text"])}
-        """
-
-        # -------------------------
-        # Green NIST mapping nodes
-        # -------------------------
-        net.add_node(
-            item["mapping"],
-            label=item["short_label"],
-            title=tooltip,
-            color="#2e9d50",
-            size=42,
-            shape="circle",
-            x=x,
-            y=y,
-            physics=False,
-            font={
-                "color": "white",
-                "size": 17,
-                "face": "arial",
-                "bold": True
-            }
-        )
-
-        # -------------------------
-        # Edge with percentage score
-        # -------------------------
-        net.add_edge(
-            selected_id,
-            item["mapping"],
-            label=format_score_percent(item["final"]),
-            color="#b8c1cc",
-            width=2,
-            font={
-                "size": 16,
-                "color": "#3366cc",
-                "align": "top",
-                "face": "arial"
-            }
-        )
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-        net.save_graph(tmp.name)
-
-        with open(tmp.name, "r", encoding="utf-8") as f:
-            graph_html = f.read()
-
-    mapping_data = {
-        item["mapping"]: {
+        mapping_data[node_id] = {
+            "rank": str(rank),
             "mapping": item["mapping"],
             "short_label": item["short_label"],
             "text": item["text"],
-            "final": format_score_decimal(item["final"]),
-            "final_percent": format_score_percent(item["final"]),
-            "embedding": format_score_decimal(item["embedding"]),
-            "embedding_percent": format_score_percent(item["embedding"]),
-            "ontology": format_score_decimal(item["ontology"]),
-            "ontology_percent": format_score_percent(item["ontology"]),
+            "final": format_decimal(item["final"]),
+            "final_percent": format_percent(item["final"]),
+            "embedding": format_decimal(item["embedding"]),
+            "embedding_percent": format_percent(item["embedding"]),
+            "ontology": format_decimal(item["ontology"]),
+            "ontology_percent": format_percent(item["ontology"]),
             "commonality": item["commonality"],
             "justification": item["justification"],
             "differences": item["differences"]
         }
-        for item in mappings
-    }
+
+        dx = x - center_x
+        dy = y - center_y
+        distance = math.sqrt(dx * dx + dy * dy)
+
+        start_x = center_x + (blue_radius / distance) * dx
+        start_y = center_y + (blue_radius / distance) * dy
+
+        end_x = x - (green_radius / distance) * dx
+        end_y = y - (green_radius / distance) * dy
+
+        svg_lines += f"""
+            <line 
+                x1="{start_x}" 
+                y1="{start_y}" 
+                x2="{end_x}" 
+                y2="{end_y}" 
+                stroke="#b8c4d0" 
+                stroke-width="2"
+            />
+        """
+
+        # Number below each green circle, like the percentage in your example
+        svg_numbers += f"""
+            <text 
+                x="{x}" 
+                y="{y + green_radius + 18}" 
+                text-anchor="middle" 
+                dominant-baseline="middle"
+                class="number-label"
+            >
+                {rank}
+            </text>
+        """
+
+        svg_nodes += f"""
+            <g class="mapping-node" onclick="updatePanel('{node_id}')">
+                <circle 
+                    cx="{x}" 
+                    cy="{y}" 
+                    r="{green_radius}" 
+                    fill="#2f9b4f"
+                />
+                <text 
+                    x="{x}" 
+                    y="{y}" 
+                    text-anchor="middle" 
+                    dominant-baseline="middle"
+                    class="green-label"
+                >
+                    {html.escape(item["short_label"])}
+                </text>
+            </g>
+        """
 
     mapping_json = json.dumps(mapping_data, ensure_ascii=False)
 
-    custom_panel = f"""
-    <style>
-        body {{
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            background-color: white;
-        }}
-
-        #main-container {{
-            display: flex;
-            width: 100%;
-            height: 720px;
-        }}
-
-        #graph-container {{
-            width: 68%;
-            height: 720px;
-            border-right: 1px solid #e0e0e0;
-            background-color: white;
-        }}
-
-        #details-panel {{
-            width: 32%;
-            height: 720px;
-            overflow-y: auto;
-            padding: 22px;
-            box-sizing: border-box;
-            background-color: #f8fafc;
-            border-left: 1px solid #e0e0e0;
-        }}
-
-        .panel-title {{
-            font-size: 24px;
-            font-weight: bold;
-            color: #12355b;
-            margin-bottom: 16px;
-        }}
-
-        .sub-title {{
-            font-size: 17px;
-            font-weight: bold;
-            color: #2e7d32;
-            margin-top: 18px;
-            margin-bottom: 8px;
-        }}
-
-        .score-box {{
-            background-color: white;
-            border: 1px solid #d0d7de;
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 12px;
-        }}
-
-        .score-row {{
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 15px;
-        }}
-
-        .score-label {{
-            font-weight: bold;
-            color: #333333;
-        }}
-
-        .score-value {{
-            color: #0b72d9;
-            font-weight: bold;
-        }}
-
-        .content-box {{
-            background-color: white;
-            border: 1px solid #d0d7de;
-            border-radius: 10px;
-            padding: 14px;
-            margin-bottom: 14px;
-            line-height: 1.5;
-            font-size: 15px;
-            color: #222222;
-            white-space: pre-wrap;
-        }}
-
-        .placeholder {{
-            color: #666666;
-            font-size: 16px;
-            line-height: 1.6;
-        }}
-    </style>
-
-    <script>
-        const mappingData = {mapping_json};
-
-        function escapeHtml(text) {{
-            if (!text) return "N/A";
-            return String(text)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }}
-
-        function updatePanel(nodeId) {{
-            const panel = document.getElementById("details-panel");
-
-            if (!mappingData[nodeId]) {{
-                panel.innerHTML = `
-                    <div class="panel-title">AI Explanations</div>
-                    <div class="placeholder">
-                        Click on a green NIST mapping circle to view its explanation, scores, commonality, justification, and differences.
-                    </div>
-                `;
-                return;
+    html_code = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{
+                margin: 0;
+                padding: 0;
+                font-family: Arial, sans-serif;
+                background: #ffffff;
             }}
 
-            const item = mappingData[nodeId];
+            .main-card {{
+                width: 100%;
+                height: 520px;
+                border: 1px solid #e0e0e0;
+                border-radius: 10px;
+                overflow: hidden;
+                background: white;
+                display: flex;
+            }}
 
-            panel.innerHTML = `
-                <div class="panel-title">AI Explanation</div>
+            .graph-section {{
+                width: 68%;
+                height: 520px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: white;
+            }}
 
-                <div class="sub-title">Selected NIST Mapping</div>
-                <div class="content-box">${{escapeHtml(item.mapping)}}</div>
+            .summary-section {{
+                width: 32%;
+                height: 520px;
+                border-left: 1px solid #e0e0e0;
+                padding: 22px;
+                box-sizing: border-box;
+                overflow-y: auto;
+                background: #ffffff;
+            }}
 
-                <div class="sub-title">Scores</div>
-                <div class="score-box">
-                    <div class="score-row">
-                        <span class="score-label">Final Score</span>
-                        <span class="score-value">${{escapeHtml(item.final)}} / ${{escapeHtml(item.final_percent)}}</span>
-                    </div>
-                    <div class="score-row">
-                        <span class="score-label">Embedding Score</span>
-                        <span class="score-value">${{escapeHtml(item.embedding)}} / ${{escapeHtml(item.embedding_percent)}}</span>
-                    </div>
-                    <div class="score-row">
-                        <span class="score-label">Ontology Score</span>
-                        <span class="score-value">${{escapeHtml(item.ontology)}} / ${{escapeHtml(item.ontology_percent)}}</span>
-                    </div>
-                </div>
+            .mapping-node {{
+                cursor: pointer;
+            }}
 
-                <div class="sub-title">Commonality</div>
-                <div class="content-box">${{escapeHtml(item.commonality)}}</div>
+            .mapping-node:hover circle {{
+                fill: #238442;
+            }}
 
-                <div class="sub-title">Justification</div>
-                <div class="content-box">${{escapeHtml(item.justification)}}</div>
+            .green-label {{
+                fill: white;
+                font-size: 13px;
+                font-weight: bold;
+                pointer-events: none;
+            }}
 
-                <div class="sub-title">Differences</div>
-                <div class="content-box">${{escapeHtml(item.differences)}}</div>
+            .blue-label {{
+                fill: white;
+                font-size: 18px;
+                font-weight: bold;
+                pointer-events: none;
+            }}
 
-                <div class="sub-title">Mapped Control Text</div>
-                <div class="content-box">${{escapeHtml(item.text)}}</div>
-            `;
-        }}
-    </script>
-    """
+            .number-label {{
+                fill: #3366cc;
+                font-size: 13px;
+                font-weight: bold;
+            }}
 
-    graph_html = graph_html.replace(
-        "<body>",
-        "<body>" + custom_panel + '<div id="main-container"><div id="graph-container">'
-    )
+            .panel-title {{
+                font-size: 20px;
+                font-weight: bold;
+                color: #1f2933;
+                margin-bottom: 16px;
+            }}
 
-    graph_html = graph_html.replace(
-        "</body>",
-        """
-        </div>
+            .sub-title {{
+                font-size: 14px;
+                font-weight: bold;
+                color: #1f2933;
+                margin-top: 16px;
+                margin-bottom: 6px;
+            }}
 
-        <div id="details-panel">
-            <div class="panel-title">AI Explanations</div>
-            <div class="placeholder">
-                Click on a green NIST mapping circle to view its explanation, scores, commonality, justification, and differences.
+            .content-box {{
+                border: 1px solid #d0d7de;
+                border-radius: 8px;
+                padding: 10px;
+                font-size: 13px;
+                line-height: 1.5;
+                color: #222;
+                margin-bottom: 10px;
+                white-space: pre-wrap;
+                background: #ffffff;
+            }}
+
+            .score-box {{
+                border: 1px solid #d0d7de;
+                border-radius: 8px;
+                padding: 10px;
+                margin-bottom: 10px;
+                background: #ffffff;
+            }}
+
+            .score-row {{
+                display: flex;
+                justify-content: space-between;
+                font-size: 13px;
+                margin-bottom: 7px;
+            }}
+
+            .score-label {{
+                font-weight: bold;
+                color: #333;
+            }}
+
+            .score-value {{
+                font-weight: bold;
+                color: #0b72d9;
+            }}
+
+            .placeholder {{
+                color: #666;
+                font-size: 14px;
+                line-height: 1.6;
+            }}
+        </style>
+    </head>
+
+    <body>
+        <div class="main-card">
+
+            <div class="graph-section">
+                <svg width="{width}" height="{height}" viewBox="0 0 {width} {height}">
+
+                    {svg_lines}
+
+                    <circle 
+                        cx="{center_x}" 
+                        cy="{center_y}" 
+                        r="{blue_radius}" 
+                        fill="#0b72d9"
+                    />
+
+                    <text 
+                        x="{center_x}" 
+                        y="{center_y}" 
+                        text-anchor="middle" 
+                        dominant-baseline="middle"
+                        class="blue-label"
+                    >
+                        {html.escape(str(selected_id))}
+                    </text>
+
+                    {svg_nodes}
+
+                    {svg_numbers}
+
+                </svg>
             </div>
-        </div>
+
+            <div class="summary-section" id="summary-panel">
+                <div class="panel-title">Mapping Summary</div>
+                <div class="placeholder">
+                    Click on a green NIST control circle to view its number, scores, commonality, justification, differences, and mapped control text.
+                </div>
+            </div>
 
         </div>
 
         <script>
-            network.on("click", function(params) {
-                if (params.nodes.length > 0) {
-                    const selectedNode = params.nodes[0];
-                    updatePanel(selectedNode);
-                }
-            });
+            const mappingData = {mapping_json};
+
+            function escapeHtml(text) {{
+                if (!text) return "N/A";
+                return String(text)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }}
+
+            function updatePanel(nodeId) {{
+                const item = mappingData[nodeId];
+                const panel = document.getElementById("summary-panel");
+
+                if (!item) {{
+                    return;
+                }}
+
+                panel.innerHTML = `
+                    <div class="panel-title">Mapping Summary</div>
+
+                    <div class="sub-title">Selected Mapping</div>
+                    <div class="content-box">
+                        <b>Number:</b> ${{escapeHtml(item.rank)}}<br>
+                        <b>NIST Control:</b> ${{escapeHtml(item.mapping)}}
+                    </div>
+
+                    <div class="sub-title">Scores</div>
+                    <div class="score-box">
+                        <div class="score-row">
+                            <span class="score-label">Final Score</span>
+                            <span class="score-value">${{escapeHtml(item.final)}} / ${{escapeHtml(item.final_percent)}}</span>
+                        </div>
+                        <div class="score-row">
+                            <span class="score-label">Embedding Score</span>
+                            <span class="score-value">${{escapeHtml(item.embedding)}} / ${{escapeHtml(item.embedding_percent)}}</span>
+                        </div>
+                        <div class="score-row">
+                            <span class="score-label">Ontology Score</span>
+                            <span class="score-value">${{escapeHtml(item.ontology)}} / ${{escapeHtml(item.ontology_percent)}}</span>
+                        </div>
+                    </div>
+
+                    <div class="sub-title">Commonality</div>
+                    <div class="content-box">${{escapeHtml(item.commonality)}}</div>
+
+                    <div class="sub-title">Justification</div>
+                    <div class="content-box">${{escapeHtml(item.justification)}}</div>
+
+                    <div class="sub-title">Differences</div>
+                    <div class="content-box">${{escapeHtml(item.differences)}}</div>
+
+                    <div class="sub-title">Mapped Control Text</div>
+                    <div class="content-box">${{escapeHtml(item.text)}}</div>
+                `;
+            }}
         </script>
+    </body>
+    </html>
+    """
 
-        </body>
-        """
-    )
-
-    return graph_html
+    return html_code
 
 
 # -------------------------
@@ -482,13 +473,15 @@ if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
     df.columns = [c.strip() for c in df.columns]
 
+    if "ECC id control" not in df.columns:
+        st.error("Column 'ECC id control' was not found in the CSV file.")
+        st.stop()
+
     st.sidebar.title("Controls")
 
     control_ids = sorted(df["ECC id control"].astype(str).unique())
 
     selected_id = st.sidebar.radio("Select Control ID", control_ids)
-
-    st.title("Control Mapping Viewer")
 
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
 
@@ -496,13 +489,32 @@ if os.path.exists(DATA_FILE):
 
     mappings = extract_mappings(row, df)
 
-    graph_html = create_graph(
-        str(selected_id),
-        source_text,
-        mappings
+    st.markdown(
+        f"""
+        <div style="
+            background-color:white;
+            border:1px solid #e0e0e0;
+            border-radius:10px;
+            padding:18px 24px;
+            margin-bottom:10px;
+        ">
+            <h1 style="margin:0; font-size:34px;">NCA-NIST Control Mapping Viewer</h1>
+            <p style="margin-top:6px;color:#4b5563;font-size:15px;">
+                Viewing mappings for: <b>{selected_id}</b> ({len(mappings)} recommended mappings)
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    components.html(graph_html, height=750, scrolling=True)
+    viewer_html = create_svg_viewer(
+        selected_id=str(selected_id),
+        source_text=source_text,
+        mappings=mappings
+    )
+
+    components.html(viewer_html, height=540, scrolling=False)
 
 else:
-    st.error("CSV file not found")
+    st.error("CSV file not found. Make sure this file is in the same folder as mapviewer.py:")
+    st.code(DATA_FILE)
