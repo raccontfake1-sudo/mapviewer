@@ -6,8 +6,13 @@ import tempfile
 import html
 import os
 import math
+
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
+
+# -------------------------
+# Mapping columns helper
+# -------------------------
 def get_mapping_columns(i):
     suffix = "" if i == 1 else f" {i}"
     return {
@@ -19,68 +24,106 @@ def get_mapping_columns(i):
         "differences": f"Differences{suffix}"
     }
 
+
+# -------------------------
+# Extract mappings
+# -------------------------
 def extract_mappings(row, df, top_k=10):
     results = []
 
     for i in range(1, 11):
         cols = get_mapping_columns(i)
 
-        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])):
+        if cols["mapping"] not in df.columns:
+            continue
+
+        mapping_val = row.get(cols["mapping"])
+        if pd.isna(mapping_val):
             continue
 
         try:
             val = str(row.get(cols["final"], 0)).replace("%", "")
-            score = float(val) / 100.0 if float(val) > 1.0 else float(val)
+            score = float(val)
+            if score > 1:
+                score = score / 100.0
         except:
             score = 0.0
 
-        commonality_val = row.get(cols["commonality"], "")
-        justification_val = row.get(cols["justification"], "")
-        differences_val = row.get(cols["differences"], "")
-
-        if pd.isna(differences_val) or differences_val == "":
-            differences_val = "The controls differ in implementation focus and specific requirements."
-
         results.append({
-            "mapping": str(row.get(cols["mapping"], "")),
+            "mapping": str(mapping_val),
             "text": str(row.get(cols["text"], "")),
             "final": score,
-            "commonality": str(commonality_val) if not pd.isna(commonality_val) else "N/A",
-            "justification": str(justification_val) if not pd.isna(justification_val) else "N/A",
-            "differences": str(differences_val)
+            "commonality": str(row.get(cols["commonality"], "N/A")),
+            "justification": str(row.get(cols["justification"], "N/A")),
+            "differences": str(row.get(cols["differences"], "N/A"))
         })
 
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
+
+# -------------------------
+# Create graph
+# -------------------------
 def create_graph(selected_id, source_text, mappings):
+
     net = Network(height="650px", width="100%", bgcolor="#ffffff")
 
-    net.set_options(""" ... """)
+    net.set_options("""
+    {
+      "physics": {
+        "enabled": true,
+        "solver": "forceAtlas2Based",
+        "forceAtlas2Based": {
+          "gravitationalConstant": -120,
+          "springLength": 180
+        }
+      },
+      "nodes": {
+        "borderWidth": 2,
+        "font": {
+          "size": 18,
+          "face": "arial"
+        }
+      },
+      "edges": {
+        "color": "#c9d2dc",
+        "font": {
+          "size": 28,
+          "align": "middle",
+          "color": "#001f5c",
+          "strokeWidth": 5,
+          "strokeColor": "#ffffff"
+        }
+      }
+    }
+    """)
 
-    # الدائرة الزرقاء الرئيسية
+    # Main node (blue)
     net.add_node(
         selected_id,
         label=str(selected_id),
         title=html.escape(source_text),
         color="#1687d9",
-        size=180,
+        size=80,
         shape="circle",
         physics=False,
-        font={"color": "white", "size": 50}
+        font={"color": "white", "size": 30}
     )
 
-    # الدوائر الخضراء 👇 (IMPORTANT: نفس مستوى indentation)
+    # Green mapping nodes in circle layout
+    n = len(mappings)
+
     for idx, item in enumerate(mappings):
 
-        angle = (2 * math.pi / len(mappings)) * idx
+        angle = (2 * math.pi / n) * idx
         x = 400 * math.cos(angle)
         y = 400 * math.sin(angle)
 
         net.add_node(
             item["mapping"],
-            label=item["mapping"],
+            label=str(idx + 1),
             title=html.escape(item["text"]),
-            color="#328a36",
+            color="#2e7d32",
             size=45,
             shape="circle",
             x=x,
@@ -92,62 +135,31 @@ def create_graph(selected_id, source_text, mappings):
         net.add_edge(
             selected_id,
             item["mapping"],
-            label=f"{idx + 1}",
-            width=3
+            label=str(idx + 1),
+            width=2
         )
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-        net.save_graph(tmp.name)
-        return open(tmp.name, "r", encoding="utf-8").read()
-    # دوائر الـ mappings
-    for idx, item in enumerate(mappings):
-
-        edge_width = 3
-
-        net.add_node(
-            item["mapping"],
-            label=item["mapping"],
-            title=html.escape(item["text"]),
-            color="#328a36",
-            size=32,
-            shape="circle",
-            font={"color": "white"}
-        )
-
-        net.add_edge(
-            selected_id,
-            item["mapping"],
-            label=f"{idx + 1}",
-            width=edge_width
-        )
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-        net.save_graph(tmp.name)
-        return open(tmp.name, "r", encoding="utf-8").read()
-  
-       
-
+    # Save graph
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
         return open(tmp.name, "r", encoding="utf-8").read()
 
+
+# -------------------------
+# Load data
+# -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
 if os.path.exists(DATA_FILE):
+
     df = pd.read_csv(DATA_FILE)
     df.columns = [c.strip() for c in df.columns]
 
-    st.sidebar.title("Controls List")
+    st.sidebar.title("Controls")
 
-    control_ids = sorted(
-        df["ECC id control"].astype(str).unique(),
-        key=lambda x: int("".join(filter(str.isdigit, x))) if any(c.isdigit() for c in x) else 0
-    )
+    control_ids = sorted(df["ECC id control"].astype(str).unique())
 
-    selected_id = st.sidebar.radio(
-        "Select Control ID:",
-        control_ids
-    )
+    selected_id = st.sidebar.radio("Select Control ID", control_ids)
 
     st.title("Control Mapping Viewer")
 
@@ -164,182 +176,11 @@ if os.path.exists(DATA_FILE):
 
     st.markdown("## AI Explanations")
 
-    if mappings:
-        for idx, m in enumerate(mappings):
-            with st.expander(f"{idx + 1} - {m['mapping']}"):
-                st.markdown(f"**Commonality:** {m['commonality']}")
-                st.markdown(f"**Justification:** {m['justification']}")
-                st.markdown(f"**Differences:** {m['differences']}")
-    else:
-        st.info("No mappings found for this control.")
+    for idx, m in enumerate(mappings):
+        with st.expander(f"{idx + 1} - {m['mapping']}"):
+            st.write("**Commonality:**", m["commonality"])
+            st.write("**Justification:**", m["justification"])
+            st.write("**Differences:**", m["differences"])
 
 else:
-    st.error("Data file not found. Please ensure the CSV is in the same directory.")
-
-عندك لخبطة كبيرة لأنك كررت نفس البلوك 3 مرات 😭
-وفيه سطر فيه مسافة زيادة:
-
-     for idx, item in enumerate(mappings):
-
-لا تصلحينه يدوي، أسهل شيء:
-
-احذفي كل شيء داخل create_graph بعد هذا السطر:
-
-# الدائرة الزرقاء الرئيسية
-
-واستبدليه بالكامل بهذا فقط 👇
-
-    # الدائرة الزرقاء الرئيسية
-    net.add_node(
-        selected_id,
-        label=str(selected_id),
-        title=html.escape(source_text),
-        color="#1687d9",
-        size=180,
-        shape="circle",
-        physics=False,
-        font={
-            "color": "white",
-            "size": 50
-        }
-    )
-
-    # الدوائر الخضراء بالترتيب
-    for idx, item in enumerate(mappings):
-
-        angle = (2 * math.pi / len(mappings)) * idx
-        x = 400 * math.cos(angle)
-        y = 400 * math.sin(angle)
-
-        net.add_node(
-            item["mapping"],
-            label=item["mapping"],
-            title=html.escape(item["text"]),
-            color="#328a36",
-            size=45,
-            shape="circle",
-            x=x,
-            y=y,
-            physics=False,
-            font={
-                "color": "white",
-                "size": 20
-            }
-        )
-
-        net.add_edge(
-            selected_id,
-            item["mapping"],
-            label=f"{idx + 1}",
-            width=3
-        )
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-        net.save_graph(tmp.name)
-        return open(tmp.name, "r", encoding="utf-8").read()
-
-المهم:
-
-احذفي كل التكرار اللي تحت
-خلي هذا البلوك فقط داخل create_graph
-
-وبيرجع يشتغل والترتيب يصير مرتب 🔥
-
-بدلي هذا السطر:
-
-"color": "#000000",
-
-بهذا:
-
-"color": "#003b8e",
-
-أو إذا تبين أزرق أغمق وأوضح أكثر:
-
-"color": "#001f5c",
-
-بيطلع رقم الترتيب أزرق غامق وواضح 🔥
-
-وين ذا
-
-داخل net.set_options 👌
-
-دوري هذا الجزء:
-
-"edges": {
-  "font": {
-    "size": 16,
-    "align": "middle",
-    "color": "#1476d4"
-  },
-
-وغيريه إلى:
-
-"edges": {
-  "font": {
-    "size": 35,
-    "align": "middle",
-    "color": "#001f5c",
-    "strokeWidth": 5,
-    "strokeColor": "#ffffff"
-  },
-
-هذا يغير:
-
-لون أرقام الترتيب إلى أزرق غامق
-ويكبرها
-ويخليها أوضح 🔥
-File "/mount/src/mapviewer/app.py", line 212, in <module>
-    graph_html = create_graph(
-        str(selected_id),
-        str(row["Source Text"]),
-        mappings
-    )
-File "/mount/src/mapviewer/app.py", line 59, in create_graph
-      net.set_options("""
-      ~~~~~~~~~~~~~~~^^^^
-      {
-      ^
-    ...<19 lines>...
-      }
-      ^
-      """)
-      ^^^^
-File "/home/adminuser/venv/lib/python3.14/site-packages/pyvis/network.py", line 1006, in set_options
-    self.options = self.options.set(options)
-                   ~~~~~~~~~~~~~~~~^^^^^^^^^
-File "/home/adminuser/venv/lib/python3.14/site-packages/pyvis/options.py", line 224, in set
-    options = json.loads(options)
-File "/usr/local/lib/python3.14/json/__init__.py", line 352, in loads
-    return _default_decoder.decode(s)
-           ~~~~~~~~~~~~~~~~~~~~~~~^^^
-File "/usr/local/lib/python3.14/json/decoder.py", line 345, in decode
-    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
-               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-File "/usr/local/lib/python3.14/json/decoder.py", line 361, in raw_decode
-    obj, end = self.scan_once(s, idx)
-               ~~~~~~~~~~~~~~^^^^^^^^
-
-الخطأ لأن JSON داخل set_options صار فيه فاصلة أو تنسيق غلط بعد التعديل 😭
-
-استبدلي جزء "edges" كامل بهذا بالضبط:
-
-"edges": {
-  "font": {
-    "size": 35,
-    "align": "middle",
-    "color": "#001f5c",
-    "strokeWidth": 5,
-    "strokeColor": "#ffffff"
-  },
-  "color": "#d3dbe3"
-}
-
-وخليه داخل:
-
-net.set_options("""
-{
- ...
-}
-""")
-
-المشكلة غالبًا إن "color": "#d3dbe3" كانت بمكان غلط أو ناقصة فاصلة ,.
+    st.error("CSV file not found")
