@@ -68,13 +68,14 @@ def create_graph(selected_id, source_text, mappings):
         },
         "borderWidth": 2
       },
-      "edges": {
-        "font": {
-          "size": 16,
-          "align": "middle",
-          "color": "#1476d4"
-        },
-        "color": "#d3dbe3"
+     "edges": {
+  "font": {
+    "size": 35,
+    "align": "middle",
+    "color": "#001f5c",
+    "strokeWidth": 5,
+    "strokeColor": "#ffffff"
+  },
       }
     }
     """)
