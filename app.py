@@ -98,7 +98,7 @@ def create_graph(selected_id, source_text, mappings):
     }
     """)
 
-    # 🔵 Main node (blue big circle)
+    # 🔵 Blue main node
     net.add_node(
         selected_id,
         label=str(selected_id),
@@ -110,7 +110,7 @@ def create_graph(selected_id, source_text, mappings):
         font={"color": "white", "size": 40}
     )
 
-    # 🟢 Green mapping nodes
+    # 🟢 Green nodes
     n = len(mappings)
 
     for idx, item in enumerate(mappings):
@@ -119,12 +119,18 @@ def create_graph(selected_id, source_text, mappings):
         x = 400 * math.cos(angle)
         y = 400 * math.sin(angle)
 
-       net.add_node(
-    item["mapping"],
-    label=str(idx + 1),
-    title=f"Control: {item['mapping']}",
-    color="#2e7d32",
-    size=55,   # 👈 هذا حجم الدائرة الخضراء
+        net.add_node(
+            item["mapping"],
+            label=str(idx + 1),
+            title=f"Control: {item['mapping']}",
+            color="#2e7d32",
+            size=90,   # 🔥 كبرنا الدائرة الخضراء
+            shape="circle",
+            x=x,
+            y=y,
+            physics=False,
+            font={"color": "white", "size": 22}
+        )
 
         net.add_edge(
             selected_id,
@@ -133,7 +139,6 @@ def create_graph(selected_id, source_text, mappings):
             width=2
         )
 
-    # Save graph
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
         return open(tmp.name, "r", encoding="utf-8").read()
