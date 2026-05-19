@@ -94,7 +94,7 @@ def create_graph(selected_id, source_text, mappings):
    color="#1687d9",
    size=220,
    shape="circle",
-   font={"color": "white", "size": 30}
+   font={"color": "white", "size": 40}
 )
 
        # دوائر الـ mappings
@@ -125,7 +125,7 @@ def create_graph(selected_id, source_text, mappings):
         label=str(selected_id),
         title=html.escape(source_text),
         color="#1687d9",
-        size=120,
+        size=220,
         shape="circle",
         font={"color": "white", "size": 40}
     )
