@@ -25,39 +25,35 @@ def get_mapping_columns(i):
     }
 
 
-# -------------------------
-# Extract mappings
-# -------------------------
 def extract_mappings(row, df, top_k=10):
     results = []
-
     for i in range(1, 11):
         cols = get_mapping_columns(i)
-
-        if cols["mapping"] not in df.columns:
+        if cols["mapping"] not in df.columns or pd.isna(row.get(cols["mapping"])):
             continue
-
-        mapping_val = row.get(cols["mapping"])
-        if pd.isna(mapping_val):
-            continue
-
         try:
-            val = str(row.get(cols["final"], 0)).replace("%", "")
-            score = float(val)
-            if score > 1:
-                score = score / 100.0
+            val = str(row.get(cols["final"], 0)).replace('%', '')
+            score = float(val) / 100.0 if float(val) > 1.0 else float(val)
         except:
             score = 0.0
-
+        
+        # Commonality و Justification من الملف مباشرة
+        commonality_val = row.get(cols["commonality"], "")
+        justification_val = row.get(cols["justification"], "")
+        
+        # فقط Differences له قيمة افتراضية
+        differences_val = row.get(cols["differences"], "")
+        if pd.isna(differences_val) or differences_val == "":
+            differences_val = "The controls differ in implementation focus and specific requirements."
+        
         results.append({
-            "mapping": str(mapping_val),
+            "mapping": str(row.get(cols["mapping"], "")),
             "text": str(row.get(cols["text"], "")),
             "final": score,
-            "commonality": str(row.get(cols["commonality"], "N/A")),
-            "justification": str(row.get(cols["justification"], "N/A")),
-            "differences": str(row.get(cols["differences"], "N/A"))
+            "commonality": str(commonality_val) if not pd.isna(commonality_val) else "N/A",
+            "justification": str(justification_val) if not pd.isna(justification_val) else "N/A",
+            "differences": str(differences_val)
         })
-
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 
