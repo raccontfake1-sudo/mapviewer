@@ -88,7 +88,7 @@ def create_graph(selected_id, source_text, mappings):
       "edges": {
           "color": "#c9d2dc",
           "font": {
-            "size": 70,
+            "size": 40,
             "align": "middle",
             "color": "#001f5c"
           }
@@ -134,7 +134,8 @@ def create_graph(selected_id, source_text, mappings):
             selected_id,
             item["mapping"],
             label=str(idx + 1),
-            width=2
+            color="black",
+            width=5
         )
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
