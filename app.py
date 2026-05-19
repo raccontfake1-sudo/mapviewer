@@ -5,7 +5,7 @@ import streamlit.components.v1 as components
 import tempfile
 import html
 import os
-
+import math
 st.set_page_config(page_title="Control Mapping Viewer", layout="wide")
 
 def get_mapping_columns(i):
@@ -86,18 +86,94 @@ def create_graph(selected_id, source_text, mappings):
     """)
 
     # الدائرة الزرقاء الرئيسية
-   # الدائرة الزرقاء الرئيسية
     net.add_node(
-  selected_id,
-   label=str(selected_id),
-   title=html.escape(source_text),
-   color="#1687d9",
-   size=220,
-   shape="circle",
-   font={"color": "white", "size": 40}
-)
+        selected_id,
+        label=str(selected_id),
+        title=html.escape(source_text),
+        color="#1687d9",
+        size=180,
+        shape="circle",
+        physics=False,
+        font={
+            "color": "white",
+            "size": 50
+        }
+    )
 
-       # دوائر الـ mappings
+    # الدوائر الخضراء
+     for idx, item in enumerate(mappings):
+
+        angle = (2 * math.pi / len(mappings)) * idx
+        x = 400 * math.cos(angle)
+        y = 400 * math.sin(angle)
+
+        net.add_node(
+            item["mapping"],
+            label=item["mapping"],
+            title=html.escape(item["text"]),
+            color="#328a36",
+            size=45,
+            shape="circle",
+            x=x,
+            y=y,
+            physics=False,
+            font={
+                "color": "white",
+                "size": 20
+            }
+        )
+
+        net.add_edge(
+            selected_id,
+            item["mapping"],
+            label=f"{idx + 1}",
+            width=3
+        )
+            label=item["mapping"],
+            title=html.escape(item["text"]),
+            color="#328a36",
+            size=45,
+            shape="circle",
+            font={
+                "color": "white",
+                "size": 20
+            }
+        )
+
+        net.add_edge(
+            selected_id,
+            item["mapping"],
+            label=f"{idx + 1}",
+            width=3
+        )
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+        net.save_graph(tmp.name)
+        return open(tmp.name, "r", encoding="utf-8").read()
+    # دوائر الـ mappings
+    for idx, item in enumerate(mappings):
+
+        net.add_node(
+            item["mapping"],
+            label=item["mapping"],
+            title=html.escape(item["text"]),
+            color="#328a36",
+            size=32,
+            shape="dot",
+            font={"color": "white"}
+        )
+
+        net.add_edge(
+            selected_id,
+            item["mapping"],
+            label=f"{idx + 1}",
+            width=3
+        )
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+        net.save_graph(tmp.name)
+        return open(tmp.name, "r", encoding="utf-8").read()
+    # دوائر الـ mappings
     for idx, item in enumerate(mappings):
 
         edge_width = 3
@@ -117,18 +193,13 @@ def create_graph(selected_id, source_text, mappings):
             item["mapping"],
             label=f"{idx + 1}",
             width=edge_width
-        ) 
+        )
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+        net.save_graph(tmp.name)
+        return open(tmp.name, "r", encoding="utf-8").read()
   
-          # الدائرة الزرقاء الرئيسية
-    net.add_node(
-        selected_id,
-        label=str(selected_id),
-        title=html.escape(source_text),
-        color="#1687d9",
-        size=220,
-        shape="circle",
-        font={"color": "white", "size": 40}
-    )
+       
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
@@ -179,57 +250,74 @@ if os.path.exists(DATA_FILE):
 else:
     st.error("Data file not found. Please ensure the CSV is in the same directory.")
 
-المشكلة مو من size 😭
-المشكلة إن PyVis أحيانًا يثبّت حجم العقد حسب الـ physics.
+عندك لخبطة كبيرة لأنك كررت نفس البلوك 3 مرات 😭
+وفيه سطر فيه مسافة زيادة:
 
-أضيفي هذا السطر داخل الدائرة الزرقاء:
+     for idx, item in enumerate(mappings):
 
-physics=False,
+لا تصلحينه يدوي، أسهل شيء:
 
-خليها كذا بالكامل:
-
-net.add_node(
-    selected_id,
-    label=str(selected_id),
-    title=html.escape(source_text),
-    color="#1687d9",
-    size=220,
-    shape="circle",
-    physics=False,
-    font={"color": "white", "size": 40}
-)
-
-وبرضه احذفي النسخة الثانية هذي بالكامل:
+احذفي كل شيء داخل create_graph بعد هذا السطر:
 
 # الدائرة الزرقاء الرئيسية
-net.add_node(
-    selected_id,
-    label=str(selected_id),
-    title=html.escape(source_text),
-    color="#1687d9",
-    size=220,
-    shape="circle",
-    font={"color": "white", "size": 40}
-)
 
-لأنها مكررة بدون physics=False.
+واستبدليه بالكامل بهذا فقط 👇
 
-بعدها سوّي:
+    # الدائرة الزرقاء الرئيسية
+    net.add_node(
+        selected_id,
+        label=str(selected_id),
+        title=html.escape(source_text),
+        color="#1687d9",
+        size=180,
+        shape="circle",
+        physics=False,
+        font={
+            "color": "white",
+            "size": 50
+        }
+    )
 
-streamlit run app.py
+    # الدوائر الخضراء بالترتيب
+    for idx, item in enumerate(mappings):
 
-أو إذا على GitHub/Streamlit Cloud اضغطي:
+        angle = (2 * math.pi / len(mappings)) * idx
+        x = 400 * math.cos(angle)
+        y = 400 * math.sin(angle)
 
-Restart app
-ثم Refresh
+        net.add_node(
+            item["mapping"],
+            label=item["mapping"],
+            title=html.escape(item["text"]),
+            color="#328a36",
+            size=45,
+            shape="circle",
+            x=x,
+            y=y,
+            physics=False,
+            font={
+                "color": "white",
+                "size": 20
+            }
+        )
 
-وبيطلع الفرق مباشرة 👍
+        net.add_edge(
+            selected_id,
+            item["mapping"],
+            label=f"{idx + 1}",
+            width=3
+        )
 
-File "/mount/src/mapviewer/app.py", line 122
-           net.add_node(
-          ^
-IndentationError: unexpected indent
-انت شايف الارقام من 1الي 10 ؟يبيها بالاترتيب 
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+        net.save_graph(tmp.name)
+        return open(tmp.name, "r", encoding="utf-8").read()
+
+المهم:
+
+احذفي كل التكرار اللي تحت
+خلي هذا البلوك فقط داخل create_graph
+
+وبيرجع يشتغل والترتيب يصير مرتب 🔥
 
 بدلي هذا السطر:
 
