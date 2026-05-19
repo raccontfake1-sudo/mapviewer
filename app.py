@@ -99,15 +99,16 @@ def create_graph(selected_id, source_text, mappings):
     """)
 
     # 🔵 Main node (bigger blue circle)
-    net.add_node(
-        selected_id,
-        label=str(selected_id),
-        title=html.escape(source_text),
-        color="#1687d9",
-        size=130,
-        shape="circle",
-        physics=False,
-        font={"color": "white", "size": 34}
+   net.add_node(
+    selected_id,
+    label=str(selected_id),
+    title=html.escape(source_text),
+    color="#1687d9",
+    size=200,
+    shape="circle",
+    physics=False,
+    font={"color": "white", "size": 40}
+)
     )
 
     # 🟢 Green mapping nodes
