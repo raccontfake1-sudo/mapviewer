@@ -101,22 +101,28 @@ def create_graph(selected_id, source_text, mappings):
     for idx, item in enumerate(mappings):
         edge_width = 3
 
-      net.add_node(
-    selected_id,
-    label=str(selected_id),
-    title=html.escape(source_text),
-    color="#1687d9",
-    size=120,
-    shape="circle",
-    font={"color": "white", "size": 30}
-)
+    
+def create_graph(selected_id, source_text, mappings):
 
+    net = Network(height="650px", width="100%", bgcolor="#ffffff")
+
+    # هنا يبدأ الكود
         net.add_edge(
             selected_id,
             item["mapping"],
             label=f"{idx + 1}",
             width=edge_width
         )
+          # الدائرة الزرقاء الرئيسية
+    net.add_node(
+        selected_id,
+        label=str(selected_id),
+        title=html.escape(source_text),
+        color="#1687d9",
+        size=120,
+        shape="circle",
+        font={"color": "white", "size": 30}
+    )
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
         net.save_graph(tmp.name)
