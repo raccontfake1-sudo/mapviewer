@@ -62,36 +62,27 @@ def create_graph(selected_id, source_text, mappings):
         "enabled": false
       },
       "nodes": {
+        "shape": "circle",
+        "borderWidth": 2,
         "font": {
-          "size": 18,
           "face": "arial"
-        },
-        "borderWidth": 2
+        }
       },
-   "edges": {
-  "font": {
-    "size": 35,
-    "align": "middle",
-    "color": "#001f5c",
-    "strokeWidth": 5,
-    "strokeColor": "#ffffff"
-  },
-  "color": "#d3dbe3"
-} 
+      "edges": {
+        "color": "#d3dbe3",
+        "width": 2
       }
     }
     """)
 
-    # الدائرة الزرقاء الرئيسية بالنص
+    # 🔵 العقدة الرئيسية (كبيرة وزرقاء)
     net.add_node(
         selected_id,
         label=str(selected_id),
-        title=html.escape(source_text),
+        title=source_text,
         color="#1687d9",
         size=180,
         shape="circle",
-        x=0,
-        y=0,
         physics=False,
         font={
             "color": "white",
@@ -99,21 +90,19 @@ def create_graph(selected_id, source_text, mappings):
         }
     )
 
-    # الدوائر الخضراء مرتبة
+    # 🔵 mappings (من 1 إلى 10 بالترتيب)
     for idx, item in enumerate(mappings):
 
-        angle = (2 * math.pi / len(mappings)) * idx
-
+        angle = (2 * math.pi / max(len(mappings), 1)) * idx
         x = 450 * math.cos(angle)
         y = 450 * math.sin(angle)
 
         net.add_node(
             item["mapping"],
-            label=item["mapping"],
-            title=html.escape(item["text"]),
-            color="#328a36",
-            size=45,
-            shape="circle",
+            label=f"{idx + 1}",
+            title=item["text"],
+            color="#1687d9",
+            size=60,
             x=x,
             y=y,
             physics=False,
@@ -126,8 +115,7 @@ def create_graph(selected_id, source_text, mappings):
         net.add_edge(
             selected_id,
             item["mapping"],
-            label=str(idx + 1),
-            width=3
+            width=2
         )
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
