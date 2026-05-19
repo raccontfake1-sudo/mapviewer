@@ -86,15 +86,16 @@ def create_graph(selected_id, source_text, mappings):
     """)
 
     # الدائرة الزرقاء الرئيسية
+   # الدائرة الزرقاء الرئيسية
     net.add_node(
-        selected_id,
-        label=str(selected_id),
-        title=html.escape(source_text),
-        color="#1687d9",
-        size=90,
-        shape="dot",
-        font={"color": "white", "size": 24}
-    )
+  selected_id,
+   label=str(selected_id),
+   title=html.escape(source_text),
+   color="#1687d9",
+   size=120,
+   shape="circle",
+   font={"color": "white", "size": 30}
+)
 
     # دوائر الـ mappings
     for idx, item in enumerate(mappings):
