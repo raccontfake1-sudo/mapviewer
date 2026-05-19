@@ -67,17 +67,13 @@ def create_graph(selected_id, source_text, mappings):
           "iterations": 1000
         }
       },
-     "nodes": {
-  "scaling": {
-    "min": 220,
-    "max": 220
-  },
-  "font": {
-    "size": 18,
-    "face": "arial"
-  },
-  "borderWidth": 2
-},
+      "nodes": {
+        "font": {
+          "size": 18,
+          "face": "arial"
+        },
+        "borderWidth": 2
+      },
       "edges": {
         "font": {
           "size": 16,
@@ -88,18 +84,42 @@ def create_graph(selected_id, source_text, mappings):
       }
     }
     """)
-net.add_node(
-    selected_id,
-    label=str(selected_id),
-    title=html.escape(source_text),
-    color="#1687d9",
-    value=3000,
-    shape="dot",
-    physics=False,
-    font={"color": "white", "size": 80}
-)
-   
 
+    # الدائرة الزرقاء الرئيسية
+    net.add_node(
+        selected_id,
+        label=str(selected_id),
+        title=html.escape(source_text),
+        color="#1687d9",
+        value=3000,
+        shape="dot",
+        physics=False,
+        font={"color": "white", "size": 80}
+    )
+
+    # دوائر الـ mappings
+    for idx, item in enumerate(mappings):
+
+        net.add_node(
+            item["mapping"],
+            label=item["mapping"],
+            title=html.escape(item["text"]),
+            color="#328a36",
+            size=32,
+            shape="dot",
+            font={"color": "white"}
+        )
+
+        net.add_edge(
+            selected_id,
+            item["mapping"],
+            label=f"{idx + 1}",
+            width=3
+        )
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
+        net.save_graph(tmp.name)
+        return open(tmp.name, "r", encoding="utf-8").read()
     # دوائر الـ mappings
     for idx, item in enumerate(mappings):
 
