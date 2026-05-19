@@ -114,7 +114,7 @@ def create_graph(selected_id, source_text, mappings):
     # 🟢 Green mapping nodes
     n = len(mappings)
 
-    for idx, item in enumerate(mappings):
+   for idx, item in enumerate(mappings):
 
     angle = (2 * math.pi / n) * idx
     x = 400 * math.cos(angle)
@@ -123,10 +123,7 @@ def create_graph(selected_id, source_text, mappings):
     net.add_node(
         item["mapping"],
         label=str(idx + 1),
-        title=f"""
-Control: {item['mapping']}<br>
-Text: {html.escape(item['text'])}
-""",
+        title=f"Control: {item['mapping']}",
         color="#2e7d32",
         size=55,
         shape="circle",
