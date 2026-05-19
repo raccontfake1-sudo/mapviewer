@@ -119,18 +119,12 @@ def create_graph(selected_id, source_text, mappings):
         x = 400 * math.cos(angle)
         y = 400 * math.sin(angle)
 
-        net.add_node(
-            item["mapping"],
-            label=str(idx + 1),
-            title=f"Control: {item['mapping']}",
-            color="#2e7d32",
-            size=55,
-            shape="circle",
-            x=x,
-            y=y,
-            physics=False,
-            font={"color": "white", "size": 22}
-        )
+       net.add_node(
+    item["mapping"],
+    label=str(idx + 1),
+    title=f"Control: {item['mapping']}",
+    color="#2e7d32",
+    size=55,   # 👈 هذا حجم الدائرة الخضراء
 
         net.add_edge(
             selected_id,
