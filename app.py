@@ -88,7 +88,7 @@ def create_graph(selected_id, source_text, mappings):
       "edges": {
           "color": "#c9d2dc",
           "font": {
-            "size": 20,
+            "size": 70,
             "align": "middle",
             "color": "#001f5c"
           }
