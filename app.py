@@ -5,6 +5,7 @@ import os
 import math
 import json
 import html
+import re
 
 st.set_page_config(page_title="NCA-NIST Control Mapping Viewer", layout="wide")
 
@@ -24,6 +25,20 @@ def get_mapping_columns(i):
         "justification": f"Justification{suffix}",
         "differences": f"Differences{suffix}"
     }
+
+
+def natural_control_sort(value):
+    value = str(value).strip()
+    parts = re.split(r"[.\-_\s]+", value)
+
+    sort_key = []
+    for part in parts:
+        if part.isdigit():
+            sort_key.append(int(part))
+        else:
+            sort_key.append(part)
+
+    return sort_key
 
 
 def safe_value(value, default="N/A"):
@@ -48,6 +63,7 @@ def parse_score(value):
             return value / 100.0
 
         return value
+
     except:
         return 0.0
 
@@ -78,7 +94,7 @@ def short_mapping_label(mapping):
     return mapping
 
 
-def extract_mappings(row, df, top_k=10):
+def extract_mappings(row, df, top_k=5):
     results = []
 
     for i in range(1, 11):
@@ -119,7 +135,8 @@ def extract_mappings(row, df, top_k=10):
             )
         })
 
-    return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
+    results = sorted(results, key=lambda x: x["final"], reverse=True)
+    return results[:top_k]
 
 
 # -------------------------
@@ -156,9 +173,11 @@ def create_svg_viewer(selected_id, source_text, mappings):
 
         mapping_data[node_id] = {
             "rank": str(rank),
-            "mapping": item["mapping"],
-            "short_label": item["short_label"],
-            "text": item["text"],
+            "ecc_control": str(selected_id),
+            "ecc_text": source_text,
+            "nist_control": item["mapping"],
+            "nist_short_label": item["short_label"],
+            "nist_text": item["text"],
             "final": format_decimal(item["final"]),
             "final_percent": format_percent(item["final"]),
             "embedding": format_decimal(item["embedding"]),
@@ -191,11 +210,11 @@ def create_svg_viewer(selected_id, source_text, mappings):
             />
         """
 
-        # Number below each green circle, like the percentage in your example
+        # Number above each green circle
         svg_numbers += f"""
             <text 
                 x="{x}" 
-                y="{y + green_radius + 18}" 
+                y="{y - green_radius - 10}" 
                 text-anchor="middle" 
                 dominant-baseline="middle"
                 class="number-label"
@@ -390,7 +409,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
             <div class="summary-section" id="summary-panel">
                 <div class="panel-title">Mapping Summary</div>
                 <div class="placeholder">
-                    Click on a green NIST control circle to view its number, scores, commonality, justification, differences, and mapped control text.
+                    Click on a green NIST control circle to view the ECC control, NIST control, scores, commonality, justification, and differences.
                 </div>
             </div>
 
@@ -420,10 +439,21 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 panel.innerHTML = `
                     <div class="panel-title">Mapping Summary</div>
 
-                    <div class="sub-title">Selected Mapping</div>
+                    <div class="sub-title">Selected Mapping Number</div>
                     <div class="content-box">
-                        <b>Number:</b> ${{escapeHtml(item.rank)}}<br>
-                        <b>NIST Control:</b> ${{escapeHtml(item.mapping)}}
+                        <b>Number:</b> ${{escapeHtml(item.rank)}}
+                    </div>
+
+                    <div class="sub-title">ECC Mapping Control</div>
+                    <div class="content-box">
+                        <b>ECC Control:</b> ${{escapeHtml(item.ecc_control)}}<br><br>
+                        <b>ECC Text:</b><br>${{escapeHtml(item.ecc_text)}}
+                    </div>
+
+                    <div class="sub-title">NIST Mapping Control</div>
+                    <div class="content-box">
+                        <b>NIST Control:</b> ${{escapeHtml(item.nist_control)}}<br><br>
+                        <b>NIST Text:</b><br>${{escapeHtml(item.nist_text)}}
                     </div>
 
                     <div class="sub-title">Scores</div>
@@ -450,9 +480,6 @@ def create_svg_viewer(selected_id, source_text, mappings):
 
                     <div class="sub-title">Differences</div>
                     <div class="content-box">${{escapeHtml(item.differences)}}</div>
-
-                    <div class="sub-title">Mapped Control Text</div>
-                    <div class="content-box">${{escapeHtml(item.text)}}</div>
                 `;
             }}
         </script>
@@ -479,15 +506,27 @@ if os.path.exists(DATA_FILE):
 
     st.sidebar.title("Controls")
 
-    control_ids = sorted(df["ECC id control"].astype(str).unique())
+    control_ids = sorted(
+        df["ECC id control"].astype(str).unique(),
+        key=natural_control_sort
+    )
 
     selected_id = st.sidebar.radio("Select Control ID", control_ids)
+
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Number of mappings")
+
+    top_k = st.sidebar.radio(
+        "Show top mappings",
+        [1, 2, 3, 4, 5],
+        index=4
+    )
 
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
 
     source_text = safe_value(row.get("Source Text", ""))
 
-    mappings = extract_mappings(row, df)
+    mappings = extract_mappings(row, df, top_k=top_k)
 
     st.markdown(
         f"""
@@ -498,7 +537,9 @@ if os.path.exists(DATA_FILE):
             padding:18px 24px;
             margin-bottom:10px;
         ">
-            <h1 style="margin:0; font-size:34px;">NCA-NIST Control Mapping Viewer</h1>
+            <h1 style="margin:0; font-size:34px; color:#1f2933;">
+                NCA-NIST Control Mapping Viewer
+            </h1>
             <p style="margin-top:6px;color:#4b5563;font-size:15px;">
                 Viewing mappings for: <b>{selected_id}</b> ({len(mappings)} recommended mappings)
             </p>
