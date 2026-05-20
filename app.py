@@ -12,54 +12,41 @@ st.set_page_config(page_title="NCA-NIST Control Mapping Viewer", layout="wide")
 st.markdown(
     """
     <style>
-        /* ── Sidebar radio: center, big font, tight rows ── */
-        [data-testid="stSidebar"] .stRadio > div {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0px !important;
+        /* ── Nuclear option: force every text node inside sidebar radio ── */
+
+        /* The wrapper div */
+        section[data-testid="stSidebar"] div[role="radiogroup"] {
+            gap: 0 !important;
         }
-        [data-testid="stSidebar"] .stRadio label {
-            width: 100%;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            font-size: 22px !important;
-            font-weight: 700 !important;
-            padding: 2px 0 !important;
+
+        /* Each radio row label */
+        section[data-testid="stSidebar"] div[role="radiogroup"] label {
+            padding: 4px 8px !important;
             margin: 0 !important;
-            line-height: 1.3 !important;
-            color: #1f2933 !important;
+            min-height: unset !important;
         }
-        [data-testid="stSidebar"] .stRadio label span p,
-        [data-testid="stSidebar"] .stRadio label span {
-            font-size: 22px !important;
-            font-weight: 700 !important;
-            line-height: 1.3 !important;
-            margin: 0 !important;
+
+        /* The visible text span — this is what actually renders the ID */
+        section[data-testid="stSidebar"] div[role="radiogroup"] label div,
+        section[data-testid="stSidebar"] div[role="radiogroup"] label p,
+        section[data-testid="stSidebar"] div[role="radiogroup"] label span {
+            font-size: 28px !important;
+            font-weight: 800 !important;
+            line-height: 1.2 !important;
+            letter-spacing: 0.5px !important;
         }
-        /* Tighten the gap between radio rows */
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label {
-            padding-top: 3px !important;
-            padding-bottom: 3px !important;
-        }
-        /* Sidebar title */
-        [data-testid="stSidebar"] h1 {
-            text-align: center;
-            font-size: 22px !important;
-        }
-        /* Hide the built-in radio group label (we use selectbox label instead) */
-        [data-testid="stSidebar"] .stRadio > label {
-            display: none !important;
-        }
-        /* Selectbox label above list */
-        [data-testid="stSidebar"] .stSelectbox label {
+
+        /* "Select Control ID" group label */
+        section[data-testid="stSidebar"] .stRadio > label,
+        section[data-testid="stSidebar"] .stRadio > label p {
             font-size: 15px !important;
             font-weight: bold !important;
-            color: #444 !important;
-            text-align: center;
-            width: 100%;
-            display: block;
+            display: block !important;
+        }
+
+        /* Sidebar title */
+        section[data-testid="stSidebar"] h1 {
+            font-size: 26px !important;
         }
     </style>
     """,
@@ -722,26 +709,11 @@ if os.path.exists(DATA_FILE):
         key=natural_control_sort
     )
 
-    # ---- Selectbox at the top for quick jump ----
-    selected_id_box = st.sidebar.selectbox(
+    selected_id = st.sidebar.radio(
         "Select Control ID",
         control_ids,
-        index=0
+        format_func=lambda x: x
     )
-
-    # ---- Radio list below, synced to the selectbox ----
-    default_radio_index = control_ids.index(selected_id_box) if selected_id_box in control_ids else 0
-
-    selected_id = st.sidebar.radio(
-        "Or pick from list",
-        control_ids,
-        index=default_radio_index,
-        label_visibility="visible"
-    )
-
-    # Selectbox takes priority if it differs
-    if selected_id_box != selected_id:
-        selected_id = selected_id_box
 
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     source_text = safe_value(row.get("Source Text", ""))
