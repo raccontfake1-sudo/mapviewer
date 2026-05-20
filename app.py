@@ -9,6 +9,50 @@ import re
 
 st.set_page_config(page_title="NCA-NIST Control Mapping Viewer", layout="wide")
 
+st.markdown(
+    """
+    <style>
+        /* Center sidebar radio labels and increase font size */
+        [data-testid="stSidebar"] .stRadio > div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        [data-testid="stSidebar"] .stRadio label {
+            width: 100%;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            font-size: 17px !important;
+            font-weight: 600 !important;
+            padding: 4px 0 !important;
+            color: #1f2933 !important;
+        }
+        [data-testid="stSidebar"] .stRadio label span {
+            font-size: 17px !important;
+        }
+        /* Also center the radio button circle itself */
+        [data-testid="stSidebar"] .stRadio label > div:first-child {
+            margin-right: 8px;
+        }
+        /* Sidebar title larger */
+        [data-testid="stSidebar"] h1 {
+            text-align: center;
+            font-size: 20px !important;
+        }
+        /* Center the "Select Control ID" label */
+        [data-testid="stSidebar"] .stRadio > label {
+            width: 100%;
+            text-align: center;
+            font-size: 15px !important;
+            font-weight: bold;
+            color: #444;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # -------------------------
 # Helpers
