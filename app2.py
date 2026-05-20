@@ -12,41 +12,54 @@ st.set_page_config(page_title="NCA-NIST Control Mapping Viewer", layout="wide")
 st.markdown(
     """
     <style>
-        /* Center sidebar radio labels and increase font size */
+        /* ── Sidebar radio: center, big font, tight rows ── */
         [data-testid="stSidebar"] .stRadio > div {
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 0px !important;
         }
         [data-testid="stSidebar"] .stRadio label {
             width: 100%;
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
-            font-size: 17px !important;
-            font-weight: 600 !important;
-            padding: 4px 0 !important;
+            font-size: 22px !important;
+            font-weight: 700 !important;
+            padding: 2px 0 !important;
+            margin: 0 !important;
+            line-height: 1.3 !important;
             color: #1f2933 !important;
         }
+        [data-testid="stSidebar"] .stRadio label span p,
         [data-testid="stSidebar"] .stRadio label span {
-            font-size: 17px !important;
+            font-size: 22px !important;
+            font-weight: 700 !important;
+            line-height: 1.3 !important;
+            margin: 0 !important;
         }
-        /* Also center the radio button circle itself */
-        [data-testid="stSidebar"] .stRadio label > div:first-child {
-            margin-right: 8px;
+        /* Tighten the gap between radio rows */
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label {
+            padding-top: 3px !important;
+            padding-bottom: 3px !important;
         }
-        /* Sidebar title larger */
+        /* Sidebar title */
         [data-testid="stSidebar"] h1 {
             text-align: center;
-            font-size: 20px !important;
+            font-size: 22px !important;
         }
-        /* Center the "Select Control ID" label */
+        /* Hide the built-in radio group label (we use selectbox label instead) */
         [data-testid="stSidebar"] .stRadio > label {
-            width: 100%;
-            text-align: center;
+            display: none !important;
+        }
+        /* Selectbox label above list */
+        [data-testid="stSidebar"] .stSelectbox label {
             font-size: 15px !important;
-            font-weight: bold;
-            color: #444;
+            font-weight: bold !important;
+            color: #444 !important;
+            text-align: center;
+            width: 100%;
+            display: block;
         }
     </style>
     """,
@@ -709,12 +722,26 @@ if os.path.exists(DATA_FILE):
         key=natural_control_sort
     )
 
-    # ---- Shortened sidebar labels: show only the control ID (already short) ----
-    selected_id = st.sidebar.radio(
+    # ---- Selectbox at the top for quick jump ----
+    selected_id_box = st.sidebar.selectbox(
         "Select Control ID",
         control_ids,
-        format_func=lambda x: x  # already short IDs; no truncation needed
+        index=0
     )
+
+    # ---- Radio list below, synced to the selectbox ----
+    default_radio_index = control_ids.index(selected_id_box) if selected_id_box in control_ids else 0
+
+    selected_id = st.sidebar.radio(
+        "Or pick from list",
+        control_ids,
+        index=default_radio_index,
+        label_visibility="visible"
+    )
+
+    # Selectbox takes priority if it differs
+    if selected_id_box != selected_id:
+        selected_id = selected_id_box
 
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     source_text = safe_value(row.get("Source Text", ""))
