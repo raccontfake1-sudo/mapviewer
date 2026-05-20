@@ -7,14 +7,17 @@ import json
 import html
 import re
 
-st.set_page_config(page_title="NCA-NIST Control Mapping Viewer", layout="wide")
-
+st.set_page_config(
+    page_title="NCA-NIST Control Mapping Viewer",
+    layout="wide"
+)
 
 # -------------------------
 # Helpers
 # -------------------------
 def get_mapping_columns(i):
     suffix = "" if i == 1 else f" {i}"
+
     return {
         "mapping": f"NIST mapping{suffix}",
         "text": f"Text{suffix}",
@@ -29,9 +32,11 @@ def get_mapping_columns(i):
 
 def natural_control_sort(value):
     value = str(value).strip()
+
     parts = re.split(r"[.\-_\s]+", value)
 
     sort_key = []
+
     for part in parts:
         if part.isdigit():
             sort_key.append(int(part))
@@ -44,6 +49,7 @@ def natural_control_sort(value):
 def safe_value(value, default="N/A"):
     if pd.isna(value) or str(value).strip() == "":
         return default
+
     return str(value).strip()
 
 
@@ -88,16 +94,21 @@ def short_mapping_label(mapping):
     if ":" in mapping:
         mapping = mapping.split(":")[0].strip()
 
-    if len(mapping) > 9:
-        return mapping[:9]
+    if len(mapping) > 8:
+        return mapping[:8]
 
     return mapping
 
 
+# -------------------------
+# Extract mappings
+# -------------------------
 def extract_mappings(row, df, top_k=5):
+
     results = []
 
     for i in range(1, 11):
+
         cols = get_mapping_columns(i)
 
         if cols["mapping"] not in df.columns:
@@ -131,11 +142,16 @@ def extract_mappings(row, df, top_k=5):
             "justification": safe_value(row.get(cols["justification"], "")),
             "differences": safe_value(
                 row.get(cols["differences"], ""),
-                "The controls differ in implementation focus and specific requirements."
+                "The controls differ in implementation focus."
             )
         })
 
-    results = sorted(results, key=lambda x: x["final"], reverse=True)
+    results = sorted(
+        results,
+        key=lambda x: x["final"],
+        reverse=True
+    )
+
     return results[:top_k]
 
 
@@ -144,31 +160,34 @@ def extract_mappings(row, df, top_k=5):
 # -------------------------
 def create_svg_viewer(selected_id, source_text, mappings):
 
-    width = 620
-    height = 420
+    width = 700
+    height = 500
 
-    center_x = 310
-    center_y = 210
+    center_x = 350
+    center_y = 250
 
-    blue_radius = 45
-    green_radius = 34
-    graph_radius = 145
+    blue_radius = 52
+    green_radius = 38
+
+    # shorter links
+    graph_radius = 130
 
     mapping_data = {}
 
     svg_lines = ""
     svg_nodes = ""
-    svg_numbers = ""
 
     n = len(mappings)
 
     for idx, item in enumerate(mappings):
+
         angle = (2 * math.pi / n) * idx - (math.pi / 2)
 
         x = center_x + graph_radius * math.cos(angle)
         y = center_y + graph_radius * math.sin(angle)
 
         rank = idx + 1
+
         node_id = f"node_{rank}"
 
         mapping_data[node_id] = {
@@ -191,6 +210,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
 
         dx = x - center_x
         dy = y - center_y
+
         distance = math.sqrt(dx * dx + dy * dy)
 
         start_x = center_x + (blue_radius / distance) * dx
@@ -199,46 +219,49 @@ def create_svg_viewer(selected_id, source_text, mappings):
         end_x = x - (green_radius / distance) * dx
         end_y = y - (green_radius / distance) * dy
 
+        # shorter links
         svg_lines += f"""
-            <line 
-                x1="{start_x}" 
-                y1="{start_y}" 
-                x2="{end_x}" 
-                y2="{end_y}" 
-                stroke="#b8c4d0" 
+            <line
+                x1="{start_x}"
+                y1="{start_y}"
+                x2="{end_x}"
+                y2="{end_y}"
+                stroke="#b8c4d0"
                 stroke-width="2"
             />
         """
 
-        svg_numbers += f"""
-            <text 
-                x="{x}" 
-                y="{y - green_radius - 10}" 
-                text-anchor="middle" 
-                dominant-baseline="middle"
-                class="number-label"
-            >
-                {rank}
-            </text>
-        """
-
+        # NEW CIRCLE STYLE
         svg_nodes += f"""
             <g class="mapping-node" onclick="updatePanel('{node_id}')">
-                <circle 
-                    cx="{x}" 
-                    cy="{y}" 
-                    r="{green_radius}" 
+
+                <circle
+                    cx="{x}"
+                    cy="{y}"
+                    r="{green_radius}"
                     fill="#2f9b4f"
                 />
-                <text 
-                    x="{x}" 
-                    y="{y}" 
-                    text-anchor="middle" 
-                    dominant-baseline="middle"
-                    class="green-label"
+
+                <!-- NUMBER -->
+                <text
+                    x="{x}"
+                    y="{y - 8}"
+                    text-anchor="middle"
+                    class="circle-number"
+                >
+                    {rank}
+                </text>
+
+                <!-- CONTROL NAME -->
+                <text
+                    x="{x}"
+                    y="{y + 14}"
+                    text-anchor="middle"
+                    class="circle-control"
                 >
                     {html.escape(item["short_label"])}
                 </text>
+
             </g>
         """
 
@@ -246,21 +269,25 @@ def create_svg_viewer(selected_id, source_text, mappings):
 
     html_code = f"""
     <!DOCTYPE html>
+
     <html>
+
     <head>
+
         <style>
+
             body {{
                 margin: 0;
                 padding: 0;
                 font-family: Arial, sans-serif;
-                background: #ffffff;
+                background: white;
             }}
 
             .main-card {{
                 width: 100%;
-                height: 520px;
+                height: 620px;
                 border: 1px solid #e0e0e0;
-                border-radius: 10px;
+                border-radius: 12px;
                 overflow: hidden;
                 background: white;
                 display: flex;
@@ -268,18 +295,17 @@ def create_svg_viewer(selected_id, source_text, mappings):
 
             .graph-section {{
                 width: 68%;
-                height: 520px;
+                height: 620px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: white;
             }}
 
             .summary-section {{
                 width: 32%;
-                height: 520px;
+                height: 620px;
                 border-left: 1px solid #e0e0e0;
-                padding: 22px;
+                padding: 24px;
                 box-sizing: border-box;
                 overflow-y: auto;
                 background: #ffffff;
@@ -293,9 +319,16 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 fill: #238442;
             }}
 
-            .green-label {{
+            .circle-number {{
                 fill: white;
-                font-size: 13px;
+                font-size: 16px;
+                font-weight: bold;
+                pointer-events: none;
+            }}
+
+            .circle-control {{
+                fill: white;
+                font-size: 11px;
                 font-weight: bold;
                 pointer-events: none;
             }}
@@ -307,35 +340,29 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 pointer-events: none;
             }}
 
-            .number-label {{
-                fill: #3366cc;
-                font-size: 13px;
-                font-weight: bold;
-            }}
-
             .panel-title {{
-                font-size: 20px;
+                font-size: 22px;
                 font-weight: bold;
                 color: #1f2933;
-                margin-bottom: 16px;
+                margin-bottom: 20px;
             }}
 
             .sub-title {{
-                font-size: 14px;
+                font-size: 15px;
                 font-weight: bold;
                 color: #1f2933;
                 margin-top: 16px;
-                margin-bottom: 6px;
+                margin-bottom: 8px;
             }}
 
             .content-box {{
                 border: 1px solid #d0d7de;
                 border-radius: 8px;
-                padding: 10px;
+                padding: 12px;
                 font-size: 13px;
-                line-height: 1.5;
+                line-height: 1.6;
                 color: #222;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
                 white-space: pre-wrap;
                 background: #ffffff;
             }}
@@ -343,7 +370,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
             .score-box {{
                 border: 1px solid #d0d7de;
                 border-radius: 8px;
-                padding: 10px;
+                padding: 12px;
                 margin-bottom: 10px;
                 background: #ffffff;
             }}
@@ -352,7 +379,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 display: flex;
                 justify-content: space-between;
                 font-size: 13px;
-                margin-bottom: 7px;
+                margin-bottom: 8px;
             }}
 
             .score-label {{
@@ -368,30 +395,35 @@ def create_svg_viewer(selected_id, source_text, mappings):
             .placeholder {{
                 color: #666;
                 font-size: 14px;
-                line-height: 1.6;
+                line-height: 1.7;
             }}
+
         </style>
+
     </head>
 
     <body>
+
         <div class="main-card">
 
             <div class="graph-section">
+
                 <svg width="{width}" height="{height}" viewBox="0 0 {width} {height}">
 
                     {svg_lines}
 
-                    <circle 
-                        cx="{center_x}" 
-                        cy="{center_y}" 
-                        r="{blue_radius}" 
+                    <!-- CENTER NODE -->
+                    <circle
+                        cx="{center_x}"
+                        cy="{center_y}"
+                        r="{blue_radius}"
                         fill="#0b72d9"
                     />
 
-                    <text 
-                        x="{center_x}" 
-                        y="{center_y}" 
-                        text-anchor="middle" 
+                    <text
+                        x="{center_x}"
+                        y="{center_y}"
+                        text-anchor="middle"
                         dominant-baseline="middle"
                         class="blue-label"
                     >
@@ -400,25 +432,41 @@ def create_svg_viewer(selected_id, source_text, mappings):
 
                     {svg_nodes}
 
-                    {svg_numbers}
-
                 </svg>
+
             </div>
 
             <div class="summary-section" id="summary-panel">
-                <div class="panel-title">Mapping Summary</div>
-                <div class="placeholder">
-                    Click on a green NIST control circle to view the ECC control, NIST control, scores, commonality, justification, and differences.
+
+                <div class="panel-title">
+                    Mapping Summary
                 </div>
+
+                <div class="placeholder">
+                    Click any green control circle to view:
+
+                    <br><br>
+
+                    • ECC Control  
+                    • NIST Control  
+                    • Scores  
+                    • Commonality  
+                    • Justification  
+                    • Differences
+                </div>
+
             </div>
 
         </div>
 
         <script>
+
             const mappingData = {mapping_json};
 
             function escapeHtml(text) {{
+
                 if (!text) return "N/A";
+
                 return String(text)
                     .replace(/&/g, "&amp;")
                     .replace(/</g, "&lt;")
@@ -428,7 +476,9 @@ def create_svg_viewer(selected_id, source_text, mappings):
             }}
 
             function updatePanel(nodeId) {{
+
                 const item = mappingData[nodeId];
+
                 const panel = document.getElementById("summary-panel");
 
                 if (!item) {{
@@ -436,53 +486,119 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 }}
 
                 panel.innerHTML = `
-                    <div class="panel-title">Mapping Summary</div>
 
-                    <div class="sub-title">Selected Mapping Number</div>
-                    <div class="content-box">
-                        <b>Number:</b> ${{escapeHtml(item.rank)}}
+                    <div class="panel-title">
+                        Mapping Summary
                     </div>
 
-                    <div class="sub-title">ECC Mapping Control</div>
-                    <div class="content-box">
-                        <b>ECC Control:</b> ${{escapeHtml(item.ecc_control)}}<br><br>
-                        <b>ECC Text:</b><br>${{escapeHtml(item.ecc_text)}}
+                    <div class="sub-title">
+                        Mapping Number
                     </div>
 
-                    <div class="sub-title">NIST Mapping Control</div>
                     <div class="content-box">
-                        <b>NIST Control:</b> ${{escapeHtml(item.nist_control)}}<br><br>
-                        <b>NIST Text:</b><br>${{escapeHtml(item.nist_text)}}
+                        <b>#${{escapeHtml(item.rank)}}</b>
                     </div>
 
-                    <div class="sub-title">Scores</div>
+                    <div class="sub-title">
+                        ECC Control
+                    </div>
+
+                    <div class="content-box">
+
+                        <b>${{escapeHtml(item.ecc_control)}}</b>
+
+                        <br><br>
+
+                        ${{escapeHtml(item.ecc_text)}}
+
+                    </div>
+
+                    <div class="sub-title">
+                        NIST Control
+                    </div>
+
+                    <div class="content-box">
+
+                        <b>${{escapeHtml(item.nist_control)}}</b>
+
+                        <br><br>
+
+                        ${{escapeHtml(item.nist_text)}}
+
+                    </div>
+
+                    <div class="sub-title">
+                        Scores
+                    </div>
+
                     <div class="score-box">
+
                         <div class="score-row">
-                            <span class="score-label">Final Score</span>
-                            <span class="score-value">${{escapeHtml(item.final)}} / ${{escapeHtml(item.final_percent)}}</span>
+                            <span class="score-label">
+                                Final Score
+                            </span>
+
+                            <span class="score-value">
+                                ${{escapeHtml(item.final)}} /
+                                ${{escapeHtml(item.final_percent)}}
+                            </span>
                         </div>
+
                         <div class="score-row">
-                            <span class="score-label">Embedding Score</span>
-                            <span class="score-value">${{escapeHtml(item.embedding)}} / ${{escapeHtml(item.embedding_percent)}}</span>
+                            <span class="score-label">
+                                Embedding
+                            </span>
+
+                            <span class="score-value">
+                                ${{escapeHtml(item.embedding)}} /
+                                ${{escapeHtml(item.embedding_percent)}}
+                            </span>
                         </div>
+
                         <div class="score-row">
-                            <span class="score-label">Ontology Score</span>
-                            <span class="score-value">${{escapeHtml(item.ontology)}} / ${{escapeHtml(item.ontology_percent)}}</span>
+                            <span class="score-label">
+                                Ontology
+                            </span>
+
+                            <span class="score-value">
+                                ${{escapeHtml(item.ontology)}} /
+                                ${{escapeHtml(item.ontology_percent)}}
+                            </span>
                         </div>
+
                     </div>
 
-                    <div class="sub-title">Commonality</div>
-                    <div class="content-box">${{escapeHtml(item.commonality)}}</div>
+                    <div class="sub-title">
+                        Commonality
+                    </div>
 
-                    <div class="sub-title">Justification</div>
-                    <div class="content-box">${{escapeHtml(item.justification)}}</div>
+                    <div class="content-box">
+                        ${{escapeHtml(item.commonality)}}
+                    </div>
 
-                    <div class="sub-title">Differences</div>
-                    <div class="content-box">${{escapeHtml(item.differences)}}</div>
+                    <div class="sub-title">
+                        Justification
+                    </div>
+
+                    <div class="content-box">
+                        ${{escapeHtml(item.justification)}}
+                    </div>
+
+                    <div class="sub-title">
+                        Differences
+                    </div>
+
+                    <div class="content-box">
+                        ${{escapeHtml(item.differences)}}
+                    </div>
+
                 `;
             }}
+
         </script>
+
     </body>
+
     </html>
     """
 
@@ -490,22 +606,20 @@ def create_svg_viewer(selected_id, source_text, mappings):
 
 
 # -------------------------
-# Load data
+# Load Data
 # -------------------------
 DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
 if os.path.exists(DATA_FILE):
 
     df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
+
     df.columns = [c.strip() for c in df.columns]
 
     if "ECC id control" not in df.columns:
-        st.error("Column 'ECC id control' was not found in the CSV file.")
+        st.error("Column 'ECC id control' was not found.")
         st.stop()
 
-    # -------------------------
-    # Sidebar controls only
-    # -------------------------
     st.sidebar.title("Controls")
 
     control_ids = sorted(
@@ -513,44 +627,26 @@ if os.path.exists(DATA_FILE):
         key=natural_control_sort
     )
 
-    selected_id = st.sidebar.radio("Select Control ID", control_ids)
-
-    row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
-    source_text = safe_value(row.get("Source Text", ""))
-
-    # -------------------------
-    # Header styling
-    # -------------------------
-    st.markdown(
-        """
-        <style>
-            div[data-testid="stRadio"] div[role="radiogroup"] {
-                display: flex;
-                flex-direction: row;
-                gap: 16px;
-                align-items: center;
-                margin-top: -58px;
-                margin-left: 24px;
-            }
-
-            div[data-testid="stRadio"] div[role="radiogroup"] label {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                font-size: 14px;
-            }
-
-            div[data-testid="stRadio"] > label {
-                display: none;
-            }
-        </style>
-        """,
-        unsafe_allow_html=True
+    selected_id = st.sidebar.radio(
+        "Select Control ID",
+        control_ids
     )
 
-    header_col1, header_col2 = st.columns([3.3, 1.5])
+    row = df[
+        df["ECC id control"].astype(str) == str(selected_id)
+    ].iloc[0]
+
+    source_text = safe_value(
+        row.get("Source Text", "")
+    )
+
+    # -------------------------
+    # Header
+    # -------------------------
+    header_col1, header_col2 = st.columns([3.5, 1.5])
 
     with header_col1:
+
         st.markdown(
             f"""
             <div style="
@@ -558,22 +654,35 @@ if os.path.exists(DATA_FILE):
                 border:1px solid #e0e0e0;
                 border-right:0;
                 border-radius:10px 0 0 10px;
-                padding:18px 24px;
-                min-height:126px;
-                box-sizing:border-box;
+                padding:24px;
+                margin-bottom:10px;
+                min-height:125px;
             ">
-                <h1 style="margin:0; font-size:34px; color:#1f2933;">
+
+                <h1 style="
+                    margin:0;
+                    font-size:34px;
+                    color:#1f2933;
+                ">
                     NCA-NIST Control Mapping Viewer
                 </h1>
-                <p style="margin-top:28px;color:#4b5563;font-size:15px;">
-                    Viewing mappings for: <b>{selected_id}</b>
+
+                <p style="
+                    margin-top:28px;
+                    color:#4b5563;
+                    font-size:16px;
+                ">
+                    Viewing mappings for:
+                    <b>{selected_id}</b>
                 </p>
+
             </div>
             """,
             unsafe_allow_html=True
         )
 
     with header_col2:
+
         st.markdown(
             """
             <div style="
@@ -581,42 +690,53 @@ if os.path.exists(DATA_FILE):
                 border:1px solid #e0e0e0;
                 border-left:0;
                 border-radius:0 10px 10px 0;
-                padding:18px 24px 0 24px;
-                min-height:126px;
-                box-sizing:border-box;
+                padding:24px;
+                margin-bottom:-18px;
+                min-height:125px;
             ">
+
                 <p style="
-                    margin:0 0 10px 0;
+                    margin:0;
                     font-weight:bold;
                     color:#1f2933;
-                    font-size:15px;
+                    font-size:16px;
                 ">
-                    Number of mappings
+                    Number of circles
                 </p>
+
             </div>
             """,
             unsafe_allow_html=True
         )
 
+        # COUNTER 1 → 10
         top_k = st.radio(
-            "Number of mappings",
-            [1, 2, 3, 4, 5],
+            "Number of circles",
+            list(range(1, 11)),
             index=4,
             horizontal=True,
             label_visibility="collapsed"
         )
 
-    mappings = extract_mappings(row, df, top_k=top_k)
+    mappings = extract_mappings(
+        row,
+        df,
+        top_k=top_k
+    )
 
     st.markdown(
         f"""
         <div style="
-            margin-top:-10px;
-            margin-bottom:10px;
+            margin-top:-14px;
+            margin-bottom:14px;
             color:#4b5563;
             font-size:15px;
         ">
-            <b>{len(mappings)}</b> recommended mapping(s)
+
+            Showing
+            <b>{len(mappings)}</b>
+            recommended mapping(s).
+
         </div>
         """,
         unsafe_allow_html=True
@@ -628,8 +748,42 @@ if os.path.exists(DATA_FILE):
         mappings=mappings
     )
 
-    components.html(viewer_html, height=540, scrolling=False)
+    components.html(
+        viewer_html,
+        height=640,
+        scrolling=False
+    )
+
+    # -------------------------
+    # SUMMARY TABLE
+    # -------------------------
+    st.markdown("## Results Summary")
+
+    summary_data = []
+
+    for idx, item in enumerate(mappings, start=1):
+
+        summary_data.append({
+            "Rank": idx,
+            "NIST Control": item["mapping"],
+            "Final Score": format_percent(item["final"]),
+            "Embedding": format_percent(item["embedding"]),
+            "Ontology": format_percent(item["ontology"])
+        })
+
+    summary_df = pd.DataFrame(summary_data)
+
+    st.dataframe(
+        summary_df,
+        use_container_width=True,
+        hide_index=True
+    )
 
 else:
-    st.error("CSV file not found. Make sure this file is in the same folder as mapviewer.py:")
+
+    st.error(
+        "CSV file not found. "
+        "Make sure this file is in the same folder as mapviewer.py:"
+    )
+
     st.code(DATA_FILE)
