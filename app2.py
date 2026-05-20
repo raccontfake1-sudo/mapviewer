@@ -503,6 +503,9 @@ if os.path.exists(DATA_FILE):
         st.error("Column 'ECC id control' was not found in the CSV file.")
         st.stop()
 
+    # -------------------------
+    # Sidebar controls only
+    # -------------------------
     st.sidebar.title("Controls")
 
     control_ids = sorted(
@@ -516,9 +519,36 @@ if os.path.exists(DATA_FILE):
     source_text = safe_value(row.get("Source Text", ""))
 
     # -------------------------
-    # Header with number selector beside Viewing mappings text
+    # Header styling
     # -------------------------
-    header_col1, header_col2 = st.columns([4, 1.2])
+    st.markdown(
+        """
+        <style>
+            div[data-testid="stRadio"] div[role="radiogroup"] {
+                display: flex;
+                flex-direction: row;
+                gap: 16px;
+                align-items: center;
+                margin-top: -58px;
+                margin-left: 24px;
+            }
+
+            div[data-testid="stRadio"] div[role="radiogroup"] label {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 14px;
+            }
+
+            div[data-testid="stRadio"] > label {
+                display: none;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    header_col1, header_col2 = st.columns([3.3, 1.5])
 
     with header_col1:
         st.markdown(
@@ -529,8 +559,8 @@ if os.path.exists(DATA_FILE):
                 border-right:0;
                 border-radius:10px 0 0 10px;
                 padding:18px 24px;
-                margin-bottom:10px;
-                min-height:125px;
+                min-height:126px;
+                box-sizing:border-box;
             ">
                 <h1 style="margin:0; font-size:34px; color:#1f2933;">
                     NCA-NIST Control Mapping Viewer
@@ -551,12 +581,17 @@ if os.path.exists(DATA_FILE):
                 border:1px solid #e0e0e0;
                 border-left:0;
                 border-radius:0 10px 10px 0;
-                padding:18px 18px 0 18px;
-                margin-bottom:-18px;
-                min-height:67px;
+                padding:18px 24px 0 24px;
+                min-height:126px;
+                box-sizing:border-box;
             ">
-                <p style="margin:0; font-weight:bold; color:#1f2933; font-size:15px;">
-                    Number of circles
+                <p style="
+                    margin:0 0 10px 0;
+                    font-weight:bold;
+                    color:#1f2933;
+                    font-size:15px;
+                ">
+                    Number of mappings
                 </p>
             </div>
             """,
@@ -564,7 +599,7 @@ if os.path.exists(DATA_FILE):
         )
 
         top_k = st.radio(
-            "Number of circles",
+            "Number of mappings",
             [1, 2, 3, 4, 5],
             index=4,
             horizontal=True,
@@ -576,12 +611,12 @@ if os.path.exists(DATA_FILE):
     st.markdown(
         f"""
         <div style="
-            margin-top:-14px;
+            margin-top:-10px;
             margin-bottom:10px;
             color:#4b5563;
             font-size:15px;
         ">
-            Showing <b>{len(mappings)}</b> recommended mapping(s).
+            <b>{len(mappings)}</b> recommended mapping(s)
         </div>
         """,
         unsafe_allow_html=True
