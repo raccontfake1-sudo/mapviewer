@@ -1,7 +1,0 @@
-streamlit
-pandas
-pyvis
-networkx
-groq
-python-dotenv
-tqdm
