@@ -210,7 +210,6 @@ def create_svg_viewer(selected_id, source_text, mappings):
             />
         """
 
-        # Number above each green circle
         svg_numbers += f"""
             <text 
                 x="{x}" 
@@ -513,36 +512,76 @@ if os.path.exists(DATA_FILE):
 
     selected_id = st.sidebar.radio("Select Control ID", control_ids)
 
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("Number of mappings")
-
-    top_k = st.sidebar.radio(
-        "Show top mappings",
-        [1, 2, 3, 4, 5],
-        index=4
-    )
-
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
-
     source_text = safe_value(row.get("Source Text", ""))
+
+    # -------------------------
+    # Header with number selector beside Viewing mappings text
+    # -------------------------
+    header_col1, header_col2 = st.columns([4, 1.2])
+
+    with header_col1:
+        st.markdown(
+            f"""
+            <div style="
+                background-color:white;
+                border:1px solid #e0e0e0;
+                border-right:0;
+                border-radius:10px 0 0 10px;
+                padding:18px 24px;
+                margin-bottom:10px;
+                min-height:125px;
+            ">
+                <h1 style="margin:0; font-size:34px; color:#1f2933;">
+                    NCA-NIST Control Mapping Viewer
+                </h1>
+                <p style="margin-top:28px;color:#4b5563;font-size:15px;">
+                    Viewing mappings for: <b>{selected_id}</b>
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with header_col2:
+        st.markdown(
+            """
+            <div style="
+                background-color:white;
+                border:1px solid #e0e0e0;
+                border-left:0;
+                border-radius:0 10px 10px 0;
+                padding:18px 18px 0 18px;
+                margin-bottom:-18px;
+                min-height:67px;
+            ">
+                <p style="margin:0; font-weight:bold; color:#1f2933; font-size:15px;">
+                    Number of circles
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        top_k = st.radio(
+            "Number of circles",
+            [1, 2, 3, 4, 5],
+            index=4,
+            horizontal=True,
+            label_visibility="collapsed"
+        )
 
     mappings = extract_mappings(row, df, top_k=top_k)
 
     st.markdown(
         f"""
         <div style="
-            background-color:white;
-            border:1px solid #e0e0e0;
-            border-radius:10px;
-            padding:18px 24px;
+            margin-top:-14px;
             margin-bottom:10px;
+            color:#4b5563;
+            font-size:15px;
         ">
-            <h1 style="margin:0; font-size:34px; color:#1f2933;">
-                NCA-NIST Control Mapping Viewer
-            </h1>
-            <p style="margin-top:6px;color:#4b5563;font-size:15px;">
-                Viewing mappings for: <b>{selected_id}</b> ({len(mappings)} recommended mappings)
-            </p>
+            Showing <b>{len(mappings)}</b> recommended mapping(s).
         </div>
         """,
         unsafe_allow_html=True
