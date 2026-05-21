@@ -691,7 +691,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
 # -------------------------
 # Load data
 # -------------------------
-DATA_FILE = "final_with_explanations_COMPLETE.csv"
+DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
 if os.path.exists(DATA_FILE):
 
@@ -769,10 +769,10 @@ if os.path.exists(DATA_FILE):
             unsafe_allow_html=True
         )
 
-        # ---- Counter 1–10 (select_slider gives a compact single-line picker) ----
+        # ---- Counter 1–5 ----
         top_k = st.select_slider(
             "Number of circles",
-            options=list(range(1, 11)),
+            options=list(range(1, 6)),
             value=5,
             label_visibility="collapsed"
         )
