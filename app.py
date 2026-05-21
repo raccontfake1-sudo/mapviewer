@@ -251,7 +251,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
             "final_percent": format_percent(item["final"]),
             "embedding": format_decimal(item["embedding"]),
             "embedding_percent": format_percent(item["embedding"]),
-            "ontology": format_decimal(item["ontology score"]),
+            "ontology": format_decimal(item["ontology"]),
             "ontology_percent": format_percent(item["ontology"]),
             "commonality": item["commonality"],
             "justification": item["justification"],
