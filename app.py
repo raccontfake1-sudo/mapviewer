@@ -716,7 +716,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
 # -------------------------
 # Load data
 # -------------------------
-DATA_FILE = "final_with_explanations_COMPLETE.csv"
+DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
 if os.path.exists(DATA_FILE):
 
@@ -744,11 +744,39 @@ if os.path.exists(DATA_FILE):
     source_text_col = find_col(list(df.columns), "Source Text")
     source_text = safe_value(row.get(source_text_col, "") if source_text_col else "")
 
-    # Debug expander — helps verify actual column names from the CSV
+    # Debug expander — shows real CSV column names AND score lookup results
     with st.sidebar.expander("🔍 Debug: CSV columns"):
-        st.write("**Columns found in CSV:**")
+        st.write("**All columns in CSV:**")
         for c in df.columns:
             st.write(f"• `{c}`")
+
+        st.write("---")
+        st.write("**Score column lookup for mapping 1:**")
+        for label, target in [
+            ("Final Score",     "Final Score"),
+            ("Embedding Score", "Embedding Score"),
+            ("Ontology Score",  "Ontology Score"),
+        ]:
+            found = find_col(list(df.columns), target)
+            if found:
+                raw_val = row.get(found, "N/A")
+                st.success(f"✅ `{target}` → `{found}` = `{raw_val}`")
+            else:
+                st.error(f"❌ `{target}` → NOT FOUND")
+
+        st.write("---")
+        st.write("**Score column lookup for mapping 2:**")
+        for label, target in [
+            ("Final Score 2",     "Final Score 2"),
+            ("Embedding Score 2", "Embedding Score 2"),
+            ("Ontology Score 2",  "Ontology Score 2"),
+        ]:
+            found = find_col(list(df.columns), target)
+            if found:
+                raw_val = row.get(found, "N/A")
+                st.success(f"✅ `{target}` → `{found}` = `{raw_val}`")
+            else:
+                st.error(f"❌ `{target}` → NOT FOUND")
 
     # -------------------------
     # Header — number selector fills the right box better
