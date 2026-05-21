@@ -691,7 +691,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
 # -------------------------
 # Load data
 # -------------------------
-DATA_FILE = "final_owl_ontology_refined_mappings.csv"
+DATA_FILE = "final_with_explanations_COMPLETE.csv"
 
 if os.path.exists(DATA_FILE):
 
