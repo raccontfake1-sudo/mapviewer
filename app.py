@@ -194,7 +194,7 @@ def extract_mappings(row, df, top_k=5):
             "text": safe_value(row.get(cols["text"], "")),
             "final": final_score,
             "embedding": embedding_score,
-            "ontology score": ontology_score,
+            "ontology": ontology_score,
             "commonality": safe_value(row.get(cols["commonality"], "")),
             "justification": safe_value(row.get(cols["justification"], "")),
             "differences": safe_value(
