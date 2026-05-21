@@ -179,8 +179,8 @@ def extract_mappings(row, df, top_k=5):
         )
 
         ontology_score = (
-            parse_score(row.get(cols["ontology"], 0))
-            if cols["ontology"] in df.columns
+            parse_score(row.get(cols["ontology score"], 0))
+            if cols["ontology score"] in df.columns
             else 0.0
         )
 
@@ -194,7 +194,7 @@ def extract_mappings(row, df, top_k=5):
             "text": safe_value(row.get(cols["text"], "")),
             "final": final_score,
             "embedding": embedding_score,
-            "ontology": ontology_score,
+            "ontology score": ontology_score,
             "commonality": safe_value(row.get(cols["commonality"], "")),
             "justification": safe_value(row.get(cols["justification"], "")),
             "differences": safe_value(
@@ -251,7 +251,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
             "final_percent": format_percent(item["final"]),
             "embedding": format_decimal(item["embedding"]),
             "embedding_percent": format_percent(item["embedding"]),
-            "ontology": format_decimal(item["ontology"]),
+            "ontology": format_decimal(item["ontology score"]),
             "ontology_percent": format_percent(item["ontology"]),
             "commonality": item["commonality"],
             "justification": item["justification"],
