@@ -63,7 +63,7 @@ def get_mapping_columns(i):
         "mapping": f"NIST mapping{suffix}",
         "text": f"Text{suffix}",
         "final": f"Final Score{suffix}",
-        "embedding": f"Embedding score{suffix}",
+        "embedding": f"Dense{suffix}",
         "ontology": f"Ontology Score{suffix}",
         "commonality": f"Commonality{suffix}",
         "justification": f"Justification{suffix}",
