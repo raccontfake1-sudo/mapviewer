@@ -179,8 +179,8 @@ def extract_mappings(row, df, top_k=5):
         )
 
         ontology_score = (
-            parse_score(row.get(cols["ontology score"], 0))
-            if cols["ontology score"] in df.columns
+            parse_score(row.get(cols["ontology"], 0))
+            if cols["ontology"] in df.columns
             else 0.0
         )
 
