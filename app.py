@@ -71,6 +71,30 @@ def get_mapping_columns(i):
     }
 
 
+def find_col(df_columns, target):
+    """
+    Fuzzy column finder: matches ignoring case, extra spaces, and common
+    variations like 'FinalScore' vs 'Final Score' vs 'final_score'.
+    Returns the actual column name found in df, or None.
+    """
+    def normalise(s):
+        return re.sub(r"[\s_]+", "", s).lower()
+
+    target_norm = normalise(target)
+    for col in df_columns:
+        if normalise(col) == target_norm:
+            return col
+    return None
+
+
+def safe_get_score(row, df_columns, col_name):
+    """Get a score value using fuzzy column matching."""
+    actual = find_col(df_columns, col_name)
+    if actual is None:
+        return 0.0
+    return parse_score(row.get(actual, 0))
+
+
 def natural_control_sort(value):
     value = str(value).strip()
     parts = re.split(r"[.\-_\s]+", value)
@@ -160,45 +184,46 @@ def short_mapping_label(mapping):
 
 def extract_mappings(row, df, top_k=5):
     results = []
+    df_cols = list(df.columns)
 
     for i in range(1, 11):
         cols = get_mapping_columns(i)
 
-        if cols["mapping"] not in df.columns:
+        # Use fuzzy match for the mapping column itself
+        actual_mapping_col = find_col(df_cols, cols["mapping"])
+        if actual_mapping_col is None:
             continue
 
-        if pd.isna(row.get(cols["mapping"])):
+        val = row.get(actual_mapping_col)
+        if pd.isna(val) or str(val).strip() == "":
             continue
 
-        final_score = parse_score(row.get(cols["final"], 0))
+        # Use fuzzy match for every score column
+        final_score    = safe_get_score(row, df_cols, cols["final"])
+        embedding_score = safe_get_score(row, df_cols, cols["embedding"])
+        ontology_score  = safe_get_score(row, df_cols, cols["ontology"])
 
-        embedding_score = (
-            parse_score(row.get(cols["embedding"], 0))
-            if cols["embedding"] in df.columns
-            else 0.0
-        )
+        # Text, commonality, justification, differences — fuzzy too
+        actual_text = find_col(df_cols, cols["text"])
+        actual_comm = find_col(df_cols, cols["commonality"])
+        actual_just = find_col(df_cols, cols["justification"])
+        actual_diff = find_col(df_cols, cols["differences"])
 
-        ontology_score = (
-            parse_score(row.get(cols["ontology"], 0))
-            if cols["ontology"] in df.columns
-            else 0.0
-        )
-
-        raw_mapping = safe_value(row.get(cols["mapping"], ""))
+        raw_mapping = safe_value(row.get(actual_mapping_col, ""))
         code, name = short_mapping_label(raw_mapping)
 
         results.append({
-            "mapping": raw_mapping,
+            "mapping":    raw_mapping,
             "short_code": code,
             "short_name": name,
-            "text": safe_value(row.get(cols["text"], "")),
-            "final": final_score,
-            "embedding": embedding_score,
-            "ontology": ontology_score,
-            "commonality": safe_value(row.get(cols["commonality"], "")),
-            "justification": safe_value(row.get(cols["justification"], "")),
+            "text":        safe_value(row.get(actual_text, "") if actual_text else ""),
+            "final":       final_score,
+            "embedding":   embedding_score,
+            "ontology":    ontology_score,
+            "commonality": safe_value(row.get(actual_comm, "") if actual_comm else ""),
+            "justification": safe_value(row.get(actual_just, "") if actual_just else ""),
             "differences": safe_value(
-                row.get(cols["differences"], ""),
+                row.get(actual_diff, "") if actual_diff else "",
                 "The controls differ in implementation focus and specific requirements."
             )
         })
@@ -691,7 +716,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
 # -------------------------
 # Load data
 # -------------------------
-DATA_FILE = "final_with_explanations_COMPLETE.csv"
+DATA_FILE = "final_ontology_refined_mappings_with_explanations.csv"
 
 if os.path.exists(DATA_FILE):
 
@@ -716,7 +741,14 @@ if os.path.exists(DATA_FILE):
     )
 
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
-    source_text = safe_value(row.get("Source Text", ""))
+    source_text_col = find_col(list(df.columns), "Source Text")
+    source_text = safe_value(row.get(source_text_col, "") if source_text_col else "")
+
+    # Debug expander — helps verify actual column names from the CSV
+    with st.sidebar.expander("🔍 Debug: CSV columns"):
+        st.write("**Columns found in CSV:**")
+        for c in df.columns:
+            st.write(f"• `{c}`")
 
     # -------------------------
     # Header — number selector fills the right box better
