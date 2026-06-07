@@ -822,7 +822,7 @@ if os.path.exists(DATA_FILE):
                 justify-content:center;
             ">
                 <p style="margin:0 0 8px 0; font-weight:bold; color:#1f2933; font-size:16px;">
-                    Number of circles
+                    Top-K Recommendations
                 </p>
             </div>
             """,
@@ -831,7 +831,7 @@ if os.path.exists(DATA_FILE):
 
         # ---- Counter 1–5 ----
         top_k = st.select_slider(
-            "Number of circles",
+            "Top-K Recommendations",
             options=list(range(1, 6)),
             value=5,
             label_visibility="collapsed"
@@ -862,6 +862,92 @@ if os.path.exists(DATA_FILE):
     # Extra height to show the summary table below the graph
     components.html(viewer_html, height=700, scrolling=False)
 
+    # ==========================================
+# CAPSTONE DEMO FEATURES
+# ==========================================
+
+st.markdown("---")
+st.subheader("System Features")
+
+# Processing Bar
+st.markdown("### Processing Status")
+
+progress_steps = [
+    "✓ Loading ECC Control",
+    "✓ Loading NIST Controls",
+    "✓ Extracting Metadata",
+    "✓ Generating Semantic Embeddings",
+    "✓ Applying Ontology Scoring",
+    "✓ Computing Confidence Match",
+    "✓ Generating AI Explanation",
+    "✓ Returning Top-K Results"
+]
+
+for step in progress_steps:
+    st.success(step)
+
+st.markdown("---")
+
+# Domain Name
+st.markdown("### Domain")
+st.info("Governance")
+
+# Confidence Color
+best_score = mappings[0]["final"] if mappings else 0
+
+st.markdown("### Confidence Level")
+
+if best_score >= 0.85:
+    st.success("🟢 High Match")
+elif best_score >= 0.70:
+    st.warning("🟡 Medium Match")
+else:
+    st.error("🔴 Low Match")
+
+# Relationship Type
+st.markdown("### Relationship Type")
+
+if best_score >= 0.85:
+    relationship = "Equivalent Match"
+elif best_score >= 0.70:
+    relationship = "Partial Match"
+else:
+    relationship = "Related Match"
+
+st.info(relationship)
+
+# Top-K Recommendations
+st.markdown("### Top-K Recommendations")
+
+recommendations = pd.DataFrame([
+    {
+        "Rank": i + 1,
+        "NIST Control": m["mapping"],
+        "Score": round(m["final"], 2)
+    }
+    for i, m in enumerate(mappings)
+])
+
+st.dataframe(
+    recommendations,
+    use_container_width=True
+)
+
+# Export Report
+st.markdown("### Export Mapping Report")
+
+export_df = pd.DataFrame(mappings)
+
+csv = export_df.to_csv(index=False)
+
+st.download_button(
+    label="Export Mapping Report",
+    data=csv,
+    file_name=f"{selected_id}_mapping_report.csv",
+    mime="text/csv"
+)
+
 else:
     st.error("CSV file not found. Make sure this file is in the same folder as mapviewer.py:")
     st.code(DATA_FILE)
+
