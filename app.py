@@ -864,7 +864,7 @@ if os.path.exists(DATA_FILE):
     )
 
     # Extra height to show the summary table below the graph
-    with st.sidebar.expander("⚙️ Processing Pipeline"):
+with st.sidebar.expander("⚙️ Processing Pipeline"):
     st.write("✓ Loading ECC Control")
     st.write("✓ Loading NIST Controls")
     st.write("✓ Extracting Metadata")
