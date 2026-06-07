@@ -864,15 +864,18 @@ if os.path.exists(DATA_FILE):
     )
 
     # Extra height to show the summary table below the graph
-with st.sidebar.expander("⚙️ Processing Pipeline"):
-    st.write("✓ Loading ECC Control")
-    st.write("✓ Loading NIST Controls")
-    st.write("✓ Extracting Metadata")
-    st.write("✓ Generating Semantic Embeddings")
-    st.write("✓ Applying Ontology Scoring")
-    st.write("✓ Computing Confidence Match")
-    st.write("✓ Generating AI Explanation")
-    st.write("✓ Returning Top-K Results")
+    # Extra height to show the summary table below the graph
+
+    with st.sidebar.expander("⚙️ Processing Pipeline"):
+        st.write("✓ Loading ECC Control")
+        st.write("✓ Loading NIST Controls")
+        st.write("✓ Extracting Metadata")
+        st.write("✓ Generating Semantic Embeddings")
+        st.write("✓ Applying Ontology Scoring")
+        st.write("✓ Computing Confidence Match")
+        st.write("✓ Generating AI Explanation")
+        st.write("✓ Returning Top-K Results")
+
     components.html(viewer_html, height=700, scrolling=False)
 
 
