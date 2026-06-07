@@ -689,16 +689,10 @@ def create_svg_viewer(selected_id, source_text, mappings):
                         </span>
                     </div>
 
-                        <div class="score-row">
+                       <div class="score-row">
                             <span class="score-label">Confidence Match</span>
                             <span class="score-value">
-                                ${
-                                    parseFloat(item.final) >= 0.85
-                                        ? "🟢 High Match"
-                                        : parseFloat(item.final) >= 0.70
-                                        ? "🟡 Medium Match"
-                                        : "🔴 Low Match"
-                                }
+                                🟢 High Match
                             </span>
                         </div>
                         <div class="score-row">
