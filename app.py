@@ -949,7 +949,7 @@ if os.path.exists(DATA_FILE):
     with col_graph:
         components.html(viewer_html, height=700, scrolling=False)
 
-    st.markdown("### 📄 Export Mapping Report")
+    st.markdown("###Export Mapping Report")
 
     export_df = pd.DataFrame(mappings)
 
