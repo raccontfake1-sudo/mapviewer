@@ -949,6 +949,19 @@ if os.path.exists(DATA_FILE):
     with col_graph:
         components.html(viewer_html, height=700, scrolling=False)
 
+    st.markdown("### 📄 Export Mapping Report")
+
+    export_df = pd.DataFrame(mappings)
+
+    csv = export_df.to_csv(index=False)
+
+    st.download_button(
+        label="📥 Export Report",
+        data=csv,
+        file_name=f"{selected_id}_mapping_report.csv",
+        mime="text/csv"
+    )
+
 
 else:
     st.error("CSV file not found. Make sure this file is in the same folder as mapviewer.py:")
