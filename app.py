@@ -8,11 +8,6 @@ import html
 import re
 import time
 
-]:
-    progress_bar.progress(pct)
-    status_text.write(msg)
-    time.sleep(0.15)
-
 st.set_page_config(page_title="NCA-NIST Control Mapping Viewer", layout="wide")
 
 st.markdown(
