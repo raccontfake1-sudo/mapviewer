@@ -869,25 +869,35 @@ if os.path.exists(DATA_FILE):
     with col_status:
         st.markdown("### Processing")
 
-        progress_bar = st.progress(0)
-        status_text = st.empty()
+        pipeline_box = st.empty()
 
         steps = [
-            (10, "Loading ECC Control"),
-            (25, "Loading NIST Controls"),
-            (40, "Extracting Metadata"),
-            (55, "Generating Semantic Embeddings"),
-            (70, "Applying Ontology Scoring"),
-            (85, "Generating AI Explanation"),
-            (100, "Returning Top-K Results")
+            "Loading ECC Control",
+            "Loading NIST Controls",
+            "Extracting Metadata",
+            "Generating Semantic Embeddings",
+            "Applying Ontology Scoring",
+            "Computing Confidence Match",
+            "Generating AI Explanation",
+            "Returning Top-K Results"
         ]
 
-        for pct, msg in steps:
-            progress_bar.progress(pct)
-            status_text.text(msg)
-            time.sleep(0.15)
+        completed = []
 
-        status_text.text("✓ Mapping Complete")
+
+        for step in steps:
+            completed.append(step)
+
+            html_content = ""
+            for s in steps:
+                if s in completed:
+                    html_content += f"✅ {s}<br>"
+                else:
+                    html_content += f"⬜ {s}<br>"
+
+            pipeline_box.markdown(html_content, unsafe_allow_html=True)
+            time.sleep(0.2)
+            
 
     # Extra height to show the summary table below the graph
     # Extra height to show the summary table below the graph
