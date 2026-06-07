@@ -679,6 +679,16 @@ def create_svg_viewer(selected_id, source_text, mappings):
                         <b>NIST Control:</b> ${{escapeHtml(item.nist_control)}}<br><br>
                     <div class="score-row">
                         <span class="score-label">Domain</span>
+                    <div class="score-row">
+                        <span class="score-label">Relationship</span>
+                        <span class="score-value">
+                            ${{
+                                parseFloat(item.final) >= 0.85 ? "Strong Match" :
+                                parseFloat(item.final) >= 0.70 ? "Moderate Match" :
+                                "Weak Match"
+                            }}
+                        </span>
+                    </div>
                         <span class="score-value">
                             ${{
                                 item.nist_control.startsWith("GV") ? "Govern" :
