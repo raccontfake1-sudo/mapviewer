@@ -8,7 +8,7 @@ import html
 import re
 import time
 
-st.set_page_config(page_title="NCA-NIST Control Mapping Viewer", layout="wide")
+st.set_page_config(page_title="ECC-NIST Control Mapping Viewer", layout="wide")
 
 st.markdown(
     """
