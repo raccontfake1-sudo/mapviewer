@@ -867,7 +867,7 @@ if os.path.exists(DATA_FILE):
     col_graph, col_status = st.columns([4,1])
 
     with col_status:
-        st.markdown("### Processing")
+        st.markdown("### Processing Status")
 
         pipeline_box = st.empty()
 
