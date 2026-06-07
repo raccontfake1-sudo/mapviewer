@@ -677,6 +677,20 @@ def create_svg_viewer(selected_id, source_text, mappings):
                     <div class="sub-title">NIST Mapping Control</div>
                     <div class="content-box">
                         <b>NIST Control:</b> ${{escapeHtml(item.nist_control)}}<br><br>
+                    <div class="score-row">
+                        <span class="score-label">Domain</span>
+                        <span class="score-value">
+                            ${
+                                item.nist_control.startsWith("GV") ? "Govern" :
+                                item.nist_control.startsWith("ID") ? "Identify" :
+                                item.nist_control.startsWith("PR") ? "Protect" :
+                                item.nist_control.startsWith("DE") ? "Detect" :
+                                item.nist_control.startsWith("RS") ? "Respond" :
+                                item.nist_control.startsWith("RC") ? "Recover" :
+                                "Unknown"
+                            }
+                        </span>
+                    </div>
                         <b>NIST Text:</b><br>${{escapeHtml(item.nist_text)}}
                     </div>
 
