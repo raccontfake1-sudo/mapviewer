@@ -801,7 +801,7 @@ if os.path.exists(DATA_FILE):
                 min-height:125px;
             ">
                 <h1 style="margin:0; font-size:34px; color:#1f2933;">
-                    NCA-NIST Control Mapping Viewer
+                    ECC-NIST Control Mapping Viewer
                 </h1>
                 <p style="margin-top:28px;color:#4b5563;font-size:15px;">
                     Viewing mappings for: <b>{selected_id}</b>
