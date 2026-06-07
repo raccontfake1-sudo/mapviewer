@@ -685,11 +685,11 @@ def create_svg_viewer(selected_id, source_text, mappings):
                         <div class="score-row">
                         <span class="score-label">Final Score</span>
                         <span class="score-value">
-                            ${escapeHtml(item.final)} / ${escapeHtml(item.final_percent)}
+                            ${{escapeHtml(item.final)}} / ${{escapeHtml(item.final_percent)}}
                         </span>
                     </div>
 
-                       <div class="score-row">
+                        <div class="score-row">
                             <span class="score-label">Confidence Match</span>
                             <span class="score-value">
                                 🟢 High Match
