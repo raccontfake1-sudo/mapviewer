@@ -872,20 +872,22 @@ if os.path.exists(DATA_FILE):
         progress_bar = st.progress(0)
         status_text = st.empty()
 
-        for pct, msg in [
+        steps = [
             (10, "Loading ECC Control"),
             (25, "Loading NIST Controls"),
             (40, "Extracting Metadata"),
             (55, "Generating Semantic Embeddings"),
             (70, "Applying Ontology Scoring"),
             (85, "Generating AI Explanation"),
-            (100, "Complete")
-        ]:
+            (100, "Returning Top-K Results")
+        ]
+
+        for pct, msg in steps:
             progress_bar.progress(pct)
-            status_text.write(msg)
+            status_text.text(msg)
             time.sleep(0.15)
 
-        status_text.success("Mapping Complete")
+        status_text.text("✓ Mapping Complete")
 
     # Extra height to show the summary table below the graph
     # Extra height to show the summary table below the graph
