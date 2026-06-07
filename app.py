@@ -8,14 +8,6 @@ import html
 import re
 import time
 
-for pct, msg in [
-    (10, "Loading ECC Control"),
-    (25, "Loading NIST Controls"),
-    (40, "Extracting Metadata"),
-    (55, "Generating Semantic Embeddings"),
-    (70, "Applying Ontology Scoring"),
-    (85, "Generating AI Explanation"),
-    (100, "Complete")
 ]:
     progress_bar.progress(pct)
     status_text.write(msg)
