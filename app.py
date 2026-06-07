@@ -898,7 +898,7 @@ if os.path.exists(DATA_FILE):
    
 
     with col_graph:
-    components.html(viewer_html, height=700, scrolling=False)
+        components.html(viewer_html, height=700, scrolling=False)
 
 
 else:
