@@ -863,19 +863,41 @@ if os.path.exists(DATA_FILE):
         mappings=mappings
     )
 
+    col_graph, col_status = st.columns([4,1])
+
+    with col_status:
+        st.markdown("### Processing")
+
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+
+        progress_bar.progress(10)
+        status_text.write("Loading ECC Control")
+
+        progress_bar.progress(25)
+        status_text.write("Loading NIST Controls")
+
+        progress_bar.progress(40)
+        status_text.write("Extracting Metadata")
+
+        progress_bar.progress(55)
+        status_text.write("Generating Semantic Embeddings")
+
+        progress_bar.progress(70)
+        status_text.write("Applying Ontology Scoring")
+
+        progress_bar.progress(85)
+        status_text.write("Generating AI Explanation")
+
+        progress_bar.progress(100)
+        status_text.success("Complete")
+
     # Extra height to show the summary table below the graph
     # Extra height to show the summary table below the graph
 
-    with st.sidebar.expander("⚙️ Processing Pipeline"):
-        st.write("✓ Loading ECC Control")
-        st.write("✓ Loading NIST Controls")
-        st.write("✓ Extracting Metadata")
-        st.write("✓ Generating Semantic Embeddings")
-        st.write("✓ Applying Ontology Scoring")
-        st.write("✓ Computing Confidence Match")
-        st.write("✓ Generating AI Explanation")
-        st.write("✓ Returning Top-K Results")
+   
 
+    with col_graph:
     components.html(viewer_html, height=700, scrolling=False)
 
 
