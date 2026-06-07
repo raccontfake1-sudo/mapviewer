@@ -730,7 +730,7 @@ if os.path.exists(DATA_FILE):
     st.sidebar.title("Controls")
 
    search_term = st.sidebar.text_input(
-    "🔍 Search ECC Control"
+    "Search ECC Control"
     )    
 
     control_ids = sorted(
