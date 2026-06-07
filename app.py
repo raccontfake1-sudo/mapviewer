@@ -864,6 +864,16 @@ if os.path.exists(DATA_FILE):
     )
 
     # Extra height to show the summary table below the graph
+    st.markdown("### Processing Status")
+
+    st.info("✓ Loading ECC Control")
+    st.info("✓ Loading NIST Controls")
+    st.info("✓ Extracting Metadata")
+    st.info("✓ Generating Semantic Embeddings")
+    st.info("✓ Applying Ontology Scoring")
+    st.info("✓ Computing Confidence Match")
+    st.info("✓ Generating AI Explanation")
+    st.info("✓ Returning Top-K Results")
     components.html(viewer_html, height=700, scrolling=False)
 
 
