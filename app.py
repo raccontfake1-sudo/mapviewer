@@ -872,26 +872,20 @@ if os.path.exists(DATA_FILE):
         progress_bar = st.progress(0)
         status_text = st.empty()
 
-        progress_bar.progress(10)
-        status_text.write("Loading ECC Control")
+        for pct, msg in [
+            (10, "Loading ECC Control"),
+            (25, "Loading NIST Controls"),
+            (40, "Extracting Metadata"),
+            (55, "Generating Semantic Embeddings"),
+            (70, "Applying Ontology Scoring"),
+            (85, "Generating AI Explanation"),
+            (100, "Complete")
+        ]:
+            progress_bar.progress(pct)
+            status_text.write(msg)
+            time.sleep(0.15)
 
-        progress_bar.progress(25)
-        status_text.write("Loading NIST Controls")
-
-        progress_bar.progress(40)
-        status_text.write("Extracting Metadata")
-
-        progress_bar.progress(55)
-        status_text.write("Generating Semantic Embeddings")
-
-        progress_bar.progress(70)
-        status_text.write("Applying Ontology Scoring")
-
-        progress_bar.progress(85)
-        status_text.write("Generating AI Explanation")
-
-        progress_bar.progress(100)
-        status_text.success("Complete")
+        status_text.success("Mapping Complete")
 
     # Extra height to show the summary table below the graph
     # Extra height to show the summary table below the graph
