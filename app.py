@@ -956,7 +956,7 @@ if os.path.exists(DATA_FILE):
     csv = export_df.to_csv(index=False)
 
     st.download_button(
-        label="📥 Export Report",
+        label="Export Report",
         data=csv,
         file_name=f"{selected_id}_mapping_report.csv",
         mime="text/csv"
