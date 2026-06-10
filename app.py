@@ -13,108 +13,152 @@ st.set_page_config(page_title="ECC-NIST Control Mapping Viewer", layout="wide")
 st.markdown(
     """
     <style>
-        @import url('[fonts.googleapis.com](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)');
-
-        html, body, [class*="css"] {
-            font-family: 'Inter', sans-serif;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+        .stApp { background: #08111f; color: #e2e8f0; }
 
         section[data-testid="stSidebar"] {
-            background: #1e293b;
+            background: #07111f;
+            border-right: 1px solid #1d2b3f;
         }
-
-        section[data-testid="stSidebar"] * {
-            color: #e2e8f0 !important;
+        section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
+            padding: 0.8rem 0.75rem 1rem;
         }
-
-        section[data-testid="stSidebar"] h1 {
-            font-size: 18px !important;
-            font-weight: 700 !important;
+        section[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
+        .side-head {
+            border: 1px solid #1d2b3f;
+            border-radius: 8px;
+            padding: 9px 10px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg,#0b1728 0%,#0f2f3a 100%);
+        }
+        .side-kicker {
+            color: #67e8f9 !important;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+        .side-title {
             color: #f8fafc !important;
-            letter-spacing: 0.3px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid #334155;
-            margin-bottom: 12px !important;
+            font-size: 15px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-top: 2px;
         }
-
+        .side-count {
+            color: #8aa3b8 !important;
+            font-size: 11px;
+            margin: -2px 0 8px;
+        }
         section[data-testid="stSidebar"] input[type="text"] {
-            background: #273549 !important;
-            border: 1px solid #475569 !important;
+            background: #0f1b2d !important; border: 1px solid #28415c !important;
+            border-radius: 8px !important; color: #f1f5f9 !important;
+            font-size: 13px !important; padding: 7px 10px !important;
+        }
+        section[data-testid="stSidebar"] input[type="text"]::placeholder { color: #64748b !important; }
+        section[data-testid="stSidebar"] [data-baseweb="select"] > div {
+            min-height: 38px !important;
+            background: #0f1b2d !important;
+            border-color: #28415c !important;
             border-radius: 8px !important;
-            color: #f1f5f9 !important;
-            font-size: 13px !important;
-            padding: 8px 12px !important;
+            box-shadow: none !important;
+        }
+        section[data-testid="stSidebar"] .stTextInput,
+        section[data-testid="stSidebar"] .stSelectbox {
+            margin-bottom: 0.35rem !important;
         }
 
-        section[data-testid="stSidebar"] input[type="text"]::placeholder {
-            color: #64748b !important;
+        section[data-testid="stSidebar"] label,
+        section[data-testid="stSidebar"] label p {
+            font-size: 10px !important; font-weight: 600 !important;
+            text-transform: uppercase !important; letter-spacing: 0.8px !important;
+            color: #7892a8 !important; margin-bottom: 4px !important;
         }
 
-        section[data-testid="stSidebar"] div[role="radiogroup"] {
-            gap: 0 !important;
+        .main .block-container,
+        .block-container,
+        div[data-testid="stAppViewBlockContainer"] {
+            padding: 0.65rem 1rem 1.25rem !important;
+            margin-top: 0 !important;
+            max-width: 1540px !important;
         }
-
-        section[data-testid="stSidebar"] div[role="radiogroup"] label {
-            padding: 6px 10px !important;
-            margin: 1px 0 !important;
-            border-radius: 6px !important;
-            transition: background 0.15s ease !important;
-        }
-
-        section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
-            background: #334155 !important;
-        }
-
-        section[data-testid="stSidebar"] div[role="radiogroup"] label div,
-        section[data-testid="stSidebar"] div[role="radiogroup"] label p,
-        section[data-testid="stSidebar"] div[role="radiogroup"] label span {
-            font-size: 13px !important;
-            font-weight: 500 !important;
-            line-height: 1.4 !important;
-            color: #cbd5e1 !important;
-        }
-
-        section[data-testid="stSidebar"] .stRadio > label,
-        section[data-testid="stSidebar"] .stRadio > label p {
-            font-size: 11px !important;
-            font-weight: 600 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.8px !important;
-            color: #64748b !important;
-            margin-bottom: 6px !important;
-        }
-
-        /* Remove top space in main area */
-        .main .block-container {
-            padding-top: 0px !important;
-            padding-bottom: 24px !important;
-        }
+        .main .block-container > div:first-child { margin-top: 0 !important; }
 
         .stDownloadButton button {
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 8px !important;
-            font-weight: 600 !important;
-            font-size: 14px !important;
-            padding: 10px 22px !important;
-            transition: background 0.2s ease !important;
+            background: linear-gradient(135deg,#0f766e,#2563eb) !important;
+            color: white !important; border: none !important;
+            border-radius: 8px !important; font-weight: 600 !important;
+            font-size: 14px !important; padding: 10px 22px !important;
         }
-
         .stDownloadButton button:hover {
-            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+            background: linear-gradient(135deg,#0d9488,#1d4ed8) !important;
         }
 
         #MainMenu { visibility: hidden; }
         footer    { visibility: hidden; }
         header    { visibility: hidden; }
 
-        .stSlider > div > div > div {
-            background: #6366f1 !important;
+        .topk-card {
+            background: linear-gradient(135deg,#0b1728,#0f2f3a);
+            border: 1px solid #245064;
+            border-radius: 8px;
+            padding: 10px 12px 6px;
+            min-height: 54px;
+        }
+        .topk-title {
+            font-size: 10px;
+            font-weight: 800;
+            color: #ffffff !important;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+        }
+        .topk-sub {
+            font-size: 11px;
+            color: #8bd3dd !important;
+            margin-top: 3px;
+        }
+
+        [data-testid="stSelectSlider"],
+        [data-testid="stSlider"] {
+            padding-top: 0 !important;
+            margin-top: -8px !important;
+        }
+        [data-testid="stSelectSlider"] *,
+        [data-testid="stSlider"] * {
+            color: #ffffff !important;
+        }
+        [data-testid="stSelectSlider"] [data-testid="stTickBarMin"],
+        [data-testid="stSelectSlider"] [data-testid="stTickBarMax"],
+        [data-testid="stSlider"] [data-testid="stTickBarMin"],
+        [data-testid="stSlider"] [data-testid="stTickBarMax"],
+        [data-testid="stSelectSlider"] [data-testid*="TickBar"],
+        [data-testid="stSlider"] [data-testid*="TickBar"] {
+            color: #ffffff !important;
+            fill: #ffffff !important;
+            opacity: 1 !important;
+            font-weight: 700 !important;
+        }
+        [data-testid="stSelectSlider"] [data-testid*="TickBar"] *,
+        [data-testid="stSlider"] [data-testid*="TickBar"] *,
+        [data-testid="stSelectSlider"] svg text,
+        [data-testid="stSelectSlider"] svg tspan,
+        [data-testid="stSlider"] svg text,
+        [data-testid="stSlider"] svg tspan,
+        [data-testid="stThumbValue"],
+        [data-testid="stThumbValue"] * {
+            color: #ffffff !important;
+            fill: #ffffff !important;
+            opacity: 1 !important;
+        }
+        [data-testid="stSelectSlider"] [role="slider"] {
+            background: #67e8f9 !important;
+            border-color: #ffffff !important;
+            box-shadow: 0 0 0 2px rgba(103,232,249,0.18) !important;
         }
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 
@@ -134,121 +178,78 @@ def get_mapping_columns(i):
         "differences":   f"Differences{suffix}",
     }
 
-
 def find_col(df_columns, target):
-    def normalise(s):
-        return re.sub(r"[\s_]+", "", s).lower()
+    def normalise(s): return re.sub(r"[\s_]+", "", s).lower()
     target_norm = normalise(target)
     for col in df_columns:
         if normalise(col) == target_norm:
             return col
     return None
 
-
 def safe_get_score(row, df_columns, col_name):
     actual = find_col(df_columns, col_name)
-    if actual is None:
-        return 0.0
+    if actual is None: return 0.0
     return parse_score(row.get(actual, 0))
-
 
 def natural_control_sort(value):
     value = str(value).strip()
     parts = re.split(r"[.\-_\s]+", value)
-    sort_key = []
-    for part in parts:
-        if part.isdigit():
-            sort_key.append(int(part))
-        else:
-            sort_key.append(part)
-    return sort_key
-
+    return [int(p) if p.isdigit() else p for p in parts]
 
 def safe_value(value, default="N/A"):
-    if pd.isna(value) or str(value).strip() == "":
-        return default
+    if pd.isna(value) or str(value).strip() == "": return default
     return str(value).strip()
-
 
 def parse_score(value):
     try:
-        if pd.isna(value):
-            return 0.0
+        if pd.isna(value): return 0.0
         value = str(value).replace("%", "").strip()
-        if value == "":
-            return 0.0
+        if value == "": return 0.0
         value = float(value)
-        if value > 1:
-            return value / 100.0
-        return value
-    except:
-        return 0.0
-
+        return value / 100.0 if value > 1 else value
+    except: return 0.0
 
 def format_decimal(score):
-    try:
-        return f"{float(score):.2f}"
-    except:
-        return "N/A"
-
+    try: return f"{float(score):.2f}"
+    except: return "N/A"
 
 def format_percent(score):
-    try:
-        return f"{int(round(float(score) * 100))}%"
-    except:
-        return "N/A"
-
+    try: return f"{int(round(float(score) * 100))}%"
+    except: return "N/A"
 
 def short_mapping_label(mapping):
     mapping = str(mapping).strip()
     if ":" in mapping:
         code, name = mapping.split(":", 1)
-        code = code.strip()
-        name = name.strip()
-        if len(name) > 12:
-            name = name[:11] + "…"
-        return code, name
+        code, name = code.strip(), name.strip()
+        return code, (name[:11] + "…" if len(name) > 12 else name)
     parts = re.split(r"[-]", mapping)
     if len(parts) >= 2:
         number = "-".join(parts[:-1])
-        name   = parts[-1]
-        if len(name) > 12:
-            name = name[:11] + "…"
-        return number, name
-    if len(mapping) > 9:
-        return mapping[:9], mapping[9:]
-    return mapping, ""
-
+        name = parts[-1]
+        return number, (name[:11] + "…" if len(name) > 12 else name)
+    return (mapping[:9], mapping[9:]) if len(mapping) > 9 else (mapping, "")
 
 def extract_mappings(row, df, top_k=5):
     results = []
     df_cols = list(df.columns)
-
     for i in range(1, 11):
-        cols               = get_mapping_columns(i)
+        cols = get_mapping_columns(i)
         actual_mapping_col = find_col(df_cols, cols["mapping"])
-        if actual_mapping_col is None:
-            continue
+        if actual_mapping_col is None: continue
         val = row.get(actual_mapping_col)
-        if pd.isna(val) or str(val).strip() == "":
-            continue
-
+        if pd.isna(val) or str(val).strip() == "": continue
         final_score     = safe_get_score(row, df_cols, cols["final"])
         embedding_score = safe_get_score(row, df_cols, cols["embedding"])
         ontology_score  = safe_get_score(row, df_cols, cols["ontology"])
-
         actual_text = find_col(df_cols, cols["text"])
         actual_comm = find_col(df_cols, cols["commonality"])
         actual_just = find_col(df_cols, cols["justification"])
         actual_diff = find_col(df_cols, cols["differences"])
-
         raw_mapping = safe_value(row.get(actual_mapping_col, ""))
         code, name  = short_mapping_label(raw_mapping)
-
         results.append({
-            "mapping":       raw_mapping,
-            "short_code":    code,
-            "short_name":    name,
+            "mapping": raw_mapping, "short_code": code, "short_name": name,
             "text":          safe_value(row.get(actual_text, "") if actual_text else ""),
             "final":         final_score,
             "embedding":     embedding_score,
@@ -257,762 +258,469 @@ def extract_mappings(row, df, top_k=5):
             "justification": safe_value(row.get(actual_just, "") if actual_just else ""),
             "differences":   safe_value(
                 row.get(actual_diff, "") if actual_diff else "",
-                "The controls differ in implementation focus and specific requirements."
+                "Controls differ in implementation focus and specific requirements."
             ),
         })
+    return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
-    results = sorted(results, key=lambda x: x["final"], reverse=True)
-    return results[:top_k]
-
-
-def score_to_node_colors(score):
-    if score >= 0.85:
-        return "#059669", "rgba(5,150,105,0.45)",  "white", "#34d399"
-    elif score >= 0.70:
-        return "#d97706", "rgba(217,119,6,0.45)",  "white", "#fcd34d"
-    else:
-        return "#dc2626", "rgba(220,38,38,0.45)",  "white", "#fca5a5"
+def score_to_colors(score):
+    if score >= 0.85:   return "#059669", "#34d399", "High Match",   "🟢"
+    elif score >= 0.70: return "#d97706", "#fcd34d", "Medium Match", "🟡"
+    else:               return "#dc2626", "#fca5a5", "Low Match",    "🔴"
 
 
 # ─────────────────────────────────────────
 # PDF Export
 # ─────────────────────────────────────────
 def generate_pdf(selected_id, source_text, mappings):
-    try:
-        from fpdf import FPDF
-    except ImportError:
-        return None
-
+    try: from fpdf import FPDF
+    except ImportError: return None
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-
-    # Title
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(15, 23, 42)
     pdf.cell(0, 12, "ECC-NIST Control Mapping Report", ln=True, align="C")
-
     pdf.set_font("Helvetica", "", 11)
     pdf.set_text_color(100, 116, 139)
     pdf.cell(0, 7, f"ECC Control: {selected_id}", ln=True, align="C")
     pdf.ln(4)
-
     pdf.set_draw_color(199, 210, 254)
     pdf.set_line_width(0.5)
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(5)
-
     if source_text and source_text != "N/A":
-        pdf.set_font("Helvetica", "B", 11)
-        pdf.set_text_color(79, 70, 229)
+        pdf.set_font("Helvetica", "B", 11); pdf.set_text_color(79, 70, 229)
         pdf.cell(0, 7, "ECC Control Description", ln=True)
-        pdf.set_font("Helvetica", "", 10)
-        pdf.set_text_color(55, 65, 81)
-        clean_src = str(source_text).encode("latin-1", "replace").decode("latin-1")
-        pdf.multi_cell(0, 6, clean_src)
-        pdf.ln(4)
-        pdf.set_draw_color(199, 210, 254)
-        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-        pdf.ln(5)
-
+        pdf.set_font("Helvetica", "", 10); pdf.set_text_color(55, 65, 81)
+        pdf.multi_cell(0, 6, str(source_text).encode("latin-1","replace").decode("latin-1"))
+        pdf.ln(4); pdf.set_draw_color(199,210,254); pdf.line(10,pdf.get_y(),200,pdf.get_y()); pdf.ln(5)
     for idx, m in enumerate(mappings):
-        final_val = float(m["final"])
-        if final_val >= 0.85:
-            confidence = "High Match"
-            r, g, b    = 5, 150, 105
-        elif final_val >= 0.70:
-            confidence = "Medium Match"
-            r, g, b    = 217, 119, 6
-        else:
-            confidence = "Low Match"
-            r, g, b    = 220, 38, 38
-
-        pdf.set_fill_color(r, g, b)
-        pdf.set_text_color(255, 255, 255)
-        pdf.set_font("Helvetica", "B", 12)
-        header_text = (
-            f"  #{idx + 1}  {m['mapping']}"
-            f"  -  {format_percent(m['final'])}  ({confidence})"
-        )
-        pdf.cell(0, 10, header_text, ln=True, fill=True)
+        fv = float(m["final"])
+        if fv >= 0.85:   conf, r, g, b = "High Match",   5,150,105
+        elif fv >= 0.70: conf, r, g, b = "Medium Match", 217,119,6
+        else:            conf, r, g, b = "Low Match",    220,38,38
+        pdf.set_fill_color(r,g,b); pdf.set_text_color(255,255,255)
+        pdf.set_font("Helvetica","B",12)
+        pdf.cell(0,10,f"  #{idx+1}  {m['mapping']}  -  {format_percent(m['final'])}  ({conf})",ln=True,fill=True)
         pdf.ln(2)
-
         def field(label, value):
-            pdf.set_font("Helvetica", "B", 10)
-            pdf.set_text_color(79, 70, 229)
-            pdf.cell(0, 6, label, ln=True)
-            pdf.set_font("Helvetica", "", 10)
-            pdf.set_text_color(55, 65, 81)
-            clean = str(value).encode("latin-1", "replace").decode("latin-1")
-            pdf.multi_cell(0, 5.5, clean)
-            pdf.ln(2)
-
-        pdf.set_font("Helvetica", "B", 10)
-        pdf.set_text_color(79, 70, 229)
-        pdf.cell(0, 6, "Scores & Analysis", ln=True)
-        pdf.set_font("Helvetica", "", 10)
-        pdf.set_text_color(55, 65, 81)
-        pdf.cell(
-            0, 5.5,
-            f"  Final: {format_percent(m['final'])} ({format_decimal(m['final'])})   "
-            f"Embedding: {format_percent(m['embedding'])} ({format_decimal(m['embedding'])})   "
-            f"Ontology: {format_percent(m['ontology'])} ({format_decimal(m['ontology'])})",
-            ln=True,
-        )
+            pdf.set_font("Helvetica","B",10); pdf.set_text_color(79,70,229); pdf.cell(0,6,label,ln=True)
+            pdf.set_font("Helvetica","",10); pdf.set_text_color(55,65,81)
+            pdf.multi_cell(0,5.5,str(value).encode("latin-1","replace").decode("latin-1")); pdf.ln(2)
+        pdf.set_font("Helvetica","B",10); pdf.set_text_color(79,70,229); pdf.cell(0,6,"Scores",ln=True)
+        pdf.set_font("Helvetica","",10); pdf.set_text_color(55,65,81)
+        pdf.cell(0,5.5,f"  Final:{format_percent(m['final'])}  Embedding:{format_percent(m['embedding'])}  Ontology:{format_percent(m['ontology'])}",ln=True)
         pdf.ln(2)
-
-        field("NIST Control Text",  m["text"])
-        field("Commonality",        m["commonality"])
-        field("Justification",      m["justification"])
-        field("Differences",        m["differences"])
-
-        pdf.set_draw_color(199, 210, 254)
-        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-        pdf.ln(5)
-
+        field("NIST Control Text", m["text"])
+        field("Commonality",       m["commonality"])
+        field("Justification",     m["justification"])
+        field("Differences",       m["differences"])
+        pdf.set_draw_color(199,210,254); pdf.line(10,pdf.get_y(),200,pdf.get_y()); pdf.ln(5)
     return bytes(pdf.output())
 
 
 # ─────────────────────────────────────────
-# SVG Viewer
+# HTML Viewer
 # ─────────────────────────────────────────
-def create_svg_viewer(selected_id, source_text, mappings):
-    width  = 620
-    height = 440
+def create_viewer(selected_id, source_text, mappings):
+    # Graph geometry
+    W, H     = 560, 420
+    cx, cy   = 280, 210
+    BR, GR   = 38, 32      # blue/green radius
+    ORBIT    = 145          # orbit radius
 
-    center_x     = 310
-    center_y     = 220
-    blue_radius  = 48
-    green_radius = 42
-    graph_radius = 158
-
-    mapping_data = {}
-    svg_lines    = ""
-    svg_nodes    = ""
-    svg_numbers  = ""
-
+    svg_lines = svg_nodes = svg_nums = ""
     n = len(mappings)
-
-    # Truncate source text for the tooltip / center node popup
-    source_short = source_text if len(source_text) <= 160 else source_text[:157] + "…"
+    mapping_data = {}
+    summary_rows = []
 
     for idx, item in enumerate(mappings):
-        angle = (2 * math.pi / n) * idx - (math.pi / 2)
-        x = center_x + graph_radius * math.cos(angle)
-        y = center_y + graph_radius * math.sin(angle)
+        angle = (2 * math.pi / n) * idx - math.pi / 2
+        x = cx + ORBIT * math.cos(angle)
+        y = cy + ORBIT * math.sin(angle)
+        rank   = idx + 1
+        nid    = f"node_{rank}"
+        col, badge, label, icon = score_to_colors(item["final"])
+        pct    = format_percent(item["final"])
+        code   = html.escape(item["short_code"])
 
-        rank    = idx + 1
-        node_id = f"node_{rank}"
-
-        fill_color, glow_color, text_color, badge_color = score_to_node_colors(item["final"])
-        score_pct    = format_percent(item["final"])
-        code_escaped = html.escape(item["short_code"])
-
-        mapping_data[node_id] = {
-            "rank":              str(rank),
-            "ecc_control":       str(selected_id),
-            "ecc_text":          source_text,
-            "nist_control":      item["mapping"],
-            "nist_short_code":   item["short_code"],
-            "nist_short_name":   item["short_name"],
-            "nist_text":         item["text"],
-            "final":             format_decimal(item["final"]),
-            "final_percent":     format_percent(item["final"]),
-            "embedding":         format_decimal(item["embedding"]),
-            "embedding_percent": format_percent(item["embedding"]),
-            "ontology":          format_decimal(item["ontology"]),
-            "ontology_percent":  format_percent(item["ontology"]),
-            "commonality":       item["commonality"],
-            "justification":     item["justification"],
-            "differences":       item["differences"],
-            "fill_color":        fill_color,
-            "badge_color":       badge_color,
+        mapping_data[nid] = {
+            "rank": str(rank), "nist_control": item["mapping"],
+            "nist_text": item["text"],
+            "final": format_decimal(item["final"]), "final_pct": pct,
+            "emb": format_decimal(item["embedding"]), "emb_pct": format_percent(item["embedding"]),
+            "ont": format_decimal(item["ontology"]),  "ont_pct": format_percent(item["ontology"]),
+            "commonality": item["commonality"], "justification": item["justification"],
+            "differences": item["differences"], "color": col, "icon": icon, "label": label,
+            "domain": (
+                "Govern" if item["mapping"].startswith("GV") else
+                "Identify" if item["mapping"].startswith("ID") else
+                "Protect" if item["mapping"].startswith("PR") else
+                "Detect" if item["mapping"].startswith("DE") else
+                "Respond" if item["mapping"].startswith("RS") else
+                "Recover" if item["mapping"].startswith("RC") else "Unknown"
+            ),
         }
-
-        dx       = x - center_x
-        dy       = y - center_y
-        distance = math.sqrt(dx * dx + dy * dy)
-
-        start_x = center_x + (blue_radius  / distance) * dx
-        start_y = center_y + (blue_radius  / distance) * dy
-        end_x   = x        - (green_radius / distance) * dx
-        end_y   = y        - (green_radius / distance) * dy
-
-        svg_lines += f"""
-            <line x1="{start_x}" y1="{start_y}" x2="{end_x}" y2="{end_y}"
-                  stroke="{fill_color}" stroke-width="1.8"
-                  stroke-dasharray="5,3" opacity="0.6"/>
-        """
-
-        svg_numbers += f"""
-            <text x="{x}" y="{y - green_radius - 9}"
-                  text-anchor="middle" dominant-baseline="middle"
-                  class="number-label" fill="{fill_color}">#{rank}</text>
-        """
-
-        svg_nodes += f"""
-            <g class="mapping-node" onclick="updatePanel('{node_id}')"
-               data-fill="{fill_color}" data-glow="{glow_color}">
-                <circle cx="{x}" cy="{y}" r="{green_radius + 5}"
-                        fill="{fill_color}" opacity="0.18" class="glow-ring"/>
-                <circle cx="{x}" cy="{y}" r="{green_radius}"
-                        fill="{fill_color}"
-                        filter="drop-shadow(0 3px 8px {glow_color})"/>
-                <text x="{x}" y="{y - 8}"
-                      text-anchor="middle" dominant-baseline="middle"
-                      class="node-code">{code_escaped}</text>
-                <text x="{x}" y="{y + 10}"
-                      text-anchor="middle" dominant-baseline="middle"
-                      class="node-score">{html.escape(score_pct)}</text>
-            </g>
-        """
-
-    mapping_json    = json.dumps(mapping_data, ensure_ascii=False)
-    source_json     = json.dumps(source_text,  ensure_ascii=False)
-    source_id_json  = json.dumps(str(selected_id), ensure_ascii=False)
-
-    summary_rows_js = json.dumps([
-        {
-            "rank":          str(i + 1),
-            "nist_control":  m["mapping"],
-            "final_percent": format_percent(m["final"]),
-            "final":         format_decimal(m["final"]),
-            "fill_color":    score_to_node_colors(m["final"])[0],
-            "badge_color":   score_to_node_colors(m["final"])[3],
-        }
-        for i, m in enumerate(mappings)
-    ])
-
-    # rows needed for table height estimate (min 1)
-    n_rows = max(len(mappings), 1)
-    # each row ~41px + header 40px + title+padding ~52px
-    table_height = 52 + 40 + n_rows * 41
-
-    html_code = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <link rel="stylesheet"
-              href="[fonts.googleapis.com](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap)">
-        <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-
-            body {{
-                font-family: 'Inter', Arial, sans-serif;
-                background: #f8faff;
-                color: #1e293b;
-            }}
-
-            .main-card {{
-                width: 100%;
-                border: 1px solid #e2e8f0;
-                border-radius: 16px;
-                overflow: hidden;
-                background: white;
-                display: flex;
-                flex-direction: column;
-                box-shadow: 0 2px 4px rgba(99,102,241,0.05),
-                            0 8px 24px rgba(99,102,241,0.08);
-            }}
-
-            /* ── Top row ── */
-            .top-row {{
-                display: flex;
-                height: 560px;
-            }}
-
-            /* ── Graph ── */
-            .graph-section {{
-                width: 60%;
-                height: 560px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background: linear-gradient(145deg, #f5f7ff 0%, #eef2ff 100%);
-                border-right: 1px solid #e2e8f0;
-                position: relative;
-            }}
-
-            .graph-badge {{
-                position: absolute;
-                top: 14px; left: 18px;
-                background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                color: white;
-                font-size: 10px; font-weight: 700;
-                letter-spacing: 1px; text-transform: uppercase;
-                padding: 4px 10px; border-radius: 20px;
-            }}
-
-            .legend {{
-                position: absolute;
-                bottom: 14px; left: 18px;
-                display: flex; gap: 10px;
-            }}
-
-            .legend-item {{
-                display: flex; align-items: center; gap: 5px;
-                font-size: 10px; font-weight: 600; color: #64748b;
-            }}
-
-            .legend-dot {{ width: 10px; height: 10px; border-radius: 50%; }}
-
-            /* ── Detail panel ── */
-            .summary-section {{
-                width: 40%;
-                height: 560px;
-                padding: 22px 20px;
-                overflow-y: auto;
-                background: #ffffff;
-            }}
-
-            .summary-section::-webkit-scrollbar {{ width: 4px; }}
-            .summary-section::-webkit-scrollbar-track {{ background: #f8faff; }}
-            .summary-section::-webkit-scrollbar-thumb {{
-                background: #c7d2fe; border-radius: 4px;
-            }}
-
-            /* ── Results summary ── */
-            .results-summary {{
-                border-top: 1px solid #e8edff;
-                padding: 12px 20px 16px;
-                background: linear-gradient(135deg, #f8f9ff 0%, #f3f6ff 100%);
-            }}
-
-            .results-summary-title {{
-                font-size: 12px; font-weight: 700; color: #374151;
-                margin-bottom: 10px;
-                display: flex; align-items: center; gap: 6px;
-            }}
-
-            .results-table {{
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 12px;
-            }}
-
-            .results-table th {{
-                background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                color: white;
-                padding: 7px 12px;
-                text-align: left;
-                font-weight: 600; font-size: 11px;
-                text-transform: uppercase; letter-spacing: 0.5px;
-            }}
-
-            .results-table th:first-child {{ border-radius: 6px 0 0 0; }}
-            .results-table th:last-child  {{ border-radius: 0 6px 0 0; }}
-
-            .results-table td {{
-                padding: 7px 12px;
-                border-bottom: 1px solid #eef2ff;
-                color: #374151;
-                vertical-align: middle;
-            }}
-
-            .results-table tr:last-child td {{ border-bottom: none; }}
-            .results-table tr:hover td {{
-                background: #eef2ff; cursor: pointer;
-            }}
-
-            .rank-badge {{
-                display: inline-flex;
-                align-items: center; justify-content: center;
-                background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                color: white; border-radius: 50%;
-                width: 22px; height: 22px;
-                font-weight: 700; font-size: 10px;
-            }}
-
-            /* ── SVG nodes ── */
-            .mapping-node {{ cursor: pointer; }}
-            .mapping-node circle {{ transition: all 0.2s ease; }}
-            .mapping-node:hover .glow-ring {{ opacity: 0.38 !important; }}
-
-            .node-code {{
-                fill: white; font-size: 10.5px; font-weight: 800;
-                pointer-events: none;
-                font-family: 'Inter', Arial, sans-serif;
-            }}
-            .node-score {{
-                fill: rgba(255,255,255,0.92);
-                font-size: 11px; font-weight: 700;
-                pointer-events: none;
-                font-family: 'Inter', Arial, sans-serif;
-            }}
-            .number-label {{
-                font-size: 10px; font-weight: 700;
-                font-family: 'Inter', Arial, sans-serif;
-            }}
-
-            /* ── ECC center node clickable ── */
-            .center-node {{ cursor: pointer; }}
-
-            /* ── Detail panel inner ── */
-            .panel-header {{
-                display: flex; align-items: center; gap: 10px;
-                margin-bottom: 16px; padding-bottom: 12px;
-                border-bottom: 2px solid #eef2ff;
-            }}
-
-            .panel-rank-badge {{
-                width: 32px; height: 32px; border-radius: 50%;
-                display: flex; align-items: center; justify-content: center;
-                font-size: 14px; font-weight: 800; color: white; flex-shrink: 0;
-            }}
-
-            .panel-title {{
-                font-size: 15px; font-weight: 700; color: #0f172a;
-            }}
-
-            .sub-title {{
-                font-size: 10px; font-weight: 700; color: #6366f1;
-                text-transform: uppercase; letter-spacing: 0.8px;
-                margin-top: 14px; margin-bottom: 5px;
-                display: flex; align-items: center; gap: 4px;
-            }}
-
-            .content-box {{
-                border: 1px solid #e8edff;
-                border-radius: 8px;
-                padding: 10px 12px;
-                font-size: 12px; line-height: 1.6; color: #374151;
-                background: #f8faff;
-                white-space: pre-wrap;
-            }}
-
-            .score-grid {{
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-            }}
-
-            .score-card {{ border-radius: 10px; padding: 10px 12px; text-align: center; }}
-            .score-card-main  {{
-                background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                grid-column: 1 / -1;
-            }}
-            .score-card-embed {{ background: linear-gradient(135deg, #0891b2, #06b6d4); }}
-            .score-card-onto  {{ background: linear-gradient(135deg, #059669, #10b981); }}
-
-            .score-card-label {{
-                font-size: 10px; font-weight: 600;
-                text-transform: uppercase; letter-spacing: 0.6px;
-                opacity: 0.85; color: white; margin-bottom: 4px;
-            }}
-            .score-card-value {{
-                font-size: 20px; font-weight: 800; color: white; line-height: 1;
-            }}
-            .score-card-sub {{
-                font-size: 10px; color: rgba(255,255,255,0.75); margin-top: 2px;
-            }}
-
-            .confidence-row {{
-                display: flex; align-items: center; gap: 8px;
-                margin-top: 8px; padding: 8px 12px;
-                border-radius: 8px;
-                background: #f8faff; border: 1px solid #e8edff;
-                font-size: 12px; color: #374151; font-weight: 500;
-            }}
-
-            .placeholder {{
-                color: #94a3b8; font-size: 13px; line-height: 1.7;
-                text-align: center; padding: 40px 16px;
-                border: 2px dashed #c7d2fe; border-radius: 12px;
-                margin-top: 8px; background: #f8faff;
-            }}
-
-            .placeholder-icon {{ font-size: 32px; margin-bottom: 12px; }}
-            .placeholder-hint  {{ font-size: 11px; color: #a5b4fc; margin-top: 6px; }}
-
-            /* ECC popup card */
-            .ecc-panel-header {{
-                display: flex; align-items: center; gap: 10px;
-                margin-bottom: 14px; padding-bottom: 12px;
-                border-bottom: 2px solid #eef2ff;
-            }}
-
-            .ecc-icon {{
-                width: 36px; height: 36px; border-radius: 50%;
-                background: linear-gradient(135deg, #6366f1, #4f46e5);
-                display: flex; align-items: center; justify-content: center;
-                font-size: 16px; flex-shrink: 0;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="main-card">
-
-            <!-- Top row -->
-            <div class="top-row">
-
-                <!-- Graph -->
-                <div class="graph-section">
-                    <div class="graph-badge">Control Mapping Graph</div>
-
-                    <svg width="{width}" height="{height}"
-                         viewBox="0 0 {width} {height}">
-
-                        <circle cx="{center_x}" cy="{center_y}" r="{graph_radius}"
-                                fill="none" stroke="#c7d2fe" stroke-width="1"
-                                stroke-dasharray="3,6" opacity="0.5"/>
-
-                        {svg_lines}
-
-                        <!-- ECC Centre node (clickable) -->
-                        <g class="center-node" onclick="showEccPanel()">
-                            <circle cx="{center_x}" cy="{center_y}" r="{blue_radius + 10}"
-                                    fill="url(#centerGlow)" opacity="0.22"/>
-                            <circle cx="{center_x}" cy="{center_y}" r="{blue_radius}"
-                                    fill="url(#centerGrad)"
-                                    filter="drop-shadow(0 4px 14px rgba(99,102,241,0.55))"/>
-                            <text x="{center_x}" y="{center_y - 8}"
-                                  text-anchor="middle" dominant-baseline="middle"
-                                  fill="white" font-size="13" font-weight="800"
-                                  font-family="Inter, Arial, sans-serif">ECC</text>
-                            <text x="{center_x}" y="{center_y + 8}"
-                                  text-anchor="middle" dominant-baseline="middle"
-                                  fill="rgba(255,255,255,0.85)"
-                                  font-size="10" font-weight="700"
-                                  font-family="Inter, Arial, sans-serif">
-                                {html.escape(str(selected_id))}
-                            </text>
-                            <text x="{center_x}" y="{center_y + 22}"
-                                  text-anchor="middle" dominant-baseline="middle"
-                                  fill="rgba(255,255,255,0.55)"
-                                  font-size="8" font-weight="500"
-                                  font-family="Inter, Arial, sans-serif">click</text>
-                        </g>
-
-                        {svg_nodes}
-                        {svg_numbers}
-
-                        <defs>
-                            <linearGradient id="centerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%"   style="stop-color:#818cf8"/>
-                                <stop offset="100%" style="stop-color:#4f46e5"/>
-                            </linearGradient>
-                            <radialGradient id="centerGlow">
-                                <stop offset="0%"   style="stop-color:#6366f1;stop-opacity:1"/>
-                                <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0"/>
-                            </radialGradient>
-                        </defs>
-                    </svg>
-
-                    <div class="legend">
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background:#059669;"></div>
-                            High ≥85%
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background:#d97706;"></div>
-                            Mid ≥70%
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background:#dc2626;"></div>
-                            Low &lt;70%
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Detail panel -->
-                <div class="summary-section" id="summary-panel">
-                    <div class="placeholder">
-                        <div class="placeholder-icon">🔗</div>
-                        <div>Click any node to view<br>detailed mapping info</div>
-                        <div class="placeholder-hint">
-                            Click the blue ECC node for the control description
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Results summary table -->
-            <div class="results-summary">
-                <div class="results-summary-title">
-                    📋 Results Summary —
-                    <span style="color:#6366f1;">{len(mappings)} mapping(s)</span>
-                    &nbsp;for&nbsp;
-                    <b style="color:#4f46e5;">{html.escape(str(selected_id))}</b>
-                </div>
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>NIST Control</th>
-                            <th>Final Score</th>
-                        </tr>
-                    </thead>
-                    <tbody id="summary-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <script>
-            const mappingData  = {mapping_json};
-            const summaryRows  = {summary_rows_js};
-            const eccText      = {source_json};
-            const eccId        = {source_id_json};
-
-            // Build results table
-            (function buildTable() {{
-                const tbody = document.getElementById("summary-tbody");
-                summaryRows.forEach(function(row) {{
-                    const tr = document.createElement("tr");
-                    tr.onclick = function() {{ updatePanel("node_" + row.rank); }};
-                    tr.innerHTML = `
-                        <td><span class="rank-badge">${{row.rank}}</span></td>
-                        <td style="font-weight:600;color:#1e293b;">
-                            ${{escapeHtml(row.nist_control)}}
-                        </td>
-                        <td>
-                            <span style="
-                                display:inline-block;
-                                background:${{row.fill_color}};
-                                color:white; border-radius:20px;
-                                padding:2px 9px;
-                                font-weight:700; font-size:11px;
-                            ">${{escapeHtml(row.final_percent)}}</span>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                }});
-            }})();
-
-            function escapeHtml(text) {{
-                if (!text) return "N/A";
-                return String(text)
-                    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
-            }}
-
-            // Show ECC control description when blue node is clicked
-            function showEccPanel() {{
-                const panel = document.getElementById("summary-panel");
-                panel.innerHTML = `
-                    <div class="ecc-panel-header">
-                        <div class="ecc-icon">🔵</div>
-                        <div>
-                            <div class="panel-title">ECC Control</div>
-                            <div style="font-size:11px;color:#94a3b8;margin-top:1px;">
-                                Source control description
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="sub-title">🏷️ Control ID</div>
-                    <div class="content-box">
-                        <b style="color:#4f46e5;font-size:14px;">${{escapeHtml(eccId)}}</b>
-                    </div>
-
-                    <div class="sub-title">📄 Description</div>
-                    <div class="content-box" style="line-height:1.7;">
-                        ${{escapeHtml(eccText)}}
-                    </div>
-
-                    <div style="margin-top:14px; padding:10px 12px;
-                                border-radius:8px; background:#eef2ff;
-                                border:1px solid #c7d2fe;
-                                font-size:11px; color:#6366f1; font-weight:600;">
-                        💡 Click any green node to view its NIST mapping details
-                    </div>
-                `;
-            }}
-
-            // Show NIST node detail panel
-            function updatePanel(nodeId) {{
-                const item  = mappingData[nodeId];
-                const panel = document.getElementById("summary-panel");
-                if (!item) return;
-
-                const finalVal   = parseFloat(item.final);
-                const matchIcon  = finalVal >= 0.85 ? "🟢"
-                                 : finalVal >= 0.70 ? "🟡" : "🔴";
-                const matchLabel = finalVal >= 0.85 ? "High Match"
-                                 : finalVal >= 0.70 ? "Medium Match" : "Low Match";
-
-                const domain = item.nist_control.startsWith("GV") ? "Govern"
-                             : item.nist_control.startsWith("ID") ? "Identify"
-                             : item.nist_control.startsWith("PR") ? "Protect"
-                             : item.nist_control.startsWith("DE") ? "Detect"
-                             : item.nist_control.startsWith("RS") ? "Respond"
-                             : item.nist_control.startsWith("RC") ? "Recover"
-                             : "Unknown";
-
-                const fillColor = item.fill_color;
-
-                panel.innerHTML = `
-                    <div class="panel-header">
-                        <div class="panel-rank-badge"
-                             style="background:linear-gradient(135deg,
-                                    ${{fillColor}},${{fillColor}}cc);">
-                            ${{item.rank}}
-                        </div>
-                        <div>
-                            <div class="panel-title">Mapping #${{item.rank}} Details</div>
-                            <div style="font-size:11px;color:#94a3b8;margin-top:1px;">
-                                ${{escapeHtml(item.nist_control)}}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Scores first -->
-                    <div class="sub-title">📊 Scores & Analysis</div>
-                    <div class="score-grid">
-                        <div class="score-card score-card-main">
-                            <div class="score-card-label">Final Match Score</div>
-                            <div class="score-card-value">
-                                ${{escapeHtml(item.final_percent)}}
-                            </div>
-                            <div class="score-card-sub">
-                                ${{escapeHtml(item.final)}} · ${{domain}}
-                            </div>
-                        </div>
-                        <div class="score-card score-card-embed">
-                            <div class="score-card-label">Embedding</div>
-                            <div class="score-card-value">
-                                ${{escapeHtml(item.embedding_percent)}}
-                            </div>
-                            <div class="score-card-sub">
-                                ${{escapeHtml(item.embedding)}}
-                            </div>
-                        </div>
-                        <div class="score-card score-card-onto">
-                            <div class="score-card-label">Ontology</div>
-                            <div class="score-card-value">
-                                ${{escapeHtml(item.ontology_percent)}}
-                            </div>
-                            <div class="score-card-sub">
-                                ${{escapeHtml(item.ontology)}}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="confidence-row">
-                        ${{matchIcon}} <b>Confidence:</b> ${{matchLabel}}
-                    </div>
-
-                    <!-- NIST text (no ECC description here) -->
-                    <div class="sub-title">🎯 NIST Control</div>
-                    <div class="content-box">
-                        <b>${{escapeHtml(item.nist_control)}}</b><br><br>
-                        ${{escapeHtml(item.nist_text)}}
-                    </div>
-
-                    <div class="sub-title">🤝 Commonality</div>
-                    <div class="content-box">${{escapeHtml(item.commonality)}}</div>
-
-                    <div class="sub-title">✅ Justification</div>
-                    <div class="content-box">${{escapeHtml(item.justification)}}</div>
-
-                    <div class="sub-title">⚡ Differences</div>
-                    <div class="content-box">${{escapeHtml(item.differences)}}</div>
-                `;
-            }}
-        </script>
-    </body>
-    </html>
-    """
-    return html_code
+        summary_rows.append({
+            "rank": str(rank), "nist": item["mapping"],
+            "pct": pct, "color": col,
+        })
+
+        # connector line
+        dx, dy = x - cx, y - cy
+        dist = math.sqrt(dx*dx + dy*dy)
+        sx = cx + (BR / dist) * dx;  sy = cy + (BR / dist) * dy
+        ex = x  - (GR / dist) * dx;  ey = y  - (GR / dist) * dy
+        svg_lines += f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" y2="{ey:.1f}" stroke="{col}" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.55"/>\n'
+
+        # rank label
+        svg_nums += f'<text x="{x:.1f}" y="{y - GR - 8:.1f}" text-anchor="middle" fill="{col}" font-size="10" font-weight="700" font-family="Inter,sans-serif">#{rank}</text>\n'
+
+        # node group  ← onclick stores rank in JS, nodes never removed
+        svg_nodes += f"""<g class="mnode" onclick="selectNode({rank})" data-rank="{rank}" data-color="{col}">
+  <circle cx="{x:.1f}" cy="{y:.1f}" r="{GR+6}" fill="{col}" opacity="0.15" class="gring"/>
+  <circle cx="{x:.1f}" cy="{y:.1f}" r="{GR}" fill="{col}"/>
+  <text x="{x:.1f}" y="{y-7:.1f}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="800" font-family="Inter,sans-serif">{code}</text>
+  <text x="{x:.1f}" y="{y+9:.1f}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.9)" font-size="13" font-weight="700" font-family="Inter,sans-serif">{html.escape(pct)}</text>
+</g>\n"""
+
+    mdata_json   = json.dumps(mapping_data,  ensure_ascii=False)
+    srows_json   = json.dumps(summary_rows,  ensure_ascii=False)
+    src_json     = json.dumps(source_text,   ensure_ascii=False)
+    src_id_json  = json.dumps(str(selected_id), ensure_ascii=False)
+    n_mappings   = len(mappings)
+
+    return f"""<!DOCTYPE html><html><head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+html,body{{font-family:'Inter',sans-serif;background:#0f172a;color:#e2e8f0;height:100%;overflow:hidden}}
+
+/* ── outer shell: two columns side-by-side, full viewport ── */
+.shell{{display:flex;width:100%;height:100vh;overflow:hidden}}
+
+/* ── LEFT: graph ── */
+.graph-col{{
+  flex:0 0 58%;
+  display:flex;flex-direction:column;
+  background:linear-gradient(160deg,#0f172a 0%,#1e1b4b 100%);
+  border-right:1px solid #1e293b;
+  position:relative;overflow:hidden;
+}}
+.graph-header{{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 18px 10px;
+  border-bottom:1px solid #1e293b;
+  flex-shrink:0;
+}}
+.graph-badge{{
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:white;font-size:9px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;padding:3px 10px;border-radius:20px;
+}}
+.graph-title{{font-size:13px;font-weight:700;color:#e2e8f0}}
+.graph-subtitle{{font-size:11px;color:#64748b;margin-top:1px}}
+.svg-wrap{{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 0 0}}
+.legend{{
+  display:flex;gap:14px;padding:10px 18px 14px;
+  border-top:1px solid #1e293b;flex-shrink:0;
+}}
+.leg{{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:#64748b}}
+.legdot{{width:9px;height:9px;border-radius:50%;flex-shrink:0}}
+
+/* ── RIGHT: table + detail, scrolls independently ── */
+.right-col{{
+  flex:1;display:flex;flex-direction:column;
+  background:#0f172a;overflow:hidden;
+}}
+
+/* Summary table (sticky top of right col) */
+.tbl-section{{flex-shrink:0;border-bottom:1px solid #1e293b}}
+.tbl-header{{padding:12px 16px 8px;background:#0f172a}}
+.tbl-title{{font-size:12px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:6px}}
+.tbl-sub{{font-size:10px;color:#475569;margin-top:2px}}
+table{{width:100%;border-collapse:collapse;font-size:12px}}
+th{{
+  background:linear-gradient(135deg,#4f46e5,#7c3aed);
+  color:white;padding:8px 12px;text-align:left;
+  font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;
+}}
+td{{padding:8px 12px;border-bottom:1px solid #1e293b;color:#cbd5e1;vertical-align:middle}}
+tr:last-child td{{border-bottom:none}}
+tr.trow:hover td{{background:#1e293b;cursor:pointer}}
+tr.trow.active td{{background:#1e1b4b}}
+.rbadge{{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:white;border-radius:50%;width:20px;height:20px;
+  font-weight:700;font-size:9px;
+}}
+.score-pill{{
+  display:inline-block;color:white;border-radius:20px;
+  padding:2px 9px;font-weight:700;font-size:10px;
+}}
+
+/* Detail panel (scrollable) */
+.detail-col{{
+  flex:1;overflow-y:auto;padding:14px 16px 20px;
+  scrollbar-width:thin;scrollbar-color:#1e293b #0f172a;
+}}
+.detail-col::-webkit-scrollbar{{width:4px}}
+.detail-col::-webkit-scrollbar-track{{background:#0f172a}}
+.detail-col::-webkit-scrollbar-thumb{{background:#1e293b;border-radius:4px}}
+
+.placeholder{{
+  color:#334155;font-size:12px;text-align:center;
+  padding:28px 16px;border:1px dashed #1e293b;
+  border-radius:12px;margin-top:6px;line-height:1.8;
+}}
+
+/* Detail card elements */
+.d-header{{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #1e293b}}
+.d-rank{{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:white;flex-shrink:0;
+}}
+.d-title{{font-size:14px;font-weight:700;color:#f1f5f9}}
+.d-sub{{font-size:10px;color:#64748b;margin-top:2px}}
+
+.stitle{{
+  font-size:9px;font-weight:700;color:#6366f1;
+  text-transform:uppercase;letter-spacing:0.8px;
+  margin-top:10px;margin-bottom:3px;
+}}
+.cbox{{
+  border:1px solid #1e293b;border-radius:8px;
+  padding:8px 10px;font-size:11px;line-height:1.6;
+  color:#94a3b8;background:#0a0f1e;white-space:pre-wrap;
+}}
+
+.sgrid{{display:grid;grid-template-columns:1fr 1fr;gap:6px}}
+.scard{{border-radius:8px;padding:8px 10px;text-align:center}}
+.scard.main{{background:linear-gradient(135deg,#4f46e5,#7c3aed);grid-column:1/-1}}
+.scard.emb {{background:linear-gradient(135deg,#0369a1,#0891b2)}}
+.scard.ont {{background:linear-gradient(135deg,#047857,#059669)}}
+.slabel{{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:rgba(255,255,255,0.7);margin-bottom:2px}}
+.sval  {{font-size:18px;font-weight:800;color:white;line-height:1}}
+.ssub  {{font-size:9px;color:rgba(255,255,255,0.6);margin-top:2px}}
+
+.conf-row{{
+  display:flex;align-items:center;gap:6px;margin-top:6px;
+  padding:6px 10px;border-radius:8px;
+  background:#0a0f1e;border:1px solid #1e293b;
+  font-size:11px;color:#94a3b8;font-weight:500;
+}}
+
+/* SVG nodes */
+.mnode{{cursor:pointer}}
+.mnode:hover .gring{{opacity:0.35!important}}
+.mnode.selected circle:not(.gring){{stroke:white;stroke-width:2}}
+.cnode{{cursor:pointer}}
+.cnode:hover circle:first-child{{opacity:0.35!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- LEFT: graph -->
+  <div class="graph-col">
+    <div class="graph-header">
+      <div>
+        <div class="graph-badge">Control Mapping Graph</div>
+      </div>
+      <div style="margin-left:6px">
+        <div class="graph-title">ECC–NIST Mapping</div>
+        <div class="graph-subtitle">Click any node to inspect</div>
+      </div>
+    </div>
+
+    <div class="svg-wrap">
+      <svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">
+        <!-- orbit ring -->
+        <circle cx="{cx}" cy="{cy}" r="{ORBIT}"
+                fill="none" stroke="#1e293b" stroke-width="1"
+                stroke-dasharray="3,6"/>
+
+        {svg_lines}
+
+        <!-- ECC centre -->
+        <g class="cnode" onclick="showEcc()">
+          <circle cx="{cx}" cy="{cy}" r="{BR+12}" fill="#6366f1" opacity="0.12"/>
+          <circle cx="{cx}" cy="{cy}" r="{BR}"
+                  fill="url(#cgrad)" filter="drop-shadow(0 0 10px rgba(99,102,241,0.5))"/>
+          <text x="{cx}" y="{cy-9}" text-anchor="middle" dominant-baseline="middle"
+                fill="white" font-size="14" font-weight="800" font-family="Inter,sans-serif">ECC</text>
+          <text x="{cx}" y="{cy+8}" text-anchor="middle" dominant-baseline="middle"
+                fill="rgba(255,255,255,0.8)" font-size="11" font-weight="700"
+                font-family="Inter,sans-serif">{html.escape(str(selected_id))}</text>
+          <text x="{cx}" y="{cy+22}" text-anchor="middle" dominant-baseline="middle"
+                fill="rgba(255,255,255,0.4)" font-size="8" font-family="Inter,sans-serif">click</text>
+        </g>
+
+        {svg_nodes}
+        {svg_nums}
+
+        <defs>
+          <linearGradient id="cgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   style="stop-color:#818cf8"/>
+            <stop offset="100%" style="stop-color:#4f46e5"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+
+    <div class="legend">
+      <div class="leg"><div class="legdot" style="background:#059669"></div>High ≥85%</div>
+      <div class="leg"><div class="legdot" style="background:#d97706"></div>Mid ≥70%</div>
+      <div class="leg"><div class="legdot" style="background:#dc2626"></div>Low &lt;70%</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: table + detail -->
+  <div class="right-col">
+
+    <!-- summary table -->
+    <div class="tbl-section">
+      <div class="tbl-header">
+        <div class="tbl-title">📋 Results — <span style="color:#6366f1">{n_mappings} mapping(s)</span>&nbsp;for&nbsp;<b style="color:#818cf8">{html.escape(str(selected_id))}</b></div>
+        <div class="tbl-sub">Click a row or node to view full details below</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>NIST Control</th><th>Score</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- detail (scrollable) -->
+    <div class="detail-col" id="detail">
+      <div class="placeholder">
+        🔗 Select a node or row to view full mapping details<br>
+        <span style="color:#334155;font-size:10px">Click the indigo ECC node for the source control</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const MD   = {mdata_json};
+const SR   = {srows_json};
+const ECC_TEXT = {src_json};
+const ECC_ID   = {src_id_json};
+let activeRank = null;
+
+/* ── Build summary table ── */
+SR.forEach(r => {{
+  const tr = document.createElement("tr");
+  tr.className = "trow";
+  tr.dataset.rank = r.rank;
+  tr.onclick = () => selectNode(parseInt(r.rank));
+  tr.innerHTML = `
+    <td><span class="rbadge">${{r.rank}}</span></td>
+    <td style="font-weight:600;color:#e2e8f0;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${{esc(r.nist)}}</td>
+    <td><span class="score-pill" style="background:${{r.color}}">${{r.pct}}</span></td>
+  `;
+  document.getElementById("tbody").appendChild(tr);
+}});
+
+function esc(t) {{
+  if(!t) return "N/A";
+  return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+                  .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}}
+
+function setActive(rank) {{
+  /* highlight table row */
+  document.querySelectorAll(".trow").forEach(r => r.classList.remove("active"));
+  const row = document.querySelector(`.trow[data-rank="${{rank}}"]`);
+  if(row) row.classList.add("active");
+  /* highlight SVG node */
+  document.querySelectorAll(".mnode").forEach(g => g.classList.remove("selected"));
+  const node = document.querySelector(`.mnode[data-rank="${{rank}}"]`);
+  if(node) node.classList.add("selected");
+  activeRank = rank;
+}}
+
+function selectNode(rank) {{
+  const item = MD[`node_${{rank}}`];
+  if(!item) return;
+  setActive(rank);
+
+  const detail = document.getElementById("detail");
+  detail.innerHTML = `
+    <div class="d-header">
+      <div class="d-rank" style="background:${{item.color}}">${{item.rank}}</div>
+      <div>
+        <div class="d-title">Mapping #${{item.rank}} — ${{esc(item.nist_control)}}</div>
+        <div class="d-sub">${{item.domain}} · ${{item.label}} ${{item.icon}}</div>
+      </div>
+    </div>
+
+    <div class="sgrid">
+      <div class="scard main">
+        <div class="slabel">Final Match Score</div>
+        <div class="sval">${{item.final_pct}}</div>
+        <div class="ssub">${{item.final}} raw · ${{item.domain}}</div>
+      </div>
+      <div class="scard emb">
+        <div class="slabel">Embedding</div>
+        <div class="sval">${{item.emb_pct}}</div>
+        <div class="ssub">${{item.emb}}</div>
+      </div>
+      <div class="scard ont">
+        <div class="slabel">Ontology</div>
+        <div class="sval">${{item.ont_pct}}</div>
+        <div class="ssub">${{item.ont}}</div>
+      </div>
+    </div>
+    <div class="conf-row">${{item.icon}} <b style="color:#e2e8f0">Confidence:</b> ${{item.label}}</div>
+
+    <div class="stitle">🎯 NIST Control Text</div>
+    <div class="cbox"><b style="color:#818cf8">${{esc(item.nist_control)}}</b>
+
+${{esc(item.nist_text)}}</div>
+
+    <div class="stitle">🤝 Commonality</div>
+    <div class="cbox">${{esc(item.commonality)}}</div>
+
+    <div class="stitle">✅ Justification</div>
+    <div class="cbox">${{esc(item.justification)}}</div>
+
+    <div class="stitle">⚡ Differences</div>
+    <div class="cbox">${{esc(item.differences)}}</div>
+  `;
+  detail.scrollTop = 0;
+}}
+
+function showEcc() {{
+  /* deselect nodes */
+  document.querySelectorAll(".mnode").forEach(g => g.classList.remove("selected"));
+  document.querySelectorAll(".trow").forEach(r => r.classList.remove("active"));
+  activeRank = null;
+
+  document.getElementById("detail").innerHTML = `
+    <div class="d-header">
+      <div class="d-rank" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">⬡</div>
+      <div>
+        <div class="d-title">ECC Control — ${{esc(ECC_ID)}}</div>
+        <div class="d-sub">Source control description</div>
+      </div>
+    </div>
+    <div class="stitle">🏷️ Control ID</div>
+    <div class="cbox"><b style="color:#818cf8;font-size:14px">${{esc(ECC_ID)}}</b></div>
+    <div class="stitle">📄 Description</div>
+    <div class="cbox" style="line-height:1.8">${{esc(ECC_TEXT)}}</div>
+    <div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#0a0f1e;border:1px solid #1e293b;font-size:10px;color:#6366f1;font-weight:600">
+      💡 Click any outer node to view its NIST mapping details
+    </div>
+  `;
+  document.getElementById("detail").scrollTop = 0;
+}}
+</script>
+</body></html>"""
 
 
 # ─────────────────────────────────────────
@@ -1021,7 +729,6 @@ def create_svg_viewer(selected_id, source_text, mappings):
 DATA_FILE = "final_with_explanations_COMPLETE.csv"
 
 if os.path.exists(DATA_FILE):
-
     df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
     df.columns = [c.strip() for c in df.columns]
 
@@ -1029,138 +736,92 @@ if os.path.exists(DATA_FILE):
         st.error("Column 'ECC id control' was not found in the CSV file.")
         st.stop()
 
-    st.sidebar.title("ECC Controls")
-
-    search_term = st.sidebar.text_input(
-        "Search ECC Control",
-        placeholder="e.g. 1-1 or PR.AA",
-        key="search_term",
+    st.sidebar.markdown(
+        """
+        <div class="side-head">
+          <div class="side-kicker">ECC Controls</div>
+          <div class="side-title">Control Picker</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
+    search_term = st.sidebar.text_input("Search", placeholder="e.g. 1-1 or PR.AA", key="search_term")
 
-    all_control_ids = sorted(
-        df["ECC id control"].astype(str).unique(),
-        key=natural_control_sort,
-    )
-
-    if search_term.strip():
-        filtered_ids = [
-            cid for cid in all_control_ids
-            if search_term.strip().lower() in cid.lower()
-        ]
-    else:
-        filtered_ids = all_control_ids
-
-    if not filtered_ids:
-        st.sidebar.warning("No controls match your search.")
-        filtered_ids = all_control_ids
+    all_ids = sorted(df["ECC id control"].astype(str).unique(), key=natural_control_sort)
+    filtered = [c for c in all_ids if search_term.strip().lower() in c.lower()] if search_term.strip() else all_ids
+    if not filtered:
+        st.sidebar.warning("No matches.")
+        filtered = all_ids
 
     if "selected_id" not in st.session_state:
-        st.session_state.selected_id = all_control_ids[0]
+        st.session_state.selected_id = all_ids[0]
 
-    exact_match = next(
-        (cid for cid in all_control_ids
-         if cid.lower() == search_term.strip().lower()),
-        None,
-    )
-    if exact_match and exact_match != st.session_state.selected_id:
-        st.session_state.selected_id = exact_match
+    exact = next((c for c in all_ids if c.lower() == search_term.strip().lower()), None)
+    if exact and exact != st.session_state.selected_id:
+        st.session_state.selected_id = exact
 
-    radio_default_idx = (
-        filtered_ids.index(st.session_state.selected_id)
-        if st.session_state.selected_id in filtered_ids
-        else 0
-    )
-
-    selected_id = st.sidebar.radio(
+    default_idx = filtered.index(st.session_state.selected_id) if st.session_state.selected_id in filtered else 0
+    selected_id = st.sidebar.selectbox(
         "Select Control ID",
-        filtered_ids,
-        index=radio_default_idx,
-        format_func=lambda x: x,
+        filtered,
+        index=default_idx,
+        label_visibility="collapsed",
     )
     st.session_state.selected_id = selected_id
+    st.sidebar.markdown(
+        f'<div class="side-count">{len(filtered)} of {len(all_ids)} controls shown</div>',
+        unsafe_allow_html=True,
+    )
 
-    with st.sidebar.expander("🔍 Debug: CSV columns"):
-        st.write("**All columns in CSV:**")
-        for c in df.columns:
-            st.write(f"• `{c}`")
-        row_debug = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
-        st.write("---")
-        for mapping_num, targets in [
-            (1, [("Final Score",     "Final Score"),
-                 ("Embedding Score", "Embedding Score"),
-                 ("Ontology Score",  "Ontology Score")]),
-            (2, [("Final Score 2",     "Final Score 2"),
-                 ("Embedding Score 2", "Embedding Score 2"),
-                 ("Ontology Score 2",  "Ontology Score 2")]),
-        ]:
-            st.write(f"**Score column lookup for mapping {mapping_num}:**")
-            for label, target in targets:
-                found = find_col(list(df.columns), target)
-                if found:
-                    raw_val = row_debug.get(found, "N/A")
-                    st.success(f"✅ `{target}` → `{found}` = `{raw_val}`")
-                else:
-                    st.error(f"❌ `{target}` → NOT FOUND")
-            st.write("---")
+    with st.sidebar.expander("🔍 Debug columns"):
+        for c in df.columns: st.write(f"• `{c}`")
 
-    # Load selected row
-    row             = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
-    source_text_col = find_col(list(df.columns), "Source Text")
-    source_text     = safe_value(row.get(source_text_col, "") if source_text_col else "")
+    row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
+    src_col  = find_col(list(df.columns), "Source Text")
+    src_text = safe_value(row.get(src_col, "") if src_col else "")
 
-    # ── Header ──────────────────────────────────────────────────────────
-    header_col1, header_col2 = st.columns([4, 1.4])
+    # ── Compact header row ──────────────────────────────────────────────
+    h1, h2 = st.columns([5, 1.2])
 
-    with header_col1:
+    with h1:
         st.markdown(
-            f"""
-            <div style="
-                background: linear-gradient(135deg,#0f172a 0%,#312e81 60%,#4c1d95 100%);
-                border-radius: 12px 0 0 12px;
-                padding: 20px 28px; margin-bottom: 10px;
-                min-height: 110px;
-                display: flex; flex-direction: column; justify-content: center;
+            f"""<div style="
+                background:linear-gradient(135deg,#0f172a 0%,#312e81 55%,#4c1d95 100%);
+                border-radius:10px;padding:14px 22px;
+                display:flex;align-items:center;gap:18px;
             ">
-                <div style="font-size:11px;font-weight:600;color:#a5b4fc;
-                            text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
-                    ECC–NIST Framework
+              <div style="flex-shrink:0;width:40px;height:40px;border-radius:50%;
+                          background:linear-gradient(135deg,#6366f1,#8b5cf6);
+                          display:flex;align-items:center;justify-content:center;
+                          font-size:16px;font-weight:800;color:white;">E</div>
+              <div>
+                <div style="font-size:10px;font-weight:600;color:#a5b4fc;
+                            text-transform:uppercase;letter-spacing:1px;">ECC–NIST Framework</div>
+                <div style="font-size:20px;font-weight:800;color:#f8fafc;line-height:1.2;
+                            font-family:'Inter',sans-serif;">Control Mapping Viewer</div>
+                <div style="font-size:12px;color:#64748b;margin-top:2px;">
+                  Active: <span style="color:#a5b4fc;font-weight:700;">{selected_id}</span>
                 </div>
-                <h1 style="margin:0;font-size:26px;color:#f8fafc;
-                           font-family:'Inter',Arial,sans-serif;
-                           font-weight:800;line-height:1.2;">
-                    Control Mapping Viewer
-                </h1>
-                <p style="margin-top:8px;color:#94a3b8;font-size:13px;
-                          font-family:'Inter',Arial,sans-serif;">
-                    Active control:
-                    <span style="color:#a5b4fc;font-weight:700;">{selected_id}</span>
-                </p>
-            </div>
-            """,
+              </div>
+            </div>""",
             unsafe_allow_html=True,
         )
 
-    with header_col2:
+    with h2:
         st.markdown(
-            """
-            <div style="
-                background: linear-gradient(135deg,#f5f7ff 0%,#eef2ff 100%);
-                border: 1px solid #c7d2fe;
-                border-radius: 0 12px 12px 0;
-                padding: 16px 18px; margin-bottom: 10px;
-                min-height: 110px;
-                display: flex; flex-direction: column; justify-content: center;
+            """<div style="
+                background:linear-gradient(135deg,#0f172a,#1e1b4b);
+                border:1px solid #312e81;border-radius:10px;
+                padding:14px 16px;height:100%;
+                display:flex;flex-direction:column;justify-content:center;gap:6px;
             ">
-                <p style="margin:0 0 10px 0;font-weight:700;color:#4f46e5;
-                          font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">
-                    Top-K Mappings
-                </p>
-            </div>
-            """,
+              <div style="font-size:10px;font-weight:700;color:white;
+                          text-transform:uppercase;letter-spacing:0.6px;">Top-K Mappings</div>
+            </div>""",
             unsafe_allow_html=True,
         )
         top_k = st.select_slider(
-            "Top-K Recommendations",
+            "Top-K",
             options=list(range(1, 6)),
             value=5,
             label_visibility="collapsed",
@@ -1168,89 +829,56 @@ if os.path.exists(DATA_FILE):
 
     mappings = extract_mappings(row, df, top_k=top_k)
 
-    st.markdown(
-        f"""
-        <div style="margin-top:-8px;margin-bottom:8px;color:#64748b;font-size:13px;">
-            Showing <b style="color:#6366f1;">{len(mappings)}</b> recommended mapping(s) for
-            <b style="color:#4f46e5;">{selected_id}</b>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # ── Main viewer + pipeline ──────────────────────────────────────────
+    col_v, col_p = st.columns([5, 1])
 
-    viewer_html = create_svg_viewer(
-        selected_id=str(selected_id),
-        source_text=source_text,
-        mappings=mappings,
-    )
-
-    col_graph, col_status = st.columns([4, 1])
-
-    with col_status:
+    with col_p:
         st.markdown(
-            """
-            <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);
-                        border-radius:12px;padding:16px 14px;margin-bottom:8px;">
-                <div style="font-size:11px;font-weight:700;color:#a5b4fc;
-                            text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">
-                    Processing Pipeline
-                </div>
-            </div>
-            """,
+            """<div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);
+                           border-radius:10px;padding:12px 14px;margin-top:4px;">
+              <div style="font-size:10px;font-weight:700;color:#6366f1;
+                          text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">
+                Pipeline
+              </div>
+            </div>""",
             unsafe_allow_html=True,
         )
-
-        pipeline_box = st.empty()
-        steps = [
-            "Loading ECC Control",
-            "Loading NIST Controls",
-            "Extracting Metadata",
-            "Semantic Embeddings",
-            "Ontology Scoring",
-            "Confidence Matching",
-            "AI Explanation",
-            "Returning Top-K",
-        ]
-
+        pipe_box = st.empty()
+        steps = ["Load ECC Control","Load NIST Controls","Extract Metadata",
+                 "Semantic Embeddings","Ontology Scoring","Confidence Match",
+                 "AI Explanation","Return Top-K"]
         completed = []
         for step in steps:
             completed.append(step)
             rows_html = "".join(
-                f'<div style="font-size:12px;color:#86efac;padding:3px 0;">✅ {s}</div>'
-                if s in completed
-                else
-                f'<div style="font-size:12px;color:#475569;padding:3px 0;">⬜ {s}</div>'
+                f'<div style="font-size:11px;color:#86efac;padding:2px 0">✅ {s}</div>'
+                if s in completed else
+                f'<div style="font-size:11px;color:#334155;padding:2px 0">⬜ {s}</div>'
                 for s in steps
             )
-            pipeline_box.markdown(
+            pipe_box.markdown(
                 f'<div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);'
-                f'border-radius:12px;padding:12px 14px;">{rows_html}</div>',
+                f'border-radius:10px;padding:10px 14px">{rows_html}</div>',
                 unsafe_allow_html=True,
             )
-            time.sleep(0.15)
+            time.sleep(0.12)
 
-    with col_graph:
-        # 560 (top-row) + 12+10 (title) + 40 (thead) + rows*41 + 28 (padding)
-        n_rows      = max(len(mappings), 1)
-        table_h     = 52 + 40 + n_rows * 41
-        total_h     = 560 + table_h + 10
-        components.html(viewer_html, height=total_h, scrolling=False)
+    with col_v:
+        viewer_html = create_viewer(str(selected_id), src_text, mappings)
+        # height = full viewport minus header (~90px) and export (~60px)
+        components.html(viewer_html, height=600, scrolling=False)
 
-    # ── Export PDF ───────────────────────────────────────────────────────
+    # ── Export (only thing below) ──────────────────────────────────────
     st.markdown(
-        """
-        <div style="height:1px;
-                    background:linear-gradient(90deg,#e8edff,#c7d2fe,#e8edff);
-                    margin:16px 0 14px 0;"></div>
-        <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:10px;">
-            Export Mapping Report
-        </div>
-        """,
+        """<div style="height:1px;background:linear-gradient(90deg,#1e293b,#4f46e5,#1e293b);
+                       margin:12px 0 10px"></div>
+           <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">
+             Export Mapping Report
+           </div>""",
         unsafe_allow_html=True,
     )
 
-    pdf_bytes = generate_pdf(selected_id, source_text, mappings)
-
+    pdf_bytes = generate_pdf(selected_id, src_text, mappings)
     if pdf_bytes:
         st.download_button(
             label="⬇  Export PDF Report",
@@ -1259,26 +887,18 @@ if os.path.exists(DATA_FILE):
             mime="application/pdf",
         )
     else:
-        st.warning(
-            "PDF export requires the `fpdf2` library. "
-            "Install it with: `pip install fpdf2`"
-        )
+        st.warning("PDF export requires `fpdf2` — install with: `pip install fpdf2`")
 
 else:
     st.markdown(
-        f"""
-        <div style="
-            background:#fef2f2; border:1px solid #fecaca;
-            border-radius:10px; padding:24px; margin-top:30px;
-        ">
-            <div style="font-size:16px;font-weight:700;color:#991b1b;margin-bottom:8px;">
-                ⚠️ Data file not found
-            </div>
-            <div style="color:#7f1d1d;font-size:14px;">
-                Make sure <code>{DATA_FILE}</code> is in the same folder as
-                <code>mapviewer.py</code>.
-            </div>
-        </div>
-        """,
+        f"""<div style="background:#1e293b;border:1px solid #dc2626;border-radius:10px;
+                        padding:24px;margin-top:30px;">
+          <div style="font-size:16px;font-weight:700;color:#fca5a5;margin-bottom:8px;">
+            ⚠️ Data file not found
+          </div>
+          <div style="color:#94a3b8;font-size:14px;">
+            Make sure <code style="color:#818cf8">{DATA_FILE}</code> is in the same folder.
+          </div>
+        </div>""",
         unsafe_allow_html=True,
     )
