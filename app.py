@@ -84,8 +84,9 @@ st.markdown(
             margin-bottom: 6px !important;
         }
 
+        /* Remove top space in main area */
         .main .block-container {
-            padding-top: 24px !important;
+            padding-top: 0px !important;
             padding-bottom: 24px !important;
         }
 
@@ -106,6 +107,7 @@ st.markdown(
 
         #MainMenu { visibility: hidden; }
         footer    { visibility: hidden; }
+        header    { visibility: hidden; }
 
         .stSlider > div > div > div {
             background: #6366f1 !important;
@@ -219,8 +221,8 @@ def short_mapping_label(mapping):
 
 
 def extract_mappings(row, df, top_k=5):
-    results  = []
-    df_cols  = list(df.columns)
+    results = []
+    df_cols = list(df.columns)
 
     for i in range(1, 11):
         cols               = get_mapping_columns(i)
@@ -295,13 +297,11 @@ def generate_pdf(selected_id, source_text, mappings):
     pdf.cell(0, 7, f"ECC Control: {selected_id}", ln=True, align="C")
     pdf.ln(4)
 
-    # Divider
     pdf.set_draw_color(199, 210, 254)
     pdf.set_line_width(0.5)
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(5)
 
-    # ECC source text
     if source_text and source_text != "N/A":
         pdf.set_font("Helvetica", "B", 11)
         pdf.set_text_color(79, 70, 229)
@@ -315,7 +315,6 @@ def generate_pdf(selected_id, source_text, mappings):
         pdf.line(10, pdf.get_y(), 200, pdf.get_y())
         pdf.ln(5)
 
-    # Each mapping
     for idx, m in enumerate(mappings):
         final_val = float(m["final"])
         if final_val >= 0.85:
@@ -328,13 +327,12 @@ def generate_pdf(selected_id, source_text, mappings):
             confidence = "Low Match"
             r, g, b    = 220, 38, 38
 
-        # Mapping header bar
         pdf.set_fill_color(r, g, b)
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Helvetica", "B", 12)
         header_text = (
             f"  #{idx + 1}  {m['mapping']}"
-            f"  —  {format_percent(m['final'])}  ({confidence})"
+            f"  -  {format_percent(m['final'])}  ({confidence})"
         )
         pdf.cell(0, 10, header_text, ln=True, fill=True)
         pdf.ln(2)
@@ -349,7 +347,6 @@ def generate_pdf(selected_id, source_text, mappings):
             pdf.multi_cell(0, 5.5, clean)
             pdf.ln(2)
 
-        # Scores first
         pdf.set_font("Helvetica", "B", 10)
         pdf.set_text_color(79, 70, 229)
         pdf.cell(0, 6, "Scores & Analysis", ln=True)
@@ -377,14 +374,14 @@ def generate_pdf(selected_id, source_text, mappings):
 
 
 # ─────────────────────────────────────────
-# SVG Viewer (HTML component)
+# SVG Viewer
 # ─────────────────────────────────────────
 def create_svg_viewer(selected_id, source_text, mappings):
     width  = 620
-    height = 430
+    height = 440
 
     center_x     = 310
-    center_y     = 215
+    center_y     = 220
     blue_radius  = 48
     green_radius = 42
     graph_radius = 158
@@ -395,6 +392,9 @@ def create_svg_viewer(selected_id, source_text, mappings):
     svg_numbers  = ""
 
     n = len(mappings)
+
+    # Truncate source text for the tooltip / center node popup
+    source_short = source_text if len(source_text) <= 160 else source_text[:157] + "…"
 
     for idx, item in enumerate(mappings):
         angle = (2 * math.pi / n) * idx - (math.pi / 2)
@@ -409,23 +409,24 @@ def create_svg_viewer(selected_id, source_text, mappings):
         code_escaped = html.escape(item["short_code"])
 
         mapping_data[node_id] = {
-            "rank":               str(rank),
-            "ecc_control":        str(selected_id),
-            "nist_control":       item["mapping"],
-            "nist_short_code":    item["short_code"],
-            "nist_short_name":    item["short_name"],
-            "nist_text":          item["text"],
-            "final":              format_decimal(item["final"]),
-            "final_percent":      format_percent(item["final"]),
-            "embedding":          format_decimal(item["embedding"]),
-            "embedding_percent":  format_percent(item["embedding"]),
-            "ontology":           format_decimal(item["ontology"]),
-            "ontology_percent":   format_percent(item["ontology"]),
-            "commonality":        item["commonality"],
-            "justification":      item["justification"],
-            "differences":        item["differences"],
-            "fill_color":         fill_color,
-            "badge_color":        badge_color,
+            "rank":              str(rank),
+            "ecc_control":       str(selected_id),
+            "ecc_text":          source_text,
+            "nist_control":      item["mapping"],
+            "nist_short_code":   item["short_code"],
+            "nist_short_name":   item["short_name"],
+            "nist_text":         item["text"],
+            "final":             format_decimal(item["final"]),
+            "final_percent":     format_percent(item["final"]),
+            "embedding":         format_decimal(item["embedding"]),
+            "embedding_percent": format_percent(item["embedding"]),
+            "ontology":          format_decimal(item["ontology"]),
+            "ontology_percent":  format_percent(item["ontology"]),
+            "commonality":       item["commonality"],
+            "justification":     item["justification"],
+            "differences":       item["differences"],
+            "fill_color":        fill_color,
+            "badge_color":       badge_color,
         }
 
         dx       = x - center_x
@@ -467,6 +468,9 @@ def create_svg_viewer(selected_id, source_text, mappings):
         """
 
     mapping_json    = json.dumps(mapping_data, ensure_ascii=False)
+    source_json     = json.dumps(source_text,  ensure_ascii=False)
+    source_id_json  = json.dumps(str(selected_id), ensure_ascii=False)
+
     summary_rows_js = json.dumps([
         {
             "rank":          str(i + 1),
@@ -478,6 +482,11 @@ def create_svg_viewer(selected_id, source_text, mappings):
         }
         for i, m in enumerate(mappings)
     ])
+
+    # rows needed for table height estimate (min 1)
+    n_rows = max(len(mappings), 1)
+    # each row ~41px + header 40px + title+padding ~52px
+    table_height = 52 + 40 + n_rows * 41
 
     html_code = f"""
     <!DOCTYPE html>
@@ -506,15 +515,16 @@ def create_svg_viewer(selected_id, source_text, mappings):
                             0 8px 24px rgba(99,102,241,0.08);
             }}
 
+            /* ── Top row ── */
             .top-row {{
                 display: flex;
-                height: 590px;
+                height: 560px;
             }}
 
             /* ── Graph ── */
             .graph-section {{
                 width: 60%;
-                height: 590px;
+                height: 560px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -544,14 +554,12 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 font-size: 10px; font-weight: 600; color: #64748b;
             }}
 
-            .legend-dot {{
-                width: 10px; height: 10px; border-radius: 50%;
-            }}
+            .legend-dot {{ width: 10px; height: 10px; border-radius: 50%; }}
 
             /* ── Detail panel ── */
             .summary-section {{
                 width: 40%;
-                height: 590px;
+                height: 560px;
                 padding: 22px 20px;
                 overflow-y: auto;
                 background: #ffffff;
@@ -563,39 +571,39 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 background: #c7d2fe; border-radius: 4px;
             }}
 
-            /* ── Results table section ── */
+            /* ── Results summary ── */
             .results-summary {{
                 border-top: 1px solid #e8edff;
-                padding: 18px 22px 22px;
+                padding: 12px 20px 16px;
                 background: linear-gradient(135deg, #f8f9ff 0%, #f3f6ff 100%);
             }}
 
             .results-summary-title {{
-                font-size: 13px; font-weight: 700; color: #374151;
-                margin-bottom: 14px;
+                font-size: 12px; font-weight: 700; color: #374151;
+                margin-bottom: 10px;
                 display: flex; align-items: center; gap: 6px;
             }}
 
             .results-table {{
                 width: 100%;
                 border-collapse: collapse;
-                font-size: 13px;
+                font-size: 12px;
             }}
 
             .results-table th {{
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
                 color: white;
-                padding: 10px 14px;
+                padding: 7px 12px;
                 text-align: left;
                 font-weight: 600; font-size: 11px;
                 text-transform: uppercase; letter-spacing: 0.5px;
             }}
 
-            .results-table th:first-child {{ border-radius: 8px 0 0 0; }}
-            .results-table th:last-child  {{ border-radius: 0 8px 0 0; }}
+            .results-table th:first-child {{ border-radius: 6px 0 0 0; }}
+            .results-table th:last-child  {{ border-radius: 0 6px 0 0; }}
 
             .results-table td {{
-                padding: 10px 14px;
+                padding: 7px 12px;
                 border-bottom: 1px solid #eef2ff;
                 color: #374151;
                 vertical-align: middle;
@@ -611,8 +619,8 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 align-items: center; justify-content: center;
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
                 color: white; border-radius: 50%;
-                width: 26px; height: 26px;
-                font-weight: 700; font-size: 11px;
+                width: 22px; height: 22px;
+                font-weight: 700; font-size: 10px;
             }}
 
             /* ── SVG nodes ── */
@@ -625,18 +633,19 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 pointer-events: none;
                 font-family: 'Inter', Arial, sans-serif;
             }}
-
             .node-score {{
                 fill: rgba(255,255,255,0.92);
                 font-size: 11px; font-weight: 700;
                 pointer-events: none;
                 font-family: 'Inter', Arial, sans-serif;
             }}
-
             .number-label {{
                 font-size: 10px; font-weight: 700;
                 font-family: 'Inter', Arial, sans-serif;
             }}
+
+            /* ── ECC center node clickable ── */
+            .center-node {{ cursor: pointer; }}
 
             /* ── Detail panel inner ── */
             .panel-header {{
@@ -677,10 +686,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 gap: 8px;
             }}
 
-            .score-card {{
-                border-radius: 10px; padding: 10px 12px; text-align: center;
-            }}
-
+            .score-card {{ border-radius: 10px; padding: 10px 12px; text-align: center; }}
             .score-card-main  {{
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
                 grid-column: 1 / -1;
@@ -693,11 +699,9 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 text-transform: uppercase; letter-spacing: 0.6px;
                 opacity: 0.85; color: white; margin-bottom: 4px;
             }}
-
             .score-card-value {{
                 font-size: 20px; font-weight: 800; color: white; line-height: 1;
             }}
-
             .score-card-sub {{
                 font-size: 10px; color: rgba(255,255,255,0.75); margin-top: 2px;
             }}
@@ -712,21 +716,36 @@ def create_svg_viewer(selected_id, source_text, mappings):
 
             .placeholder {{
                 color: #94a3b8; font-size: 13px; line-height: 1.7;
-                text-align: center; padding: 50px 16px;
+                text-align: center; padding: 40px 16px;
                 border: 2px dashed #c7d2fe; border-radius: 12px;
                 margin-top: 8px; background: #f8faff;
             }}
 
             .placeholder-icon {{ font-size: 32px; margin-bottom: 12px; }}
             .placeholder-hint  {{ font-size: 11px; color: #a5b4fc; margin-top: 6px; }}
+
+            /* ECC popup card */
+            .ecc-panel-header {{
+                display: flex; align-items: center; gap: 10px;
+                margin-bottom: 14px; padding-bottom: 12px;
+                border-bottom: 2px solid #eef2ff;
+            }}
+
+            .ecc-icon {{
+                width: 36px; height: 36px; border-radius: 50%;
+                background: linear-gradient(135deg, #6366f1, #4f46e5);
+                display: flex; align-items: center; justify-content: center;
+                font-size: 16px; flex-shrink: 0;
+            }}
         </style>
     </head>
     <body>
         <div class="main-card">
 
-            <!-- ── Top row: graph + detail panel ── -->
+            <!-- Top row -->
             <div class="top-row">
 
+                <!-- Graph -->
                 <div class="graph-section">
                     <div class="graph-badge">Control Mapping Graph</div>
 
@@ -739,23 +758,30 @@ def create_svg_viewer(selected_id, source_text, mappings):
 
                         {svg_lines}
 
-                        <!-- Centre node -->
-                        <circle cx="{center_x}" cy="{center_y}" r="{blue_radius + 8}"
-                                fill="url(#centerGlow)" opacity="0.25"/>
-                        <circle cx="{center_x}" cy="{center_y}" r="{blue_radius}"
-                                fill="url(#centerGrad)"
-                                filter="drop-shadow(0 4px 12px rgba(99,102,241,0.5))"/>
-                        <text x="{center_x}" y="{center_y - 7}"
-                              text-anchor="middle" dominant-baseline="middle"
-                              fill="white" font-size="13" font-weight="800"
-                              font-family="Inter, Arial, sans-serif">ECC</text>
-                        <text x="{center_x}" y="{center_y + 9}"
-                              text-anchor="middle" dominant-baseline="middle"
-                              fill="rgba(255,255,255,0.85)"
-                              font-size="11" font-weight="700"
-                              font-family="Inter, Arial, sans-serif">
-                            {html.escape(str(selected_id))}
-                        </text>
+                        <!-- ECC Centre node (clickable) -->
+                        <g class="center-node" onclick="showEccPanel()">
+                            <circle cx="{center_x}" cy="{center_y}" r="{blue_radius + 10}"
+                                    fill="url(#centerGlow)" opacity="0.22"/>
+                            <circle cx="{center_x}" cy="{center_y}" r="{blue_radius}"
+                                    fill="url(#centerGrad)"
+                                    filter="drop-shadow(0 4px 14px rgba(99,102,241,0.55))"/>
+                            <text x="{center_x}" y="{center_y - 8}"
+                                  text-anchor="middle" dominant-baseline="middle"
+                                  fill="white" font-size="13" font-weight="800"
+                                  font-family="Inter, Arial, sans-serif">ECC</text>
+                            <text x="{center_x}" y="{center_y + 8}"
+                                  text-anchor="middle" dominant-baseline="middle"
+                                  fill="rgba(255,255,255,0.85)"
+                                  font-size="10" font-weight="700"
+                                  font-family="Inter, Arial, sans-serif">
+                                {html.escape(str(selected_id))}
+                            </text>
+                            <text x="{center_x}" y="{center_y + 22}"
+                                  text-anchor="middle" dominant-baseline="middle"
+                                  fill="rgba(255,255,255,0.55)"
+                                  font-size="8" font-weight="500"
+                                  font-family="Inter, Arial, sans-serif">click</text>
+                        </g>
 
                         {svg_nodes}
                         {svg_numbers}
@@ -793,12 +819,14 @@ def create_svg_viewer(selected_id, source_text, mappings):
                     <div class="placeholder">
                         <div class="placeholder-icon">🔗</div>
                         <div>Click any node to view<br>detailed mapping info</div>
-                        <div class="placeholder-hint">Scores · Analysis · Justification</div>
+                        <div class="placeholder-hint">
+                            Click the blue ECC node for the control description
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ── Results summary table ── -->
+            <!-- Results summary table -->
             <div class="results-summary">
                 <div class="results-summary-title">
                     📋 Results Summary —
@@ -822,7 +850,10 @@ def create_svg_viewer(selected_id, source_text, mappings):
         <script>
             const mappingData  = {mapping_json};
             const summaryRows  = {summary_rows_js};
+            const eccText      = {source_json};
+            const eccId        = {source_id_json};
 
+            // Build results table
             (function buildTable() {{
                 const tbody = document.getElementById("summary-tbody");
                 summaryRows.forEach(function(row) {{
@@ -838,8 +869,8 @@ def create_svg_viewer(selected_id, source_text, mappings):
                                 display:inline-block;
                                 background:${{row.fill_color}};
                                 color:white; border-radius:20px;
-                                padding:2px 10px;
-                                font-weight:700; font-size:12px;
+                                padding:2px 9px;
+                                font-weight:700; font-size:11px;
                             ">${{escapeHtml(row.final_percent)}}</span>
                         </td>
                     `;
@@ -855,6 +886,40 @@ def create_svg_viewer(selected_id, source_text, mappings):
                     .replace(/'/g, "&#039;");
             }}
 
+            // Show ECC control description when blue node is clicked
+            function showEccPanel() {{
+                const panel = document.getElementById("summary-panel");
+                panel.innerHTML = `
+                    <div class="ecc-panel-header">
+                        <div class="ecc-icon">🔵</div>
+                        <div>
+                            <div class="panel-title">ECC Control</div>
+                            <div style="font-size:11px;color:#94a3b8;margin-top:1px;">
+                                Source control description
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sub-title">🏷️ Control ID</div>
+                    <div class="content-box">
+                        <b style="color:#4f46e5;font-size:14px;">${{escapeHtml(eccId)}}</b>
+                    </div>
+
+                    <div class="sub-title">📄 Description</div>
+                    <div class="content-box" style="line-height:1.7;">
+                        ${{escapeHtml(eccText)}}
+                    </div>
+
+                    <div style="margin-top:14px; padding:10px 12px;
+                                border-radius:8px; background:#eef2ff;
+                                border:1px solid #c7d2fe;
+                                font-size:11px; color:#6366f1; font-weight:600;">
+                        💡 Click any green node to view its NIST mapping details
+                    </div>
+                `;
+            }}
+
+            // Show NIST node detail panel
             function updatePanel(nodeId) {{
                 const item  = mappingData[nodeId];
                 const panel = document.getElementById("summary-panel");
@@ -891,7 +956,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
                         </div>
                     </div>
 
-                    <!-- ① Scores & Analysis FIRST -->
+                    <!-- Scores first -->
                     <div class="sub-title">📊 Scores & Analysis</div>
                     <div class="score-grid">
                         <div class="score-card score-card-main">
@@ -926,7 +991,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
                         ${{matchIcon}} <b>Confidence:</b> ${{matchLabel}}
                     </div>
 
-                    <!-- ② NIST control (no ECC description block) -->
+                    <!-- NIST text (no ECC description here) -->
                     <div class="sub-title">🎯 NIST Control</div>
                     <div class="content-box">
                         <b>${{escapeHtml(item.nist_control)}}</b><br><br>
@@ -1014,7 +1079,6 @@ if os.path.exists(DATA_FILE):
     )
     st.session_state.selected_id = selected_id
 
-    # Debug expander
     with st.sidebar.expander("🔍 Debug: CSV columns"):
         st.write("**All columns in CSV:**")
         for c in df.columns:
@@ -1022,7 +1086,7 @@ if os.path.exists(DATA_FILE):
         row_debug = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
         st.write("---")
         for mapping_num, targets in [
-            (1, [("Final Score", "Final Score"),
+            (1, [("Final Score",     "Final Score"),
                  ("Embedding Score", "Embedding Score"),
                  ("Ontology Score",  "Ontology Score")]),
             (2, [("Final Score 2",     "Final Score 2"),
@@ -1106,7 +1170,7 @@ if os.path.exists(DATA_FILE):
 
     st.markdown(
         f"""
-        <div style="margin-top:-8px;margin-bottom:12px;color:#64748b;font-size:13px;">
+        <div style="margin-top:-8px;margin-bottom:8px;color:#64748b;font-size:13px;">
             Showing <b style="color:#6366f1;">{len(mappings)}</b> recommended mapping(s) for
             <b style="color:#4f46e5;">{selected_id}</b>
         </div>
@@ -1154,7 +1218,8 @@ if os.path.exists(DATA_FILE):
             rows_html = "".join(
                 f'<div style="font-size:12px;color:#86efac;padding:3px 0;">✅ {s}</div>'
                 if s in completed
-                else f'<div style="font-size:12px;color:#475569;padding:3px 0;">⬜ {s}</div>'
+                else
+                f'<div style="font-size:12px;color:#475569;padding:3px 0;">⬜ {s}</div>'
                 for s in steps
             )
             pipeline_box.markdown(
@@ -1165,15 +1230,18 @@ if os.path.exists(DATA_FILE):
             time.sleep(0.15)
 
     with col_graph:
-        # Height = 590 (top-row) + ~230 (results table) + small buffer
-        components.html(viewer_html, height=840, scrolling=False)
+        # 560 (top-row) + 12+10 (title) + 40 (thead) + rows*41 + 28 (padding)
+        n_rows      = max(len(mappings), 1)
+        table_h     = 52 + 40 + n_rows * 41
+        total_h     = 560 + table_h + 10
+        components.html(viewer_html, height=total_h, scrolling=False)
 
-    # ── Export as PDF ────────────────────────────────────────────────────
+    # ── Export PDF ───────────────────────────────────────────────────────
     st.markdown(
         """
         <div style="height:1px;
                     background:linear-gradient(90deg,#e8edff,#c7d2fe,#e8edff);
-                    margin:20px 0 16px 0;"></div>
+                    margin:16px 0 14px 0;"></div>
         <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:10px;">
             Export Mapping Report
         </div>
@@ -1200,8 +1268,8 @@ else:
     st.markdown(
         f"""
         <div style="
-            background:#fef2f2;border:1px solid #fecaca;
-            border-radius:10px;padding:24px;margin-top:30px;
+            background:#fef2f2; border:1px solid #fecaca;
+            border-radius:10px; padding:24px; margin-top:30px;
         ">
             <div style="font-size:16px;font-weight:700;color:#991b1b;margin-bottom:8px;">
                 ⚠️ Data file not found
