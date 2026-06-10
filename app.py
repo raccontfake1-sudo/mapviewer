@@ -1144,7 +1144,7 @@ if os.path.exists(DATA_FILE):
             """,
             unsafe_allow_html=True,
         )
-with header_col2:
+       with header_col2:
     st.markdown(
         """
         <div style="
