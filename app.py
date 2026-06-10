@@ -13,15 +13,14 @@ st.set_page_config(page_title="ECC-NIST Control Mapping Viewer", layout="wide")
 st.markdown(
     """
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('[fonts.googleapis.com](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)');
 
         html, body, [class*="css"] {
             font-family: 'Inter', sans-serif;
         }
 
-        /* ── Sidebar ── */
         section[data-testid="stSidebar"] {
-            background: #0f172a;
+            background: #1e293b;
         }
 
         section[data-testid="stSidebar"] * {
@@ -34,14 +33,13 @@ st.markdown(
             color: #f8fafc !important;
             letter-spacing: 0.3px;
             padding-bottom: 4px;
-            border-bottom: 1px solid #1e293b;
+            border-bottom: 1px solid #334155;
             margin-bottom: 12px !important;
         }
 
-        /* Search box */
         section[data-testid="stSidebar"] input[type="text"] {
-            background: #1e293b !important;
-            border: 1px solid #334155 !important;
+            background: #273549 !important;
+            border: 1px solid #475569 !important;
             border-radius: 8px !important;
             color: #f1f5f9 !important;
             font-size: 13px !important;
@@ -52,7 +50,6 @@ st.markdown(
             color: #64748b !important;
         }
 
-        /* Radio group */
         section[data-testid="stSidebar"] div[role="radiogroup"] {
             gap: 0 !important;
         }
@@ -65,7 +62,7 @@ st.markdown(
         }
 
         section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
-            background: #1e293b !important;
+            background: #334155 !important;
         }
 
         section[data-testid="stSidebar"] div[role="radiogroup"] label div,
@@ -87,13 +84,11 @@ st.markdown(
             margin-bottom: 6px !important;
         }
 
-        /* Main area */
         .main .block-container {
             padding-top: 24px !important;
             padding-bottom: 24px !important;
         }
 
-        /* Streamlit download button */
         .stDownloadButton button {
             background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
             color: white !important;
@@ -109,11 +104,9 @@ st.markdown(
             background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
         }
 
-        /* Hide Streamlit branding */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
+        #MainMenu { visibility: hidden; }
+        footer    { visibility: hidden; }
 
-        /* Slider */
         .stSlider > div > div > div {
             background: #6366f1 !important;
         }
@@ -123,27 +116,26 @@ st.markdown(
 )
 
 
-# -------------------------
+# ─────────────────────────────────────────
 # Helpers
-# -------------------------
+# ─────────────────────────────────────────
 def get_mapping_columns(i):
     suffix = "" if i == 1 else f" {i}"
     return {
-        "mapping": f"NIST mapping{suffix}",
-        "text": f"Text{suffix}",
-        "final": f"Final Score{suffix}",
-        "embedding": f"Dense{suffix}",
-        "ontology": f"Ontology Score{suffix}",
-        "commonality": f"Commonality{suffix}",
+        "mapping":       f"NIST mapping{suffix}",
+        "text":          f"Text{suffix}",
+        "final":         f"Final Score{suffix}",
+        "embedding":     f"Dense{suffix}",
+        "ontology":      f"Ontology Score{suffix}",
+        "commonality":   f"Commonality{suffix}",
         "justification": f"Justification{suffix}",
-        "differences": f"Differences{suffix}"
+        "differences":   f"Differences{suffix}",
     }
 
 
 def find_col(df_columns, target):
     def normalise(s):
         return re.sub(r"[\s_]+", "", s).lower()
-
     target_norm = normalise(target)
     for col in df_columns:
         if normalise(col) == target_norm:
@@ -217,7 +209,7 @@ def short_mapping_label(mapping):
     parts = re.split(r"[-]", mapping)
     if len(parts) >= 2:
         number = "-".join(parts[:-1])
-        name = parts[-1]
+        name   = parts[-1]
         if len(name) > 12:
             name = name[:11] + "…"
         return number, name
@@ -227,11 +219,11 @@ def short_mapping_label(mapping):
 
 
 def extract_mappings(row, df, top_k=5):
-    results = []
-    df_cols = list(df.columns)
+    results  = []
+    df_cols  = list(df.columns)
 
     for i in range(1, 11):
-        cols = get_mapping_columns(i)
+        cols               = get_mapping_columns(i)
         actual_mapping_col = find_col(df_cols, cols["mapping"])
         if actual_mapping_col is None:
             continue
@@ -249,7 +241,7 @@ def extract_mappings(row, df, top_k=5):
         actual_diff = find_col(df_cols, cols["differences"])
 
         raw_mapping = safe_value(row.get(actual_mapping_col, ""))
-        code, name = short_mapping_label(raw_mapping)
+        code, name  = short_mapping_label(raw_mapping)
 
         results.append({
             "mapping":       raw_mapping,
@@ -264,44 +256,143 @@ def extract_mappings(row, df, top_k=5):
             "differences":   safe_value(
                 row.get(actual_diff, "") if actual_diff else "",
                 "The controls differ in implementation focus and specific requirements."
-            )
+            ),
         })
 
     results = sorted(results, key=lambda x: x["final"], reverse=True)
     return results[:top_k]
 
 
-# -------------------------
-# Color helpers for score-based node coloring
-# -------------------------
 def score_to_node_colors(score):
-    """Return (fill_color, glow_color, text_color, badge_color) based on score."""
     if score >= 0.85:
-        return "#059669", "rgba(5,150,105,0.45)", "white", "#34d399"   # emerald
+        return "#059669", "rgba(5,150,105,0.45)",  "white", "#34d399"
     elif score >= 0.70:
-        return "#d97706", "rgba(217,119,6,0.45)",  "white", "#fcd34d"  # amber
+        return "#d97706", "rgba(217,119,6,0.45)",  "white", "#fcd34d"
     else:
-        return "#dc2626", "rgba(220,38,38,0.45)",  "white", "#fca5a5"  # red
+        return "#dc2626", "rgba(220,38,38,0.45)",  "white", "#fca5a5"
 
 
-# -------------------------
-# SVG Viewer
-# -------------------------
+# ─────────────────────────────────────────
+# PDF Export
+# ─────────────────────────────────────────
+def generate_pdf(selected_id, source_text, mappings):
+    try:
+        from fpdf import FPDF
+    except ImportError:
+        return None
+
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+
+    # Title
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_text_color(15, 23, 42)
+    pdf.cell(0, 12, "ECC-NIST Control Mapping Report", ln=True, align="C")
+
+    pdf.set_font("Helvetica", "", 11)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(0, 7, f"ECC Control: {selected_id}", ln=True, align="C")
+    pdf.ln(4)
+
+    # Divider
+    pdf.set_draw_color(199, 210, 254)
+    pdf.set_line_width(0.5)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
+
+    # ECC source text
+    if source_text and source_text != "N/A":
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.set_text_color(79, 70, 229)
+        pdf.cell(0, 7, "ECC Control Description", ln=True)
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(55, 65, 81)
+        clean_src = str(source_text).encode("latin-1", "replace").decode("latin-1")
+        pdf.multi_cell(0, 6, clean_src)
+        pdf.ln(4)
+        pdf.set_draw_color(199, 210, 254)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(5)
+
+    # Each mapping
+    for idx, m in enumerate(mappings):
+        final_val = float(m["final"])
+        if final_val >= 0.85:
+            confidence = "High Match"
+            r, g, b    = 5, 150, 105
+        elif final_val >= 0.70:
+            confidence = "Medium Match"
+            r, g, b    = 217, 119, 6
+        else:
+            confidence = "Low Match"
+            r, g, b    = 220, 38, 38
+
+        # Mapping header bar
+        pdf.set_fill_color(r, g, b)
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font("Helvetica", "B", 12)
+        header_text = (
+            f"  #{idx + 1}  {m['mapping']}"
+            f"  —  {format_percent(m['final'])}  ({confidence})"
+        )
+        pdf.cell(0, 10, header_text, ln=True, fill=True)
+        pdf.ln(2)
+
+        def field(label, value):
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.set_text_color(79, 70, 229)
+            pdf.cell(0, 6, label, ln=True)
+            pdf.set_font("Helvetica", "", 10)
+            pdf.set_text_color(55, 65, 81)
+            clean = str(value).encode("latin-1", "replace").decode("latin-1")
+            pdf.multi_cell(0, 5.5, clean)
+            pdf.ln(2)
+
+        # Scores first
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.set_text_color(79, 70, 229)
+        pdf.cell(0, 6, "Scores & Analysis", ln=True)
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(55, 65, 81)
+        pdf.cell(
+            0, 5.5,
+            f"  Final: {format_percent(m['final'])} ({format_decimal(m['final'])})   "
+            f"Embedding: {format_percent(m['embedding'])} ({format_decimal(m['embedding'])})   "
+            f"Ontology: {format_percent(m['ontology'])} ({format_decimal(m['ontology'])})",
+            ln=True,
+        )
+        pdf.ln(2)
+
+        field("NIST Control Text",  m["text"])
+        field("Commonality",        m["commonality"])
+        field("Justification",      m["justification"])
+        field("Differences",        m["differences"])
+
+        pdf.set_draw_color(199, 210, 254)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(5)
+
+    return bytes(pdf.output())
+
+
+# ─────────────────────────────────────────
+# SVG Viewer (HTML component)
+# ─────────────────────────────────────────
 def create_svg_viewer(selected_id, source_text, mappings):
     width  = 620
-    height = 420
+    height = 430
 
-    center_x = 310
-    center_y = 210
-
+    center_x     = 310
+    center_y     = 215
     blue_radius  = 48
     green_radius = 42
     graph_radius = 158
 
     mapping_data = {}
-    svg_lines  = ""
-    svg_nodes  = ""
-    svg_numbers = ""
+    svg_lines    = ""
+    svg_nodes    = ""
+    svg_numbers  = ""
 
     n = len(mappings)
 
@@ -314,32 +405,31 @@ def create_svg_viewer(selected_id, source_text, mappings):
         node_id = f"node_{rank}"
 
         fill_color, glow_color, text_color, badge_color = score_to_node_colors(item["final"])
-        score_pct = format_percent(item["final"])
+        score_pct    = format_percent(item["final"])
         code_escaped = html.escape(item["short_code"])
 
         mapping_data[node_id] = {
-            "rank":            str(rank),
-            "ecc_control":     str(selected_id),
-            "ecc_text":        source_text,
-            "nist_control":    item["mapping"],
-            "nist_short_code": item["short_code"],
-            "nist_short_name": item["short_name"],
-            "nist_text":       item["text"],
-            "final":           format_decimal(item["final"]),
-            "final_percent":   format_percent(item["final"]),
-            "embedding":       format_decimal(item["embedding"]),
-            "embedding_percent": format_percent(item["embedding"]),
-            "ontology":        format_decimal(item["ontology"]),
-            "ontology_percent": format_percent(item["ontology"]),
-            "commonality":     item["commonality"],
-            "justification":   item["justification"],
-            "differences":     item["differences"],
-            "fill_color":      fill_color,
-            "badge_color":     badge_color,
+            "rank":               str(rank),
+            "ecc_control":        str(selected_id),
+            "nist_control":       item["mapping"],
+            "nist_short_code":    item["short_code"],
+            "nist_short_name":    item["short_name"],
+            "nist_text":          item["text"],
+            "final":              format_decimal(item["final"]),
+            "final_percent":      format_percent(item["final"]),
+            "embedding":          format_decimal(item["embedding"]),
+            "embedding_percent":  format_percent(item["embedding"]),
+            "ontology":           format_decimal(item["ontology"]),
+            "ontology_percent":   format_percent(item["ontology"]),
+            "commonality":        item["commonality"],
+            "justification":      item["justification"],
+            "differences":        item["differences"],
+            "fill_color":         fill_color,
+            "badge_color":        badge_color,
         }
 
-        dx = x - center_x
-        dy = y - center_y
+        dx       = x - center_x
+        dy       = y - center_y
         distance = math.sqrt(dx * dx + dy * dy)
 
         start_x = center_x + (blue_radius  / distance) * dx
@@ -347,20 +437,18 @@ def create_svg_viewer(selected_id, source_text, mappings):
         end_x   = x        - (green_radius / distance) * dx
         end_y   = y        - (green_radius / distance) * dy
 
-        # Line color matches node fill
         svg_lines += f"""
             <line x1="{start_x}" y1="{start_y}" x2="{end_x}" y2="{end_y}"
-                  stroke="{fill_color}" stroke-width="1.8" stroke-dasharray="5,3" opacity="0.6"/>
+                  stroke="{fill_color}" stroke-width="1.8"
+                  stroke-dasharray="5,3" opacity="0.6"/>
         """
 
-        # Rank number above the node
         svg_numbers += f"""
             <text x="{x}" y="{y - green_radius - 9}"
                   text-anchor="middle" dominant-baseline="middle"
                   class="number-label" fill="{fill_color}">#{rank}</text>
         """
 
-        # Node: glow ring + filled circle + NIST code + score %
         svg_nodes += f"""
             <g class="mapping-node" onclick="updatePanel('{node_id}')"
                data-fill="{fill_color}" data-glow="{glow_color}">
@@ -369,14 +457,16 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 <circle cx="{x}" cy="{y}" r="{green_radius}"
                         fill="{fill_color}"
                         filter="drop-shadow(0 3px 8px {glow_color})"/>
-                <text x="{x}" y="{y - 8}" text-anchor="middle" dominant-baseline="middle"
+                <text x="{x}" y="{y - 8}"
+                      text-anchor="middle" dominant-baseline="middle"
                       class="node-code">{code_escaped}</text>
-                <text x="{x}" y="{y + 10}" text-anchor="middle" dominant-baseline="middle"
+                <text x="{x}" y="{y + 10}"
+                      text-anchor="middle" dominant-baseline="middle"
                       class="node-score">{html.escape(score_pct)}</text>
             </g>
         """
 
-    mapping_json  = json.dumps(mapping_data, ensure_ascii=False)
+    mapping_json    = json.dumps(mapping_data, ensure_ascii=False)
     summary_rows_js = json.dumps([
         {
             "rank":          str(i + 1),
@@ -393,112 +483,97 @@ def create_svg_viewer(selected_id, source_text, mappings):
     <!DOCTYPE html>
     <html>
     <head>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+        <link rel="stylesheet"
+              href="[fonts.googleapis.com](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap)">
         <style>
             * {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
             body {{
                 font-family: 'Inter', Arial, sans-serif;
-                background: #f0f4ff;
+                background: #f8faff;
                 color: #1e293b;
             }}
 
-            /* ── Main card ── */
             .main-card {{
                 width: 100%;
-                border: 1px solid #dde3f0;
+                border: 1px solid #e2e8f0;
                 border-radius: 16px;
                 overflow: hidden;
                 background: white;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 4px 6px rgba(99,102,241,0.07),
-                            0 12px 32px rgba(99,102,241,0.10);
+                box-shadow: 0 2px 4px rgba(99,102,241,0.05),
+                            0 8px 24px rgba(99,102,241,0.08);
             }}
 
-            /* ── Top row ── */
             .top-row {{
                 display: flex;
-                height: 540px;
+                height: 590px;
             }}
 
-            /* ── Graph side ── */
+            /* ── Graph ── */
             .graph-section {{
-                width: 62%;
-                height: 540px;
+                width: 60%;
+                height: 590px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: linear-gradient(145deg, #f0f4ff 0%, #e8edff 100%);
-                border-right: 1px solid #dde3f0;
+                background: linear-gradient(145deg, #f5f7ff 0%, #eef2ff 100%);
+                border-right: 1px solid #e2e8f0;
                 position: relative;
             }}
 
             .graph-badge {{
                 position: absolute;
-                top: 14px;
-                left: 18px;
+                top: 14px; left: 18px;
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
                 color: white;
-                font-size: 10px;
-                font-weight: 700;
-                letter-spacing: 1px;
-                text-transform: uppercase;
-                padding: 4px 10px;
-                border-radius: 20px;
+                font-size: 10px; font-weight: 700;
+                letter-spacing: 1px; text-transform: uppercase;
+                padding: 4px 10px; border-radius: 20px;
             }}
 
             .legend {{
                 position: absolute;
-                bottom: 14px;
-                left: 18px;
-                display: flex;
-                gap: 10px;
+                bottom: 14px; left: 18px;
+                display: flex; gap: 10px;
             }}
 
             .legend-item {{
-                display: flex;
-                align-items: center;
-                gap: 5px;
-                font-size: 10px;
-                font-weight: 600;
-                color: #64748b;
+                display: flex; align-items: center; gap: 5px;
+                font-size: 10px; font-weight: 600; color: #64748b;
             }}
 
             .legend-dot {{
-                width: 10px;
-                height: 10px;
-                border-radius: 50%;
+                width: 10px; height: 10px; border-radius: 50%;
             }}
 
             /* ── Detail panel ── */
             .summary-section {{
-                width: 38%;
-                height: 540px;
+                width: 40%;
+                height: 590px;
                 padding: 22px 20px;
                 overflow-y: auto;
-                background: white;
+                background: #ffffff;
             }}
 
             .summary-section::-webkit-scrollbar {{ width: 4px; }}
-            .summary-section::-webkit-scrollbar-track {{ background: #f1f5f9; }}
-            .summary-section::-webkit-scrollbar-thumb {{ background: #c7d2fe; border-radius: 4px; }}
+            .summary-section::-webkit-scrollbar-track {{ background: #f8faff; }}
+            .summary-section::-webkit-scrollbar-thumb {{
+                background: #c7d2fe; border-radius: 4px;
+            }}
 
-            /* ── Results table ── */
+            /* ── Results table section ── */
             .results-summary {{
                 border-top: 1px solid #e8edff;
-                padding: 16px 20px;
-                background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+                padding: 18px 22px 22px;
+                background: linear-gradient(135deg, #f8f9ff 0%, #f3f6ff 100%);
             }}
 
             .results-summary-title {{
-                font-size: 13px;
-                font-weight: 700;
-                color: #374151;
-                margin-bottom: 12px;
-                display: flex;
-                align-items: center;
-                gap: 6px;
+                font-size: 13px; font-weight: 700; color: #374151;
+                margin-bottom: 14px;
+                display: flex; align-items: center; gap: 6px;
             }}
 
             .results-table {{
@@ -510,126 +585,89 @@ def create_svg_viewer(selected_id, source_text, mappings):
             .results-table th {{
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
                 color: white;
-                padding: 9px 14px;
+                padding: 10px 14px;
                 text-align: left;
-                font-weight: 600;
-                font-size: 11px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
+                font-weight: 600; font-size: 11px;
+                text-transform: uppercase; letter-spacing: 0.5px;
             }}
 
             .results-table th:first-child {{ border-radius: 8px 0 0 0; }}
             .results-table th:last-child  {{ border-radius: 0 8px 0 0; }}
 
             .results-table td {{
-                padding: 9px 14px;
-                border-bottom: 1px solid #f0f4ff;
+                padding: 10px 14px;
+                border-bottom: 1px solid #eef2ff;
                 color: #374151;
                 vertical-align: middle;
             }}
 
             .results-table tr:last-child td {{ border-bottom: none; }}
-
             .results-table tr:hover td {{
-                background: #f0f4ff;
-                cursor: pointer;
+                background: #eef2ff; cursor: pointer;
             }}
 
             .rank-badge {{
                 display: inline-flex;
-                align-items: center;
-                justify-content: center;
+                align-items: center; justify-content: center;
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                color: white;
-                border-radius: 50%;
-                width: 24px;
-                height: 24px;
-                font-weight: 700;
-                font-size: 11px;
+                color: white; border-radius: 50%;
+                width: 26px; height: 26px;
+                font-weight: 700; font-size: 11px;
             }}
 
-            /* ── SVG node classes ── */
+            /* ── SVG nodes ── */
             .mapping-node {{ cursor: pointer; }}
-            .mapping-node circle {{
-                transition: all 0.2s ease;
-            }}
-            .mapping-node:hover .glow-ring {{
-                opacity: 0.38 !important;
-                r: 52;
-            }}
+            .mapping-node circle {{ transition: all 0.2s ease; }}
+            .mapping-node:hover .glow-ring {{ opacity: 0.38 !important; }}
 
             .node-code {{
-                fill: white;
-                font-size: 10.5px;
-                font-weight: 800;
+                fill: white; font-size: 10.5px; font-weight: 800;
                 pointer-events: none;
                 font-family: 'Inter', Arial, sans-serif;
             }}
 
             .node-score {{
                 fill: rgba(255,255,255,0.92);
-                font-size: 11px;
-                font-weight: 700;
+                font-size: 11px; font-weight: 700;
                 pointer-events: none;
                 font-family: 'Inter', Arial, sans-serif;
             }}
 
             .number-label {{
-                font-size: 10px;
-                font-weight: 700;
+                font-size: 10px; font-weight: 700;
                 font-family: 'Inter', Arial, sans-serif;
             }}
 
-            /* ── Detail panel styles ── */
+            /* ── Detail panel inner ── */
             .panel-header {{
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                margin-bottom: 16px;
-                padding-bottom: 12px;
-                border-bottom: 2px solid #e8edff;
+                display: flex; align-items: center; gap: 10px;
+                margin-bottom: 16px; padding-bottom: 12px;
+                border-bottom: 2px solid #eef2ff;
             }}
 
             .panel-rank-badge {{
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 14px;
-                font-weight: 800;
-                color: white;
-                flex-shrink: 0;
+                width: 32px; height: 32px; border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 14px; font-weight: 800; color: white; flex-shrink: 0;
             }}
 
             .panel-title {{
-                font-size: 15px;
-                font-weight: 700;
-                color: #0f172a;
+                font-size: 15px; font-weight: 700; color: #0f172a;
             }}
 
             .sub-title {{
-                font-size: 10px;
-                font-weight: 700;
-                color: #6366f1;
-                text-transform: uppercase;
-                letter-spacing: 0.8px;
-                margin-top: 14px;
-                margin-bottom: 5px;
-                display: flex;
-                align-items: center;
-                gap: 4px;
+                font-size: 10px; font-weight: 700; color: #6366f1;
+                text-transform: uppercase; letter-spacing: 0.8px;
+                margin-top: 14px; margin-bottom: 5px;
+                display: flex; align-items: center; gap: 4px;
             }}
 
             .content-box {{
                 border: 1px solid #e8edff;
                 border-radius: 8px;
                 padding: 10px 12px;
-                font-size: 12px;
-                line-height: 1.6;
-                color: #374151;
-                background: #f8f9ff;
+                font-size: 12px; line-height: 1.6; color: #374151;
+                background: #f8faff;
                 white-space: pre-wrap;
             }}
 
@@ -637,104 +675,71 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 8px;
-                margin-top: 0;
             }}
 
             .score-card {{
-                border-radius: 10px;
-                padding: 10px 12px;
-                text-align: center;
+                border-radius: 10px; padding: 10px 12px; text-align: center;
             }}
 
-            .score-card-main {{
+            .score-card-main  {{
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
                 grid-column: 1 / -1;
             }}
-
-            .score-card-embed {{
-                background: linear-gradient(135deg, #0891b2, #06b6d4);
-            }}
-
-            .score-card-onto {{
-                background: linear-gradient(135deg, #059669, #10b981);
-            }}
+            .score-card-embed {{ background: linear-gradient(135deg, #0891b2, #06b6d4); }}
+            .score-card-onto  {{ background: linear-gradient(135deg, #059669, #10b981); }}
 
             .score-card-label {{
-                font-size: 10px;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.6px;
-                opacity: 0.85;
-                color: white;
-                margin-bottom: 4px;
+                font-size: 10px; font-weight: 600;
+                text-transform: uppercase; letter-spacing: 0.6px;
+                opacity: 0.85; color: white; margin-bottom: 4px;
             }}
 
             .score-card-value {{
-                font-size: 20px;
-                font-weight: 800;
-                color: white;
-                line-height: 1;
+                font-size: 20px; font-weight: 800; color: white; line-height: 1;
             }}
 
             .score-card-sub {{
-                font-size: 10px;
-                color: rgba(255,255,255,0.75);
-                margin-top: 2px;
+                font-size: 10px; color: rgba(255,255,255,0.75); margin-top: 2px;
             }}
 
             .confidence-row {{
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-top: 8px;
-                padding: 8px 12px;
+                display: flex; align-items: center; gap: 8px;
+                margin-top: 8px; padding: 8px 12px;
                 border-radius: 8px;
-                background: #f8f9ff;
-                border: 1px solid #e8edff;
-                font-size: 12px;
-                color: #374151;
-                font-weight: 500;
+                background: #f8faff; border: 1px solid #e8edff;
+                font-size: 12px; color: #374151; font-weight: 500;
             }}
 
             .placeholder {{
-                color: #94a3b8;
-                font-size: 13px;
-                line-height: 1.7;
-                text-align: center;
-                padding: 50px 16px;
-                border: 2px dashed #c7d2fe;
-                border-radius: 12px;
-                margin-top: 8px;
-                background: #f8f9ff;
+                color: #94a3b8; font-size: 13px; line-height: 1.7;
+                text-align: center; padding: 50px 16px;
+                border: 2px dashed #c7d2fe; border-radius: 12px;
+                margin-top: 8px; background: #f8faff;
             }}
 
-            .placeholder-icon {{
-                font-size: 32px;
-                margin-bottom: 12px;
-            }}
-
-            .placeholder-hint {{
-                font-size: 11px;
-                color: #a5b4fc;
-                margin-top: 6px;
-            }}
+            .placeholder-icon {{ font-size: 32px; margin-bottom: 12px; }}
+            .placeholder-hint  {{ font-size: 11px; color: #a5b4fc; margin-top: 6px; }}
         </style>
     </head>
     <body>
         <div class="main-card">
+
+            <!-- ── Top row: graph + detail panel ── -->
             <div class="top-row">
+
                 <div class="graph-section">
                     <div class="graph-badge">Control Mapping Graph</div>
 
-                    <svg width="{width}" height="{height}" viewBox="0 0 {width} {height}">
-                        <!-- Subtle radial guide -->
+                    <svg width="{width}" height="{height}"
+                         viewBox="0 0 {width} {height}">
+
                         <circle cx="{center_x}" cy="{center_y}" r="{graph_radius}"
                                 fill="none" stroke="#c7d2fe" stroke-width="1"
                                 stroke-dasharray="3,6" opacity="0.5"/>
 
                         {svg_lines}
 
-                        <!-- Blue center node -->
+                        <!-- Centre node -->
                         <circle cx="{center_x}" cy="{center_y}" r="{blue_radius + 8}"
                                 fill="url(#centerGlow)" opacity="0.25"/>
                         <circle cx="{center_x}" cy="{center_y}" r="{blue_radius}"
@@ -746,19 +751,22 @@ def create_svg_viewer(selected_id, source_text, mappings):
                               font-family="Inter, Arial, sans-serif">ECC</text>
                         <text x="{center_x}" y="{center_y + 9}"
                               text-anchor="middle" dominant-baseline="middle"
-                              fill="rgba(255,255,255,0.85)" font-size="11" font-weight="700"
-                              font-family="Inter, Arial, sans-serif">{html.escape(str(selected_id))}</text>
+                              fill="rgba(255,255,255,0.85)"
+                              font-size="11" font-weight="700"
+                              font-family="Inter, Arial, sans-serif">
+                            {html.escape(str(selected_id))}
+                        </text>
 
                         {svg_nodes}
                         {svg_numbers}
 
                         <defs>
                             <linearGradient id="centerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#818cf8"/>
+                                <stop offset="0%"   style="stop-color:#818cf8"/>
                                 <stop offset="100%" style="stop-color:#4f46e5"/>
                             </linearGradient>
                             <radialGradient id="centerGlow">
-                                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1"/>
+                                <stop offset="0%"   style="stop-color:#6366f1;stop-opacity:1"/>
                                 <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0"/>
                             </radialGradient>
                         </defs>
@@ -766,17 +774,21 @@ def create_svg_viewer(selected_id, source_text, mappings):
 
                     <div class="legend">
                         <div class="legend-item">
-                            <div class="legend-dot" style="background:#059669;"></div> High ≥85%
+                            <div class="legend-dot" style="background:#059669;"></div>
+                            High ≥85%
                         </div>
                         <div class="legend-item">
-                            <div class="legend-dot" style="background:#d97706;"></div> Mid ≥70%
+                            <div class="legend-dot" style="background:#d97706;"></div>
+                            Mid ≥70%
                         </div>
                         <div class="legend-item">
-                            <div class="legend-dot" style="background:#dc2626;"></div> Low &lt;70%
+                            <div class="legend-dot" style="background:#dc2626;"></div>
+                            Low &lt;70%
                         </div>
                     </div>
                 </div>
 
+                <!-- Detail panel -->
                 <div class="summary-section" id="summary-panel">
                     <div class="placeholder">
                         <div class="placeholder-icon">🔗</div>
@@ -786,6 +798,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 </div>
             </div>
 
+            <!-- ── Results summary table ── -->
             <div class="results-summary">
                 <div class="results-summary-title">
                     📋 Results Summary —
@@ -807,8 +820,8 @@ def create_svg_viewer(selected_id, source_text, mappings):
         </div>
 
         <script>
-            const mappingData = {mapping_json};
-            const summaryRows = {summary_rows_js};
+            const mappingData  = {mapping_json};
+            const summaryRows  = {summary_rows_js};
 
             (function buildTable() {{
                 const tbody = document.getElementById("summary-tbody");
@@ -817,16 +830,16 @@ def create_svg_viewer(selected_id, source_text, mappings):
                     tr.onclick = function() {{ updatePanel("node_" + row.rank); }};
                     tr.innerHTML = `
                         <td><span class="rank-badge">${{row.rank}}</span></td>
-                        <td style="font-weight:600; color:#1e293b;">${{escapeHtml(row.nist_control)}}</td>
+                        <td style="font-weight:600;color:#1e293b;">
+                            ${{escapeHtml(row.nist_control)}}
+                        </td>
                         <td>
                             <span style="
                                 display:inline-block;
                                 background:${{row.fill_color}};
-                                color:white;
-                                border-radius:20px;
+                                color:white; border-radius:20px;
                                 padding:2px 10px;
-                                font-weight:700;
-                                font-size:12px;
+                                font-weight:700; font-size:12px;
                             ">${{escapeHtml(row.final_percent)}}</span>
                         </td>
                     `;
@@ -837,9 +850,9 @@ def create_svg_viewer(selected_id, source_text, mappings):
             function escapeHtml(text) {{
                 if (!text) return "N/A";
                 return String(text)
-                    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
-                    .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
-                    .replace(/'/g,"&#039;");
+                    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
             }}
 
             function updatePanel(nodeId) {{
@@ -847,12 +860,11 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 const panel = document.getElementById("summary-panel");
                 if (!item) return;
 
-                const finalVal = parseFloat(item.final);
-                const matchIcon = finalVal >= 0.85 ? "🟢"
-                                : finalVal >= 0.70 ? "🟡" : "🔴";
+                const finalVal   = parseFloat(item.final);
+                const matchIcon  = finalVal >= 0.85 ? "🟢"
+                                 : finalVal >= 0.70 ? "🟡" : "🔴";
                 const matchLabel = finalVal >= 0.85 ? "High Match"
-                                 : finalVal >= 0.70 ? "Medium Match"
-                                 : "Low Match";
+                                 : finalVal >= 0.70 ? "Medium Match" : "Low Match";
 
                 const domain = item.nist_control.startsWith("GV") ? "Govern"
                              : item.nist_control.startsWith("ID") ? "Identify"
@@ -867,49 +879,58 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 panel.innerHTML = `
                     <div class="panel-header">
                         <div class="panel-rank-badge"
-                             style="background:linear-gradient(135deg,${{fillColor}},${{fillColor}}cc);">
+                             style="background:linear-gradient(135deg,
+                                    ${{fillColor}},${{fillColor}}cc);">
                             ${{item.rank}}
                         </div>
                         <div>
                             <div class="panel-title">Mapping #${{item.rank}} Details</div>
-                            <div style="font-size:11px; color:#94a3b8; margin-top:1px;">
+                            <div style="font-size:11px;color:#94a3b8;margin-top:1px;">
                                 ${{escapeHtml(item.nist_control)}}
                             </div>
                         </div>
                     </div>
 
-                    <div class="sub-title">📌 ECC Control</div>
-                    <div class="content-box">
-                        <b>${{escapeHtml(item.ecc_control)}}</b><br><br>
-                        ${{escapeHtml(item.ecc_text)}}
-                    </div>
-
-                    <div class="sub-title">🎯 NIST Control</div>
-                    <div class="content-box">
-                        <b>${{escapeHtml(item.nist_control)}}</b><br><br>
-                        ${{escapeHtml(item.nist_text)}}
-                    </div>
-
+                    <!-- ① Scores & Analysis FIRST -->
                     <div class="sub-title">📊 Scores & Analysis</div>
                     <div class="score-grid">
                         <div class="score-card score-card-main">
                             <div class="score-card-label">Final Match Score</div>
-                            <div class="score-card-value">${{escapeHtml(item.final_percent)}}</div>
-                            <div class="score-card-sub">${{escapeHtml(item.final)}} · ${{domain}}</div>
+                            <div class="score-card-value">
+                                ${{escapeHtml(item.final_percent)}}
+                            </div>
+                            <div class="score-card-sub">
+                                ${{escapeHtml(item.final)}} · ${{domain}}
+                            </div>
                         </div>
                         <div class="score-card score-card-embed">
                             <div class="score-card-label">Embedding</div>
-                            <div class="score-card-value">${{escapeHtml(item.embedding_percent)}}</div>
-                            <div class="score-card-sub">${{escapeHtml(item.embedding)}}</div>
+                            <div class="score-card-value">
+                                ${{escapeHtml(item.embedding_percent)}}
+                            </div>
+                            <div class="score-card-sub">
+                                ${{escapeHtml(item.embedding)}}
+                            </div>
                         </div>
                         <div class="score-card score-card-onto">
                             <div class="score-card-label">Ontology</div>
-                            <div class="score-card-value">${{escapeHtml(item.ontology_percent)}}</div>
-                            <div class="score-card-sub">${{escapeHtml(item.ontology)}}</div>
+                            <div class="score-card-value">
+                                ${{escapeHtml(item.ontology_percent)}}
+                            </div>
+                            <div class="score-card-sub">
+                                ${{escapeHtml(item.ontology)}}
+                            </div>
                         </div>
                     </div>
                     <div class="confidence-row">
                         ${{matchIcon}} <b>Confidence:</b> ${{matchLabel}}
+                    </div>
+
+                    <!-- ② NIST control (no ECC description block) -->
+                    <div class="sub-title">🎯 NIST Control</div>
+                    <div class="content-box">
+                        <b>${{escapeHtml(item.nist_control)}}</b><br><br>
+                        ${{escapeHtml(item.nist_text)}}
                     </div>
 
                     <div class="sub-title">🤝 Commonality</div>
@@ -929,9 +950,9 @@ def create_svg_viewer(selected_id, source_text, mappings):
     return html_code
 
 
-# -------------------------
-# Load data
-# -------------------------
+# ─────────────────────────────────────────
+# Main app
+# ─────────────────────────────────────────
 DATA_FILE = "final_with_explanations_COMPLETE.csv"
 
 if os.path.exists(DATA_FILE):
@@ -945,19 +966,17 @@ if os.path.exists(DATA_FILE):
 
     st.sidebar.title("ECC Controls")
 
-    # ── Search box ─────────────────────────────────────────────────────
     search_term = st.sidebar.text_input(
         "Search ECC Control",
         placeholder="e.g. 1-1 or PR.AA",
-        key="search_term"
+        key="search_term",
     )
 
     all_control_ids = sorted(
         df["ECC id control"].astype(str).unique(),
-        key=natural_control_sort
+        key=natural_control_sort,
     )
 
-    # Filter the list based on the search term
     if search_term.strip():
         filtered_ids = [
             cid for cid in all_control_ids
@@ -968,70 +987,62 @@ if os.path.exists(DATA_FILE):
 
     if not filtered_ids:
         st.sidebar.warning("No controls match your search.")
-        filtered_ids = all_control_ids  # fallback to full list
+        filtered_ids = all_control_ids
 
-    # ── Auto-select: if search narrows to 1 exact match, jump to it ──
     if "selected_id" not in st.session_state:
         st.session_state.selected_id = all_control_ids[0]
 
     exact_match = next(
-        (cid for cid in all_control_ids if cid.lower() == search_term.strip().lower()),
-        None
+        (cid for cid in all_control_ids
+         if cid.lower() == search_term.strip().lower()),
+        None,
     )
     if exact_match and exact_match != st.session_state.selected_id:
         st.session_state.selected_id = exact_match
 
-    if st.session_state.selected_id not in filtered_ids:
-        radio_default_idx = 0
-    else:
-        radio_default_idx = filtered_ids.index(st.session_state.selected_id)
+    radio_default_idx = (
+        filtered_ids.index(st.session_state.selected_id)
+        if st.session_state.selected_id in filtered_ids
+        else 0
+    )
 
     selected_id = st.sidebar.radio(
         "Select Control ID",
         filtered_ids,
         index=radio_default_idx,
-        format_func=lambda x: x
+        format_func=lambda x: x,
     )
-
     st.session_state.selected_id = selected_id
 
-    # ── Debug expander ──────────────────────────────────────────────────
+    # Debug expander
     with st.sidebar.expander("🔍 Debug: CSV columns"):
         st.write("**All columns in CSV:**")
         for c in df.columns:
             st.write(f"• `{c}`")
         row_debug = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
         st.write("---")
-        st.write("**Score column lookup for mapping 1:**")
-        for label, target in [
-            ("Final Score",     "Final Score"),
-            ("Embedding Score", "Embedding Score"),
-            ("Ontology Score",  "Ontology Score"),
+        for mapping_num, targets in [
+            (1, [("Final Score", "Final Score"),
+                 ("Embedding Score", "Embedding Score"),
+                 ("Ontology Score",  "Ontology Score")]),
+            (2, [("Final Score 2",     "Final Score 2"),
+                 ("Embedding Score 2", "Embedding Score 2"),
+                 ("Ontology Score 2",  "Ontology Score 2")]),
         ]:
-            found = find_col(list(df.columns), target)
-            if found:
-                raw_val = row_debug.get(found, "N/A")
-                st.success(f"✅ `{target}` → `{found}` = `{raw_val}`")
-            else:
-                st.error(f"❌ `{target}` → NOT FOUND")
-        st.write("---")
-        st.write("**Score column lookup for mapping 2:**")
-        for label, target in [
-            ("Final Score 2",     "Final Score 2"),
-            ("Embedding Score 2", "Embedding Score 2"),
-            ("Ontology Score 2",  "Ontology Score 2"),
-        ]:
-            found = find_col(list(df.columns), target)
-            if found:
-                raw_val = row_debug.get(found, "N/A")
-                st.success(f"✅ `{target}` → `{found}` = `{raw_val}`")
-            else:
-                st.error(f"❌ `{target}` → NOT FOUND")
+            st.write(f"**Score column lookup for mapping {mapping_num}:**")
+            for label, target in targets:
+                found = find_col(list(df.columns), target)
+                if found:
+                    raw_val = row_debug.get(found, "N/A")
+                    st.success(f"✅ `{target}` → `{found}` = `{raw_val}`")
+                else:
+                    st.error(f"❌ `{target}` → NOT FOUND")
+            st.write("---")
 
-    # ── Main row ────────────────────────────────────────────────────────
-    row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
+    # Load selected row
+    row             = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     source_text_col = find_col(list(df.columns), "Source Text")
-    source_text = safe_value(row.get(source_text_col, "") if source_text_col else "")
+    source_text     = safe_value(row.get(source_text_col, "") if source_text_col else "")
 
     # ── Header ──────────────────────────────────────────────────────────
     header_col1, header_col2 = st.columns([4, 1.4])
@@ -1040,79 +1051,73 @@ if os.path.exists(DATA_FILE):
         st.markdown(
             f"""
             <div style="
-                background: linear-gradient(135deg, #0f172a 0%, #312e81 60%, #4c1d95 100%);
+                background: linear-gradient(135deg,#0f172a 0%,#312e81 60%,#4c1d95 100%);
                 border-radius: 12px 0 0 12px;
-                padding: 20px 28px;
-                margin-bottom: 10px;
+                padding: 20px 28px; margin-bottom: 10px;
                 min-height: 110px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
+                display: flex; flex-direction: column; justify-content: center;
             ">
-                <div style="font-size:11px; font-weight:600; color:#a5b4fc;
-                            text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">
+                <div style="font-size:11px;font-weight:600;color:#a5b4fc;
+                            text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
                     ECC–NIST Framework
                 </div>
-                <h1 style="margin:0; font-size:26px; color:#f8fafc;
-                           font-family:'Inter',Arial,sans-serif; font-weight:800; line-height:1.2;">
+                <h1 style="margin:0;font-size:26px;color:#f8fafc;
+                           font-family:'Inter',Arial,sans-serif;
+                           font-weight:800;line-height:1.2;">
                     Control Mapping Viewer
                 </h1>
-                <p style="margin-top:8px; color:#94a3b8; font-size:13px;
+                <p style="margin-top:8px;color:#94a3b8;font-size:13px;
                           font-family:'Inter',Arial,sans-serif;">
-                    Active control: <span style="color:#a5b4fc; font-weight:700;">{selected_id}</span>
+                    Active control:
+                    <span style="color:#a5b4fc;font-weight:700;">{selected_id}</span>
                 </p>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
     with header_col2:
         st.markdown(
             """
             <div style="
-                background: linear-gradient(135deg, #f0f4ff 0%, #e8edff 100%);
+                background: linear-gradient(135deg,#f5f7ff 0%,#eef2ff 100%);
                 border: 1px solid #c7d2fe;
                 border-radius: 0 12px 12px 0;
-                padding: 16px 18px;
-                margin-bottom: 10px;
+                padding: 16px 18px; margin-bottom: 10px;
                 min-height: 110px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
+                display: flex; flex-direction: column; justify-content: center;
             ">
-                <p style="margin:0 0 10px 0; font-weight:700; color:#4f46e5;
-                          font-size:12px; text-transform:uppercase;
-                          letter-spacing:0.5px;">
+                <p style="margin:0 0 10px 0;font-weight:700;color:#4f46e5;
+                          font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">
                     Top-K Mappings
                 </p>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
-
         top_k = st.select_slider(
             "Top-K Recommendations",
             options=list(range(1, 6)),
             value=5,
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
     mappings = extract_mappings(row, df, top_k=top_k)
 
     st.markdown(
         f"""
-        <div style="margin-top:-8px; margin-bottom:12px; color:#64748b; font-size:13px;">
+        <div style="margin-top:-8px;margin-bottom:12px;color:#64748b;font-size:13px;">
             Showing <b style="color:#6366f1;">{len(mappings)}</b> recommended mapping(s) for
             <b style="color:#4f46e5;">{selected_id}</b>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     viewer_html = create_svg_viewer(
         selected_id=str(selected_id),
         source_text=source_text,
-        mappings=mappings
+        mappings=mappings,
     )
 
     col_graph, col_status = st.columns([4, 1])
@@ -1120,20 +1125,18 @@ if os.path.exists(DATA_FILE):
     with col_status:
         st.markdown(
             """
-            <div style="background: linear-gradient(135deg, #0f172a, #1e1b4b);
-                        border-radius:12px; padding:16px 14px; margin-bottom:8px;">
-                <div style="font-size:11px; font-weight:700; color:#a5b4fc;
-                            text-transform:uppercase; letter-spacing:0.8px;
-                            margin-bottom:10px;">
+            <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);
+                        border-radius:12px;padding:16px 14px;margin-bottom:8px;">
+                <div style="font-size:11px;font-weight:700;color:#a5b4fc;
+                            text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">
                     Processing Pipeline
                 </div>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
         pipeline_box = st.empty()
-
         steps = [
             "Loading ECC Control",
             "Loading NIST Controls",
@@ -1142,62 +1145,72 @@ if os.path.exists(DATA_FILE):
             "Ontology Scoring",
             "Confidence Matching",
             "AI Explanation",
-            "Returning Top-K"
+            "Returning Top-K",
         ]
 
         completed = []
         for step in steps:
             completed.append(step)
-            rows_html = ""
-            for s in steps:
-                if s in completed:
-                    rows_html += f'<div style="font-size:12px; color:#86efac; padding:3px 0;">✅ {s}</div>'
-                else:
-                    rows_html += f'<div style="font-size:12px; color:#475569; padding:3px 0;">⬜ {s}</div>'
+            rows_html = "".join(
+                f'<div style="font-size:12px;color:#86efac;padding:3px 0;">✅ {s}</div>'
+                if s in completed
+                else f'<div style="font-size:12px;color:#475569;padding:3px 0;">⬜ {s}</div>'
+                for s in steps
+            )
             pipeline_box.markdown(
-                f'<div style="background:linear-gradient(135deg,#0f172a,#1e1b4b); border-radius:12px; padding:12px 14px;">{rows_html}</div>',
-                unsafe_allow_html=True
+                f'<div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);'
+                f'border-radius:12px;padding:12px 14px;">{rows_html}</div>',
+                unsafe_allow_html=True,
             )
             time.sleep(0.15)
 
     with col_graph:
-        components.html(viewer_html, height=700, scrolling=False)
+        # Height = 590 (top-row) + ~230 (results table) + small buffer
+        components.html(viewer_html, height=840, scrolling=False)
 
-    # ── Export ──────────────────────────────────────────────────────────
+    # ── Export as PDF ────────────────────────────────────────────────────
     st.markdown(
         """
-        <div style="height:1px; background:linear-gradient(90deg,#e8edff,#c7d2fe,#e8edff); margin:20px 0 16px 0;"></div>
-        <div style="font-size:15px; font-weight:700; color:#1e293b; margin-bottom:10px;">
+        <div style="height:1px;
+                    background:linear-gradient(90deg,#e8edff,#c7d2fe,#e8edff);
+                    margin:20px 0 16px 0;"></div>
+        <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:10px;">
             Export Mapping Report
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
-    export_df = pd.DataFrame(mappings)
-    csv = export_df.to_csv(index=False)
+    pdf_bytes = generate_pdf(selected_id, source_text, mappings)
 
-    st.download_button(
-        label="⬇  Export CSV Report",
-        data=csv,
-        file_name=f"{selected_id}_mapping_report.csv",
-        mime="text/csv"
-    )
+    if pdf_bytes:
+        st.download_button(
+            label="⬇  Export PDF Report",
+            data=pdf_bytes,
+            file_name=f"{selected_id}_mapping_report.pdf",
+            mime="application/pdf",
+        )
+    else:
+        st.warning(
+            "PDF export requires the `fpdf2` library. "
+            "Install it with: `pip install fpdf2`"
+        )
 
 else:
     st.markdown(
         f"""
         <div style="
-            background:#fef2f2; border:1px solid #fecaca;
-            border-radius:10px; padding:24px; margin-top:30px;
+            background:#fef2f2;border:1px solid #fecaca;
+            border-radius:10px;padding:24px;margin-top:30px;
         ">
-            <div style="font-size:16px; font-weight:700; color:#991b1b; margin-bottom:8px;">
+            <div style="font-size:16px;font-weight:700;color:#991b1b;margin-bottom:8px;">
                 ⚠️ Data file not found
             </div>
-            <div style="color:#7f1d1d; font-size:14px;">
-                Make sure <code>{DATA_FILE}</code> is in the same folder as <code>mapviewer.py</code>.
+            <div style="color:#7f1d1d;font-size:14px;">
+                Make sure <code>{DATA_FILE}</code> is in the same folder as
+                <code>mapviewer.py</code>.
             </div>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
