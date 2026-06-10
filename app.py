@@ -282,7 +282,8 @@ def score_to_node_colors(score):
 def generate_pdf(selected_id, source_text, mappings):
     try:
         from fpdf import FPDF
-    except ImportError:
+    except Exception as e:
+        st.error(str(e))
         return None
 
     pdf = FPDF()
