@@ -84,10 +84,28 @@ st.markdown(
             margin-bottom: 6px !important;
         }
 
-        /* Remove top space in main area */
+        /* FIX 1: Remove all top space */
         .main .block-container {
             padding-top: 0px !important;
+            margin-top: 0px !important;
             padding-bottom: 24px !important;
+        }
+
+        /* Also target the appview block */
+        .block-container {
+            padding-top: 0px !important;
+            margin-top: 0px !important;
+        }
+
+        /* Remove Streamlit default top padding */
+        div[data-testid="stAppViewBlockContainer"] {
+            padding-top: 0px !important;
+        }
+
+        /* Remove the empty element gaps above header columns */
+        div[data-testid="column"] > div:first-child {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
         }
 
         .stDownloadButton button {
@@ -113,13 +131,22 @@ st.markdown(
             background: #6366f1 !important;
         }
 
-        /* ── CHANGE 4: Top-K select_slider label & value in white ── */
+        /* FIX 2: Top-K slider numbers (1 and 5) in white */
         div[data-testid="stSelectSlider"] label,
         div[data-testid="stSelectSlider"] label p,
         div[data-testid="stSelectSlider"] p,
         div[data-testid="stSelectSlider"] span,
         div[data-testid="stSelectSlider"] div {
             color: white !important;
+        }
+
+        /* FIX 3: shift ECC header block left */
+        div[data-testid="column"]:first-child {
+            padding-right: 0px !important;
+        }
+
+        div[data-testid="column"]:first-child > div {
+            margin-right: 8px !important;
         }
     </style>
     """,
@@ -382,19 +409,17 @@ def generate_pdf(selected_id, source_text, mappings):
 
 
 # ─────────────────────────────────────────
-# SVG Viewer
+# SVG Viewer  — FIX 4: detail panel is INSIDE the right summary column
 # ─────────────────────────────────────────
 def create_svg_viewer(selected_id, source_text, mappings):
     width  = 620
     height = 440
 
-    center_x = 310
-    center_y = 220
-
-    # CHANGE 3: smaller circles
-    blue_radius  = 40   # was 48
-    green_radius = 34   # was 42
-    graph_radius = 150  # was 158
+    center_x     = 310
+    center_y     = 220
+    blue_radius  = 40
+    green_radius = 34
+    graph_radius = 150
 
     mapping_data = {}
     svg_lines    = ""
@@ -402,8 +427,6 @@ def create_svg_viewer(selected_id, source_text, mappings):
     svg_numbers  = ""
 
     n = len(mappings)
-
-    source_short = source_text if len(source_text) <= 160 else source_text[:157] + "…"
 
     for idx, item in enumerate(mappings):
         angle = (2 * math.pi / n) * idx - (math.pi / 2)
@@ -459,7 +482,6 @@ def create_svg_viewer(selected_id, source_text, mappings):
                   class="number-label" fill="{fill_color}">#{rank}</text>
         """
 
-        # CHANGE 1: larger font inside circles (node-code 13px, node-score 13px via CSS below)
         svg_nodes += f"""
             <g class="mapping-node" onclick="updatePanel('{node_id}')"
                data-fill="{fill_color}" data-glow="{glow_color}">
@@ -477,9 +499,9 @@ def create_svg_viewer(selected_id, source_text, mappings):
             </g>
         """
 
-    mapping_json    = json.dumps(mapping_data, ensure_ascii=False)
-    source_json     = json.dumps(source_text,  ensure_ascii=False)
-    source_id_json  = json.dumps(str(selected_id), ensure_ascii=False)
+    mapping_json   = json.dumps(mapping_data, ensure_ascii=False)
+    source_json    = json.dumps(source_text,  ensure_ascii=False)
+    source_id_json = json.dumps(str(selected_id), ensure_ascii=False)
 
     summary_rows_js = json.dumps([
         {
@@ -493,8 +515,6 @@ def create_svg_viewer(selected_id, source_text, mappings):
         for i, m in enumerate(mappings)
     ])
 
-    n_rows = max(len(mappings), 1)
-
     html_code = f"""
     <!DOCTYPE html>
     <html>
@@ -503,12 +523,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
               href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
         <style>
             * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-
-            body {{
-                font-family: 'Inter', Arial, sans-serif;
-                background: #f8faff;
-                color: #1e293b;
-            }}
+            body {{ font-family: 'Inter', Arial, sans-serif; background: #f8faff; color: #1e293b; }}
 
             .main-card {{
                 width: 100%;
@@ -516,66 +531,61 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 border-radius: 16px;
                 overflow: hidden;
                 background: white;
-                display: flex;
-                flex-direction: column;
-                box-shadow: 0 2px 4px rgba(99,102,241,0.05),
-                            0 8px 24px rgba(99,102,241,0.08);
+                box-shadow: 0 2px 4px rgba(99,102,241,0.05), 0 8px 24px rgba(99,102,241,0.08);
             }}
 
-            /* ── Top row: graph left + summary table right ── */
+            /* ── single top row: graph left, right panel right ── */
             .top-row {{
                 display: flex;
-                min-height: 480px;
+                min-height: 500px;
             }}
 
-            /* ── Graph (left, 60%) ── */
+            /* ── Graph (left 58%) ── */
             .graph-section {{
-                width: 60%;
+                width: 58%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 background: linear-gradient(145deg, #f5f7ff 0%, #eef2ff 100%);
                 border-right: 1px solid #e2e8f0;
                 position: relative;
+                flex-shrink: 0;
             }}
 
             .graph-badge {{
-                position: absolute;
-                top: 14px; left: 18px;
+                position: absolute; top: 14px; left: 18px;
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                color: white;
-                font-size: 10px; font-weight: 700;
+                color: white; font-size: 10px; font-weight: 700;
                 letter-spacing: 1px; text-transform: uppercase;
                 padding: 4px 10px; border-radius: 20px;
             }}
 
             .legend {{
-                position: absolute;
-                bottom: 14px; left: 18px;
+                position: absolute; bottom: 14px; left: 18px;
                 display: flex; gap: 10px;
             }}
-
-            .legend-item {{
-                display: flex; align-items: center; gap: 5px;
-                font-size: 10px; font-weight: 600; color: #64748b;
-            }}
-
+            .legend-item {{ display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; color: #64748b; }}
             .legend-dot {{ width: 10px; height: 10px; border-radius: 50%; }}
 
-            /* ── CHANGE 2: Results summary table now in right panel beside graph ── */
-            .summary-table-section {{
-                width: 40%;
+            /* ── Right panel (42%): table on top, detail below ── */
+            .right-panel {{
+                width: 42%;
                 display: flex;
                 flex-direction: column;
                 background: #ffffff;
                 overflow: hidden;
             }}
 
-            .summary-table-header {{
-                padding: 16px 18px 10px;
-                border-bottom: 1px solid #e8edff;
-                background: linear-gradient(135deg, #f8f9ff 0%, #f3f6ff 100%);
+            /* Summary table (top half of right panel) */
+            .summary-table-section {{
                 flex-shrink: 0;
+                border-bottom: 1px solid #e8edff;
+            }}
+
+            .summary-table-header {{
+                padding: 14px 16px 8px;
+                background: linear-gradient(135deg, #f8f9ff 0%, #f3f6ff 100%);
+                border-bottom: 1px solid #e8edff;
             }}
 
             .summary-table-title {{
@@ -584,229 +594,156 @@ def create_svg_viewer(selected_id, source_text, mappings):
             }}
 
             .summary-table-sub {{
-                font-size: 11px; color: #94a3b8; margin-top: 3px;
+                font-size: 11px; color: #94a3b8; margin-top: 2px;
             }}
 
-            .summary-table-scroll {{
+            /* FIX 4: Detail section scrolls inside the right panel below the table */
+            .detail-section {{
                 flex: 1;
                 overflow-y: auto;
-                padding: 0;
-            }}
-
-            .summary-table-scroll::-webkit-scrollbar {{ width: 4px; }}
-            .summary-table-scroll::-webkit-scrollbar-track {{ background: #f8faff; }}
-            .summary-table-scroll::-webkit-scrollbar-thumb {{
-                background: #c7d2fe; border-radius: 4px;
-            }}
-
-            /* ── Detail panel (below the top row) ── */
-            .detail-section {{
-                border-top: 1px solid #e2e8f0;
-                padding: 18px 22px;
+                padding: 14px 16px;
                 background: #ffffff;
-                min-height: 60px;
             }}
+
+            .detail-section::-webkit-scrollbar {{ width: 4px; }}
+            .detail-section::-webkit-scrollbar-track {{ background: #f8faff; }}
+            .detail-section::-webkit-scrollbar-thumb {{ background: #c7d2fe; border-radius: 4px; }}
 
             .results-table {{
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 12px;
+                width: 100%; border-collapse: collapse; font-size: 12px;
             }}
 
             .results-table th {{
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                color: white;
-                padding: 9px 12px;
-                text-align: left;
+                color: white; padding: 8px 12px; text-align: left;
                 font-weight: 600; font-size: 11px;
                 text-transform: uppercase; letter-spacing: 0.5px;
                 position: sticky; top: 0; z-index: 1;
             }}
 
-            .results-table th:first-child {{ border-radius: 0; }}
-            .results-table th:last-child  {{ border-radius: 0; }}
-
             .results-table td {{
-                padding: 9px 12px;
+                padding: 8px 12px;
                 border-bottom: 1px solid #eef2ff;
-                color: #374151;
-                vertical-align: middle;
+                color: #374151; vertical-align: middle;
             }}
 
             .results-table tr:last-child td {{ border-bottom: none; }}
-            .results-table tr:hover td {{
-                background: #eef2ff; cursor: pointer;
-            }}
+            .results-table tr:hover td {{ background: #eef2ff; cursor: pointer; }}
 
             .rank-badge {{
-                display: inline-flex;
-                align-items: center; justify-content: center;
+                display: inline-flex; align-items: center; justify-content: center;
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
                 color: white; border-radius: 50%;
-                width: 22px; height: 22px;
-                font-weight: 700; font-size: 10px;
+                width: 22px; height: 22px; font-weight: 700; font-size: 10px;
             }}
 
-            /* ── SVG nodes ── */
+            /* SVG node styles */
             .mapping-node {{ cursor: pointer; }}
             .mapping-node circle {{ transition: all 0.2s ease; }}
             .mapping-node:hover .glow-ring {{ opacity: 0.38 !important; }}
-
-            /* CHANGE 1: bigger fonts inside circles */
             .node-code {{
                 fill: white; font-size: 13px; font-weight: 800;
-                pointer-events: none;
-                font-family: 'Inter', Arial, sans-serif;
+                pointer-events: none; font-family: 'Inter', Arial, sans-serif;
             }}
             .node-score {{
-                fill: rgba(255,255,255,0.92);
-                font-size: 13px; font-weight: 700;
-                pointer-events: none;
-                font-family: 'Inter', Arial, sans-serif;
+                fill: rgba(255,255,255,0.92); font-size: 13px; font-weight: 700;
+                pointer-events: none; font-family: 'Inter', Arial, sans-serif;
             }}
-            .number-label {{
-                font-size: 10px; font-weight: 700;
-                font-family: 'Inter', Arial, sans-serif;
-            }}
-
+            .number-label {{ font-size: 10px; font-weight: 700; font-family: 'Inter', Arial, sans-serif; }}
             .center-node {{ cursor: pointer; }}
 
-            /* ── Detail panel inner ── */
+            /* Detail panel inner elements */
             .panel-header {{
                 display: flex; align-items: center; gap: 10px;
-                margin-bottom: 14px; padding-bottom: 12px;
+                margin-bottom: 12px; padding-bottom: 10px;
                 border-bottom: 2px solid #eef2ff;
             }}
-
             .panel-rank-badge {{
-                width: 32px; height: 32px; border-radius: 50%;
+                width: 28px; height: 28px; border-radius: 50%;
                 display: flex; align-items: center; justify-content: center;
-                font-size: 14px; font-weight: 800; color: white; flex-shrink: 0;
+                font-size: 13px; font-weight: 800; color: white; flex-shrink: 0;
             }}
-
-            .panel-title {{
-                font-size: 15px; font-weight: 700; color: #0f172a;
-            }}
+            .panel-title {{ font-size: 14px; font-weight: 700; color: #0f172a; }}
 
             .sub-title {{
-                font-size: 11px; font-weight: 700; color: #6366f1;
+                font-size: 10px; font-weight: 700; color: #6366f1;
                 text-transform: uppercase; letter-spacing: 0.8px;
-                margin-top: 12px; margin-bottom: 4px;
-                display: flex; align-items: center; gap: 4px;
+                margin-top: 10px; margin-bottom: 3px;
             }}
 
             .content-box {{
-                border: 1px solid #e8edff;
-                border-radius: 8px;
-                padding: 10px 12px;
-                font-size: 12px; line-height: 1.6; color: #374151;
-                background: #f8faff;
-                white-space: pre-wrap;
+                border: 1px solid #e8edff; border-radius: 8px;
+                padding: 8px 10px; font-size: 11px; line-height: 1.6;
+                color: #374151; background: #f8faff; white-space: pre-wrap;
             }}
 
-            .score-grid {{
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-            }}
-
-            .score-card {{ border-radius: 10px; padding: 10px 12px; text-align: center; }}
-            .score-card-main  {{
-                background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                grid-column: 1 / -1;
-            }}
+            .score-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }}
+            .score-card {{ border-radius: 8px; padding: 8px 10px; text-align: center; }}
+            .score-card-main  {{ background: linear-gradient(135deg, #6366f1, #8b5cf6); grid-column: 1 / -1; }}
             .score-card-embed {{ background: linear-gradient(135deg, #0891b2, #06b6d4); }}
             .score-card-onto  {{ background: linear-gradient(135deg, #059669, #10b981); }}
-
-            .score-card-label {{
-                font-size: 10px; font-weight: 600;
-                text-transform: uppercase; letter-spacing: 0.6px;
-                opacity: 0.85; color: white; margin-bottom: 4px;
-            }}
-            .score-card-value {{
-                font-size: 20px; font-weight: 800; color: white; line-height: 1;
-            }}
-            .score-card-sub {{
-                font-size: 10px; color: rgba(255,255,255,0.75); margin-top: 2px;
-            }}
+            .score-card-label {{ font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.85; color: white; margin-bottom: 2px; }}
+            .score-card-value {{ font-size: 18px; font-weight: 800; color: white; line-height: 1; }}
+            .score-card-sub   {{ font-size: 9px; color: rgba(255,255,255,0.75); margin-top: 2px; }}
 
             .confidence-row {{
-                display: flex; align-items: center; gap: 8px;
-                margin-top: 8px; padding: 8px 12px;
-                border-radius: 8px;
+                display: flex; align-items: center; gap: 6px; margin-top: 6px;
+                padding: 6px 10px; border-radius: 8px;
                 background: #f8faff; border: 1px solid #e8edff;
-                font-size: 12px; color: #374151; font-weight: 500;
+                font-size: 11px; color: #374151; font-weight: 500;
             }}
 
             .placeholder-detail {{
-                color: #94a3b8; font-size: 13px; line-height: 1.7;
-                text-align: center; padding: 16px;
-                border: 2px dashed #c7d2fe; border-radius: 12px;
-                background: #f8faff;
-                display: inline-block; width: 100%;
+                color: #94a3b8; font-size: 12px; line-height: 1.7; text-align: center;
+                padding: 24px 12px; border: 2px dashed #c7d2fe; border-radius: 12px;
+                background: #f8faff; margin-top: 4px;
             }}
 
             .ecc-panel-header {{
                 display: flex; align-items: center; gap: 10px;
-                margin-bottom: 14px; padding-bottom: 12px;
+                margin-bottom: 12px; padding-bottom: 10px;
                 border-bottom: 2px solid #eef2ff;
             }}
-
             .ecc-icon {{
-                width: 36px; height: 36px; border-radius: 50%;
+                width: 32px; height: 32px; border-radius: 50%;
                 background: linear-gradient(135deg, #6366f1, #4f46e5);
                 display: flex; align-items: center; justify-content: center;
-                font-size: 16px; flex-shrink: 0;
+                font-size: 14px; flex-shrink: 0;
             }}
         </style>
     </head>
     <body>
         <div class="main-card">
-
-            <!-- Top row: graph + summary table side by side -->
             <div class="top-row">
 
-                <!-- Graph (left 60%) -->
+                <!-- Graph left -->
                 <div class="graph-section">
                     <div class="graph-badge">Control Mapping Graph</div>
-
-                    <svg width="{width}" height="{height}"
-                         viewBox="0 0 {width} {height}">
-
+                    <svg width="{width}" height="{height}" viewBox="0 0 {width} {height}">
                         <circle cx="{center_x}" cy="{center_y}" r="{graph_radius}"
                                 fill="none" stroke="#c7d2fe" stroke-width="1"
                                 stroke-dasharray="3,6" opacity="0.5"/>
-
                         {svg_lines}
-
-                        <!-- ECC Centre node -->
                         <g class="center-node" onclick="showEccPanel()">
                             <circle cx="{center_x}" cy="{center_y}" r="{blue_radius + 10}"
                                     fill="url(#centerGlow)" opacity="0.22"/>
                             <circle cx="{center_x}" cy="{center_y}" r="{blue_radius}"
                                     fill="url(#centerGrad)"
                                     filter="drop-shadow(0 4px 14px rgba(99,102,241,0.55))"/>
-                            <text x="{center_x}" y="{center_y - 9}"
-                                  text-anchor="middle" dominant-baseline="middle"
-                                  fill="white" font-size="14" font-weight="800"
-                                  font-family="Inter, Arial, sans-serif">ECC</text>
-                            <text x="{center_x}" y="{center_y + 8}"
-                                  text-anchor="middle" dominant-baseline="middle"
-                                  fill="rgba(255,255,255,0.85)"
-                                  font-size="11" font-weight="700"
-                                  font-family="Inter, Arial, sans-serif">
+                            <text x="{center_x}" y="{center_y - 9}" text-anchor="middle"
+                                  dominant-baseline="middle" fill="white" font-size="14"
+                                  font-weight="800" font-family="Inter, Arial, sans-serif">ECC</text>
+                            <text x="{center_x}" y="{center_y + 8}" text-anchor="middle"
+                                  dominant-baseline="middle" fill="rgba(255,255,255,0.85)"
+                                  font-size="11" font-weight="700" font-family="Inter, Arial, sans-serif">
                                 {html.escape(str(selected_id))}
                             </text>
-                            <text x="{center_x}" y="{center_y + 22}"
-                                  text-anchor="middle" dominant-baseline="middle"
-                                  fill="rgba(255,255,255,0.55)"
-                                  font-size="9" font-weight="500"
-                                  font-family="Inter, Arial, sans-serif">click</text>
+                            <text x="{center_x}" y="{center_y + 22}" text-anchor="middle"
+                                  dominant-baseline="middle" fill="rgba(255,255,255,0.55)"
+                                  font-size="9" font-weight="500" font-family="Inter, Arial, sans-serif">click</text>
                         </g>
-
                         {svg_nodes}
                         {svg_numbers}
-
                         <defs>
                             <linearGradient id="centerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                                 <stop offset="0%"   style="stop-color:#818cf8"/>
@@ -818,37 +755,27 @@ def create_svg_viewer(selected_id, source_text, mappings):
                             </radialGradient>
                         </defs>
                     </svg>
-
                     <div class="legend">
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background:#059669;"></div>
-                            High ≥85%
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background:#d97706;"></div>
-                            Mid ≥70%
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background:#dc2626;"></div>
-                            Low &lt;70%
-                        </div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#059669;"></div>High ≥85%</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#d97706;"></div>Mid ≥70%</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#dc2626;"></div>Low &lt;70%</div>
                     </div>
                 </div>
 
-                <!-- CHANGE 2: Results summary table on the right -->
-                <div class="summary-table-section">
-                    <div class="summary-table-header">
-                        <div class="summary-table-title">
-                            📋 Results Summary —
-                            <span style="color:#6366f1;">{len(mappings)} mapping(s)</span>
-                            &nbsp;for&nbsp;
-                            <b style="color:#4f46e5;">{html.escape(str(selected_id))}</b>
+                <!-- Right panel: table + detail -->
+                <div class="right-panel">
+
+                    <!-- Summary table (always visible at top of right panel) -->
+                    <div class="summary-table-section">
+                        <div class="summary-table-header">
+                            <div class="summary-table-title">
+                                📋 Results —
+                                <span style="color:#6366f1;">{len(mappings)} mapping(s)</span>
+                                &nbsp;for&nbsp;
+                                <b style="color:#4f46e5;">{html.escape(str(selected_id))}</b>
+                            </div>
+                            <div class="summary-table-sub">Click a row or node to view details</div>
                         </div>
-                        <div class="summary-table-sub">
-                            Click a row to view details below
-                        </div>
-                    </div>
-                    <div class="summary-table-scroll">
                         <table class="results-table">
                             <thead>
                                 <tr>
@@ -860,18 +787,19 @@ def create_svg_viewer(selected_id, source_text, mappings):
                             <tbody id="summary-tbody"></tbody>
                         </table>
                     </div>
+
+                    <!-- FIX 4: Detail panel scrolls below the table, inside same column -->
+                    <div class="detail-section" id="detail-panel">
+                        <div class="placeholder-detail">
+                            🔗 Click any node or row to view details<br>
+                            <span style="color:#a5b4fc;font-size:10px;">
+                                Click the blue ECC node for the control description
+                            </span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
-
-            <!-- Detail panel (below the top row, full width) -->
-            <div class="detail-section" id="detail-panel">
-                <div class="placeholder-detail">
-                    🔗 Click any node or table row to view detailed mapping info
-                    &nbsp;·&nbsp;
-                    <span style="color:#a5b4fc;">Click the blue ECC node for the control description</span>
-                </div>
-            </div>
-
         </div>
 
         <script>
@@ -887,17 +815,13 @@ def create_svg_viewer(selected_id, source_text, mappings):
                     tr.onclick = function() {{ updatePanel("node_" + row.rank); }};
                     tr.innerHTML = `
                         <td><span class="rank-badge">${{row.rank}}</span></td>
-                        <td style="font-weight:600;color:#1e293b;">
-                            ${{escapeHtml(row.nist_control)}}
-                        </td>
+                        <td style="font-weight:600;color:#1e293b;">${{escapeHtml(row.nist_control)}}</td>
                         <td>
-                            <span style="
-                                display:inline-block;
-                                background:${{row.fill_color}};
-                                color:white; border-radius:20px;
-                                padding:2px 9px;
-                                font-weight:700; font-size:11px;
-                            ">${{escapeHtml(row.final_percent)}}</span>
+                            <span style="display:inline-block;background:${{row.fill_color}};
+                                color:white;border-radius:20px;padding:2px 9px;
+                                font-weight:700;font-size:11px;">
+                                ${{escapeHtml(row.final_percent)}}
+                            </span>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -919,32 +843,19 @@ def create_svg_viewer(selected_id, source_text, mappings):
                         <div class="ecc-icon">🔵</div>
                         <div>
                             <div class="panel-title">ECC Control</div>
-                            <div style="font-size:11px;color:#94a3b8;margin-top:1px;">
-                                Source control description
-                            </div>
+                            <div style="font-size:10px;color:#94a3b8;margin-top:1px;">Source control description</div>
                         </div>
                     </div>
-
-                    <div style="display:grid;grid-template-columns:220px 1fr;gap:14px;">
-                        <div>
-                            <div class="sub-title">🏷️ Control ID</div>
-                            <div class="content-box">
-                                <b style="color:#4f46e5;font-size:14px;">${{escapeHtml(eccId)}}</b>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="sub-title">📄 Description</div>
-                            <div class="content-box" style="line-height:1.7;">
-                                ${{escapeHtml(eccText)}}
-                            </div>
-                        </div>
+                    <div class="sub-title">🏷️ Control ID</div>
+                    <div class="content-box">
+                        <b style="color:#4f46e5;font-size:13px;">${{escapeHtml(eccId)}}</b>
                     </div>
-
-                    <div style="margin-top:12px; padding:8px 12px;
-                                border-radius:8px; background:#eef2ff;
-                                border:1px solid #c7d2fe;
-                                font-size:11px; color:#6366f1; font-weight:600;">
-                        💡 Click any green node or table row to view its NIST mapping details
+                    <div class="sub-title">📄 Description</div>
+                    <div class="content-box" style="line-height:1.7;">${{escapeHtml(eccText)}}</div>
+                    <div style="margin-top:10px;padding:8px 10px;border-radius:8px;
+                                background:#eef2ff;border:1px solid #c7d2fe;
+                                font-size:10px;color:#6366f1;font-weight:600;">
+                        💡 Click any green node to view its NIST mapping details
                     </div>
                 `;
             }}
@@ -955,99 +866,67 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 if (!item) return;
 
                 const finalVal   = parseFloat(item.final);
-                const matchIcon  = finalVal >= 0.85 ? "🟢"
-                                 : finalVal >= 0.70 ? "🟡" : "🔴";
-                const matchLabel = finalVal >= 0.85 ? "High Match"
-                                 : finalVal >= 0.70 ? "Medium Match" : "Low Match";
+                const matchIcon  = finalVal >= 0.85 ? "🟢" : finalVal >= 0.70 ? "🟡" : "🔴";
+                const matchLabel = finalVal >= 0.85 ? "High Match" : finalVal >= 0.70 ? "Medium Match" : "Low Match";
 
                 const domain = item.nist_control.startsWith("GV") ? "Govern"
                              : item.nist_control.startsWith("ID") ? "Identify"
                              : item.nist_control.startsWith("PR") ? "Protect"
                              : item.nist_control.startsWith("DE") ? "Detect"
                              : item.nist_control.startsWith("RS") ? "Respond"
-                             : item.nist_control.startsWith("RC") ? "Recover"
-                             : "Unknown";
+                             : item.nist_control.startsWith("RC") ? "Recover" : "Unknown";
 
                 const fillColor = item.fill_color;
 
                 panel.innerHTML = `
                     <div class="panel-header">
                         <div class="panel-rank-badge"
-                             style="background:linear-gradient(135deg,
-                                    ${{fillColor}},${{fillColor}}cc);">
+                             style="background:linear-gradient(135deg,${{fillColor}},${{fillColor}}cc);">
                             ${{item.rank}}
                         </div>
                         <div>
                             <div class="panel-title">Mapping #${{item.rank}} Details</div>
-                            <div style="font-size:11px;color:#94a3b8;margin-top:1px;">
+                            <div style="font-size:10px;color:#94a3b8;margin-top:1px;">
                                 ${{escapeHtml(item.nist_control)}}
                             </div>
                         </div>
                     </div>
 
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
-                        <!-- Scores -->
-                        <div>
-                            <div class="sub-title">📊 Scores</div>
-                            <div class="score-grid">
-                                <div class="score-card score-card-main">
-                                    <div class="score-card-label">Final Match Score</div>
-                                    <div class="score-card-value">
-                                        ${{escapeHtml(item.final_percent)}}
-                                    </div>
-                                    <div class="score-card-sub">
-                                        ${{escapeHtml(item.final)}} · ${{domain}}
-                                    </div>
-                                </div>
-                                <div class="score-card score-card-embed">
-                                    <div class="score-card-label">Embedding</div>
-                                    <div class="score-card-value">
-                                        ${{escapeHtml(item.embedding_percent)}}
-                                    </div>
-                                    <div class="score-card-sub">
-                                        ${{escapeHtml(item.embedding)}}
-                                    </div>
-                                </div>
-                                <div class="score-card score-card-onto">
-                                    <div class="score-card-label">Ontology</div>
-                                    <div class="score-card-value">
-                                        ${{escapeHtml(item.ontology_percent)}}
-                                    </div>
-                                    <div class="score-card-sub">
-                                        ${{escapeHtml(item.ontology)}}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="confidence-row">
-                                ${{matchIcon}} <b>Confidence:</b> ${{matchLabel}}
-                            </div>
+                    <div class="score-grid">
+                        <div class="score-card score-card-main">
+                            <div class="score-card-label">Final Match Score</div>
+                            <div class="score-card-value">${{escapeHtml(item.final_percent)}}</div>
+                            <div class="score-card-sub">${{escapeHtml(item.final)}} · ${{domain}}</div>
                         </div>
-
-                        <!-- NIST -->
-                        <div>
-                            <div class="sub-title">🎯 NIST Control</div>
-                            <div class="content-box" style="height:calc(100% - 28px);">
-                                <b>${{escapeHtml(item.nist_control)}}</b><br><br>
-                                ${{escapeHtml(item.nist_text)}}
-                            </div>
+                        <div class="score-card score-card-embed">
+                            <div class="score-card-label">Embedding</div>
+                            <div class="score-card-value">${{escapeHtml(item.embedding_percent)}}</div>
+                            <div class="score-card-sub">${{escapeHtml(item.embedding)}}</div>
                         </div>
-
-                        <!-- Commonality + Justification -->
-                        <div>
-                            <div class="sub-title">🤝 Commonality</div>
-                            <div class="content-box">${{escapeHtml(item.commonality)}}</div>
-                            <div class="sub-title">✅ Justification</div>
-                            <div class="content-box">${{escapeHtml(item.justification)}}</div>
-                        </div>
-
-                        <!-- Differences -->
-                        <div>
-                            <div class="sub-title">⚡ Differences</div>
-                            <div class="content-box" style="height:calc(100% - 28px);">
-                                ${{escapeHtml(item.differences)}}
-                            </div>
+                        <div class="score-card score-card-onto">
+                            <div class="score-card-label">Ontology</div>
+                            <div class="score-card-value">${{escapeHtml(item.ontology_percent)}}</div>
+                            <div class="score-card-sub">${{escapeHtml(item.ontology)}}</div>
                         </div>
                     </div>
+                    <div class="confidence-row">
+                        ${{matchIcon}} <b>Confidence:</b> ${{matchLabel}}
+                    </div>
+
+                    <div class="sub-title">🎯 NIST Control</div>
+                    <div class="content-box">
+                        <b>${{escapeHtml(item.nist_control)}}</b><br><br>
+                        ${{escapeHtml(item.nist_text)}}
+                    </div>
+
+                    <div class="sub-title">🤝 Commonality</div>
+                    <div class="content-box">${{escapeHtml(item.commonality)}}</div>
+
+                    <div class="sub-title">✅ Justification</div>
+                    <div class="content-box">${{escapeHtml(item.justification)}}</div>
+
+                    <div class="sub-title">⚡ Differences</div>
+                    <div class="content-box">${{escapeHtml(item.differences)}}</div>
                 `;
             }}
         </script>
@@ -1149,7 +1028,7 @@ if os.path.exists(DATA_FILE):
     source_text_col = find_col(list(df.columns), "Source Text")
     source_text     = safe_value(row.get(source_text_col, "") if source_text_col else "")
 
-    # ── Header ──────────────────────────────────────────────────────────
+    # ── Header (no top margin/padding) ──────────────────────────────────
     header_col1, header_col2 = st.columns([4, 1.4])
 
     with header_col1:
@@ -1158,9 +1037,10 @@ if os.path.exists(DATA_FILE):
             <div style="
                 background: linear-gradient(135deg,#0f172a 0%,#312e81 60%,#4c1d95 100%);
                 border-radius: 12px 0 0 12px;
-                padding: 20px 28px; margin-bottom: 10px;
+                padding: 20px 28px;
                 min-height: 110px;
                 display: flex; flex-direction: column; justify-content: center;
+                margin-left: -16px;
             ">
                 <div style="font-size:11px;font-weight:600;color:#a5b4fc;
                             text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
@@ -1188,7 +1068,7 @@ if os.path.exists(DATA_FILE):
                 background: linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);
                 border: 1px solid #312e81;
                 border-radius: 0 12px 12px 0;
-                padding: 16px 18px; margin-bottom: 10px;
+                padding: 16px 18px;
                 min-height: 110px;
                 display: flex; flex-direction: column; justify-content: center;
             ">
@@ -1211,7 +1091,7 @@ if os.path.exists(DATA_FILE):
 
     st.markdown(
         f"""
-        <div style="margin-top:-8px;margin-bottom:8px;color:#64748b;font-size:13px;">
+        <div style="margin-top:6px;margin-bottom:8px;color:#64748b;font-size:13px;">
             Showing <b style="color:#6366f1;">{len(mappings)}</b> recommended mapping(s) for
             <b style="color:#4f46e5;">{selected_id}</b>
         </div>
@@ -1271,16 +1151,15 @@ if os.path.exists(DATA_FILE):
             time.sleep(0.15)
 
     with col_graph:
-        # top-row 480 + detail panel ~220 + small padding
-        total_h = 480 + 240 + 10
-        components.html(viewer_html, height=total_h, scrolling=False)
+        # top-row min-height 500 + some padding; detail is inside so no extra rows below graph
+        components.html(viewer_html, height=520, scrolling=False)
 
-    # ── Export PDF ───────────────────────────────────────────────────────
+    # ── Export PDF (only thing below the viewer) ──────────────────────
     st.markdown(
         """
         <div style="height:1px;
                     background:linear-gradient(90deg,#e8edff,#c7d2fe,#e8edff);
-                    margin:16px 0 14px 0;"></div>
+                    margin:14px 0 12px 0;"></div>
         <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:10px;">
             Export Mapping Report
         </div>
