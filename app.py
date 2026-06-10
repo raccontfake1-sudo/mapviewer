@@ -95,7 +95,7 @@ st.markdown(
 
         /* Streamlit download button */
         .stDownloadButton button {
-            background: #1d4ed8 !important;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
             color: white !important;
             border: none !important;
             border-radius: 8px !important;
@@ -106,7 +106,7 @@ st.markdown(
         }
 
         .stDownloadButton button:hover {
-            background: #1e40af !important;
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
         }
 
         /* Hide Streamlit branding */
@@ -115,7 +115,7 @@ st.markdown(
 
         /* Slider */
         .stSlider > div > div > div {
-            background: #1d4ed8 !important;
+            background: #6366f1 !important;
         }
     </style>
     """,
@@ -272,6 +272,19 @@ def extract_mappings(row, df, top_k=5):
 
 
 # -------------------------
+# Color helpers for score-based node coloring
+# -------------------------
+def score_to_node_colors(score):
+    """Return (fill_color, glow_color, text_color, badge_color) based on score."""
+    if score >= 0.85:
+        return "#059669", "rgba(5,150,105,0.45)", "white", "#34d399"   # emerald
+    elif score >= 0.70:
+        return "#d97706", "rgba(217,119,6,0.45)",  "white", "#fcd34d"  # amber
+    else:
+        return "#dc2626", "rgba(220,38,38,0.45)",  "white", "#fca5a5"  # red
+
+
+# -------------------------
 # SVG Viewer
 # -------------------------
 def create_svg_viewer(selected_id, source_text, mappings):
@@ -281,9 +294,9 @@ def create_svg_viewer(selected_id, source_text, mappings):
     center_x = 310
     center_y = 210
 
-    blue_radius  = 45
-    green_radius = 38
-    graph_radius = 155
+    blue_radius  = 48
+    green_radius = 42
+    graph_radius = 158
 
     mapping_data = {}
     svg_lines  = ""
@@ -299,6 +312,10 @@ def create_svg_viewer(selected_id, source_text, mappings):
 
         rank    = idx + 1
         node_id = f"node_{rank}"
+
+        fill_color, glow_color, text_color, badge_color = score_to_node_colors(item["final"])
+        score_pct = format_percent(item["final"])
+        code_escaped = html.escape(item["short_code"])
 
         mapping_data[node_id] = {
             "rank":            str(rank),
@@ -316,7 +333,9 @@ def create_svg_viewer(selected_id, source_text, mappings):
             "ontology_percent": format_percent(item["ontology"]),
             "commonality":     item["commonality"],
             "justification":   item["justification"],
-            "differences":     item["differences"]
+            "differences":     item["differences"],
+            "fill_color":      fill_color,
+            "badge_color":     badge_color,
         }
 
         dx = x - center_x
@@ -328,34 +347,32 @@ def create_svg_viewer(selected_id, source_text, mappings):
         end_x   = x        - (green_radius / distance) * dx
         end_y   = y        - (green_radius / distance) * dy
 
+        # Line color matches node fill
         svg_lines += f"""
             <line x1="{start_x}" y1="{start_y}" x2="{end_x}" y2="{end_y}"
-                  stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,3"/>
+                  stroke="{fill_color}" stroke-width="1.8" stroke-dasharray="5,3" opacity="0.6"/>
         """
 
+        # Rank number above the node
         svg_numbers += f"""
-            <text x="{x}" y="{y - green_radius - 10}"
+            <text x="{x}" y="{y - green_radius - 9}"
                   text-anchor="middle" dominant-baseline="middle"
-                  class="number-label">{rank}</text>
+                  class="number-label" fill="{fill_color}">#{rank}</text>
         """
 
-        code_escaped = html.escape(item["short_code"])
-        name_escaped = html.escape(item["short_name"])
-
-        if name_escaped:
-            label_svg = f"""
-                <text x="{x}" y="{y - 7}" text-anchor="middle" dominant-baseline="middle" class="green-label-code">{code_escaped}</text>
-                <text x="{x}" y="{y + 10}" text-anchor="middle" dominant-baseline="middle" class="green-label-name">{name_escaped}</text>
-            """
-        else:
-            label_svg = f"""
-                <text x="{x}" y="{y}" text-anchor="middle" dominant-baseline="middle" class="green-label-code">{code_escaped}</text>
-            """
-
+        # Node: glow ring + filled circle + NIST code + score %
         svg_nodes += f"""
-            <g class="mapping-node" onclick="updatePanel('{node_id}')">
-                <circle cx="{x}" cy="{y}" r="{green_radius}" fill="#059669"/>
-                {label_svg}
+            <g class="mapping-node" onclick="updatePanel('{node_id}')"
+               data-fill="{fill_color}" data-glow="{glow_color}">
+                <circle cx="{x}" cy="{y}" r="{green_radius + 5}"
+                        fill="{fill_color}" opacity="0.18" class="glow-ring"/>
+                <circle cx="{x}" cy="{y}" r="{green_radius}"
+                        fill="{fill_color}"
+                        filter="drop-shadow(0 3px 8px {glow_color})"/>
+                <text x="{x}" y="{y - 8}" text-anchor="middle" dominant-baseline="middle"
+                      class="node-code">{code_escaped}</text>
+                <text x="{x}" y="{y + 10}" text-anchor="middle" dominant-baseline="middle"
+                      class="node-score">{html.escape(score_pct)}</text>
             </g>
         """
 
@@ -366,6 +383,8 @@ def create_svg_viewer(selected_id, source_text, mappings):
             "nist_control":  m["mapping"],
             "final_percent": format_percent(m["final"]),
             "final":         format_decimal(m["final"]),
+            "fill_color":    score_to_node_colors(m["final"])[0],
+            "badge_color":   score_to_node_colors(m["final"])[3],
         }
         for i, m in enumerate(mappings)
     ])
@@ -374,71 +393,107 @@ def create_svg_viewer(selected_id, source_text, mappings):
     <!DOCTYPE html>
     <html>
     <head>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
         <style>
             * {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
             body {{
                 font-family: 'Inter', Arial, sans-serif;
-                background: #f8fafc;
+                background: #f0f4ff;
                 color: #1e293b;
             }}
 
+            /* ── Main card ── */
             .main-card {{
                 width: 100%;
-                border: 1px solid #e2e8f0;
-                border-radius: 12px;
+                border: 1px solid #dde3f0;
+                border-radius: 16px;
                 overflow: hidden;
                 background: white;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+                box-shadow: 0 4px 6px rgba(99,102,241,0.07),
+                            0 12px 32px rgba(99,102,241,0.10);
             }}
 
+            /* ── Top row ── */
             .top-row {{
                 display: flex;
-                height: 520px;
+                height: 540px;
             }}
 
+            /* ── Graph side ── */
             .graph-section {{
-                width: 65%;
-                height: 520px;
+                width: 62%;
+                height: 540px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: #f8fafc;
-                border-right: 1px solid #e2e8f0;
+                background: linear-gradient(145deg, #f0f4ff 0%, #e8edff 100%);
+                border-right: 1px solid #dde3f0;
                 position: relative;
             }}
 
-            .graph-label {{
+            .graph-badge {{
                 position: absolute;
                 top: 14px;
                 left: 18px;
-                font-size: 11px;
-                font-weight: 600;
-                color: #94a3b8;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                color: white;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 1px;
                 text-transform: uppercase;
-                letter-spacing: 0.7px;
+                padding: 4px 10px;
+                border-radius: 20px;
             }}
 
+            .legend {{
+                position: absolute;
+                bottom: 14px;
+                left: 18px;
+                display: flex;
+                gap: 10px;
+            }}
+
+            .legend-item {{
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                font-size: 10px;
+                font-weight: 600;
+                color: #64748b;
+            }}
+
+            .legend-dot {{
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+            }}
+
+            /* ── Detail panel ── */
             .summary-section {{
-                width: 35%;
-                height: 520px;
-                padding: 20px;
+                width: 38%;
+                height: 540px;
+                padding: 22px 20px;
                 overflow-y: auto;
                 background: white;
             }}
 
+            .summary-section::-webkit-scrollbar {{ width: 4px; }}
+            .summary-section::-webkit-scrollbar-track {{ background: #f1f5f9; }}
+            .summary-section::-webkit-scrollbar-thumb {{ background: #c7d2fe; border-radius: 4px; }}
+
+            /* ── Results table ── */
             .results-summary {{
-                border-top: 1px solid #e2e8f0;
+                border-top: 1px solid #e8edff;
                 padding: 16px 20px;
-                background: #f8fafc;
+                background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
             }}
 
             .results-summary-title {{
                 font-size: 13px;
-                font-weight: 600;
+                font-weight: 700;
                 color: #374151;
                 margin-bottom: 12px;
                 display: flex;
@@ -453,20 +508,22 @@ def create_svg_viewer(selected_id, source_text, mappings):
             }}
 
             .results-table th {{
-                background: #f1f5f9;
-                color: #475569;
-                padding: 8px 12px;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                color: white;
+                padding: 9px 14px;
                 text-align: left;
                 font-weight: 600;
                 font-size: 11px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
-                border-bottom: 1px solid #e2e8f0;
             }}
 
+            .results-table th:first-child {{ border-radius: 8px 0 0 0; }}
+            .results-table th:last-child  {{ border-radius: 0 8px 0 0; }}
+
             .results-table td {{
-                padding: 9px 12px;
-                border-bottom: 1px solid #f1f5f9;
+                padding: 9px 14px;
+                border-bottom: 1px solid #f0f4ff;
                 color: #374151;
                 vertical-align: middle;
             }}
@@ -474,7 +531,7 @@ def create_svg_viewer(selected_id, source_text, mappings):
             .results-table tr:last-child td {{ border-bottom: none; }}
 
             .results-table tr:hover td {{
-                background: #eff6ff;
+                background: #f0f4ff;
                 cursor: pointer;
             }}
 
@@ -482,122 +539,161 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                background: #1d4ed8;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
                 color: white;
                 border-radius: 50%;
-                width: 22px;
-                height: 22px;
+                width: 24px;
+                height: 24px;
                 font-weight: 700;
                 font-size: 11px;
             }}
 
-            .score-pill {{
-                display: inline-block;
-                background: #dcfce7;
-                color: #166534;
-                border: 1px solid #bbf7d0;
-                border-radius: 20px;
-                padding: 2px 10px;
-                font-weight: 600;
-                font-size: 12px;
-            }}
-
+            /* ── SVG node classes ── */
             .mapping-node {{ cursor: pointer; }}
             .mapping-node circle {{
-                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
                 transition: all 0.2s ease;
             }}
-            .mapping-node:hover circle {{
-                fill: #047857;
-                filter: drop-shadow(0 3px 8px rgba(5,150,105,0.4));
+            .mapping-node:hover .glow-ring {{
+                opacity: 0.38 !important;
+                r: 52;
             }}
 
-            .green-label-code {{
+            .node-code {{
                 fill: white;
                 font-size: 10.5px;
-                font-weight: 700;
+                font-weight: 800;
                 pointer-events: none;
                 font-family: 'Inter', Arial, sans-serif;
             }}
 
-            .green-label-name {{
-                fill: #a7f3d0;
-                font-size: 9px;
-                pointer-events: none;
-                font-family: 'Inter', Arial, sans-serif;
-            }}
-
-            .blue-label {{
-                fill: white;
-                font-size: 16px;
+            .node-score {{
+                fill: rgba(255,255,255,0.92);
+                font-size: 11px;
                 font-weight: 700;
                 pointer-events: none;
                 font-family: 'Inter', Arial, sans-serif;
             }}
 
             .number-label {{
-                fill: #1d4ed8;
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 700;
                 font-family: 'Inter', Arial, sans-serif;
             }}
 
-            /* Panel */
+            /* ── Detail panel styles ── */
+            .panel-header {{
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 16px;
+                padding-bottom: 12px;
+                border-bottom: 2px solid #e8edff;
+            }}
+
+            .panel-rank-badge {{
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: 800;
+                color: white;
+                flex-shrink: 0;
+            }}
+
             .panel-title {{
                 font-size: 15px;
                 font-weight: 700;
                 color: #0f172a;
-                margin-bottom: 14px;
-                padding-bottom: 10px;
-                border-bottom: 2px solid #e2e8f0;
             }}
 
             .sub-title {{
-                font-size: 11px;
-                font-weight: 600;
-                color: #64748b;
+                font-size: 10px;
+                font-weight: 700;
+                color: #6366f1;
                 text-transform: uppercase;
-                letter-spacing: 0.6px;
+                letter-spacing: 0.8px;
                 margin-top: 14px;
-                margin-bottom: 6px;
+                margin-bottom: 5px;
+                display: flex;
+                align-items: center;
+                gap: 4px;
             }}
 
             .content-box {{
-                border: 1px solid #e2e8f0;
+                border: 1px solid #e8edff;
                 border-radius: 8px;
                 padding: 10px 12px;
-                font-size: 12.5px;
+                font-size: 12px;
                 line-height: 1.6;
                 color: #374151;
-                background: #f8fafc;
+                background: #f8f9ff;
                 white-space: pre-wrap;
             }}
 
-            .score-box {{
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                overflow: hidden;
+            .score-grid {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                margin-top: 0;
             }}
 
-            .score-row {{
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                font-size: 12.5px;
-                padding: 8px 12px;
-                border-bottom: 1px solid #f1f5f9;
+            .score-card {{
+                border-radius: 10px;
+                padding: 10px 12px;
+                text-align: center;
             }}
 
-            .score-row:last-child {{ border-bottom: none; }}
-
-            .score-label {{
-                font-weight: 500;
-                color: #64748b;
+            .score-card-main {{
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                grid-column: 1 / -1;
             }}
 
-            .score-value {{
+            .score-card-embed {{
+                background: linear-gradient(135deg, #0891b2, #06b6d4);
+            }}
+
+            .score-card-onto {{
+                background: linear-gradient(135deg, #059669, #10b981);
+            }}
+
+            .score-card-label {{
+                font-size: 10px;
                 font-weight: 600;
-                color: #1d4ed8;
+                text-transform: uppercase;
+                letter-spacing: 0.6px;
+                opacity: 0.85;
+                color: white;
+                margin-bottom: 4px;
+            }}
+
+            .score-card-value {{
+                font-size: 20px;
+                font-weight: 800;
+                color: white;
+                line-height: 1;
+            }}
+
+            .score-card-sub {{
+                font-size: 10px;
+                color: rgba(255,255,255,0.75);
+                margin-top: 2px;
+            }}
+
+            .confidence-row {{
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: 8px;
+                padding: 8px 12px;
+                border-radius: 8px;
+                background: #f8f9ff;
+                border: 1px solid #e8edff;
+                font-size: 12px;
+                color: #374151;
+                font-weight: 500;
             }}
 
             .placeholder {{
@@ -605,15 +701,22 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 font-size: 13px;
                 line-height: 1.7;
                 text-align: center;
-                padding: 40px 16px;
-                border: 1.5px dashed #e2e8f0;
-                border-radius: 10px;
+                padding: 50px 16px;
+                border: 2px dashed #c7d2fe;
+                border-radius: 12px;
                 margin-top: 8px;
+                background: #f8f9ff;
             }}
 
             .placeholder-icon {{
-                font-size: 28px;
-                margin-bottom: 10px;
+                font-size: 32px;
+                margin-bottom: 12px;
+            }}
+
+            .placeholder-hint {{
+                font-size: 11px;
+                color: #a5b4fc;
+                margin-top: 6px;
             }}
         </style>
     </head>
@@ -621,35 +724,74 @@ def create_svg_viewer(selected_id, source_text, mappings):
         <div class="main-card">
             <div class="top-row">
                 <div class="graph-section">
-                    <div class="graph-label">Control Mapping Graph</div>
+                    <div class="graph-badge">Control Mapping Graph</div>
+
                     <svg width="{width}" height="{height}" viewBox="0 0 {width} {height}">
+                        <!-- Subtle radial guide -->
+                        <circle cx="{center_x}" cy="{center_y}" r="{graph_radius}"
+                                fill="none" stroke="#c7d2fe" stroke-width="1"
+                                stroke-dasharray="3,6" opacity="0.5"/>
+
                         {svg_lines}
 
+                        <!-- Blue center node -->
+                        <circle cx="{center_x}" cy="{center_y}" r="{blue_radius + 8}"
+                                fill="url(#centerGlow)" opacity="0.25"/>
                         <circle cx="{center_x}" cy="{center_y}" r="{blue_radius}"
-                                fill="#1d4ed8"
-                                filter="drop-shadow(0 3px 8px rgba(29,78,216,0.4))"/>
-
-                        <text x="{center_x}" y="{center_y}"
+                                fill="url(#centerGrad)"
+                                filter="drop-shadow(0 4px 12px rgba(99,102,241,0.5))"/>
+                        <text x="{center_x}" y="{center_y - 7}"
                               text-anchor="middle" dominant-baseline="middle"
-                              class="blue-label">{html.escape(str(selected_id))}</text>
+                              fill="white" font-size="13" font-weight="800"
+                              font-family="Inter, Arial, sans-serif">ECC</text>
+                        <text x="{center_x}" y="{center_y + 9}"
+                              text-anchor="middle" dominant-baseline="middle"
+                              fill="rgba(255,255,255,0.85)" font-size="11" font-weight="700"
+                              font-family="Inter, Arial, sans-serif">{html.escape(str(selected_id))}</text>
 
                         {svg_nodes}
                         {svg_numbers}
+
+                        <defs>
+                            <linearGradient id="centerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#818cf8"/>
+                                <stop offset="100%" style="stop-color:#4f46e5"/>
+                            </linearGradient>
+                            <radialGradient id="centerGlow">
+                                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1"/>
+                                <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0"/>
+                            </radialGradient>
+                        </defs>
                     </svg>
+
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background:#059669;"></div> High ≥85%
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background:#d97706;"></div> Mid ≥70%
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background:#dc2626;"></div> Low &lt;70%
+                        </div>
+                    </div>
                 </div>
 
                 <div class="summary-section" id="summary-panel">
-                    <div class="panel-title">Mapping Details</div>
                     <div class="placeholder">
                         <div class="placeholder-icon">🔗</div>
-                        Click any green NIST control node to view detailed mapping information, scores, and analysis.
+                        <div>Click any node to view<br>detailed mapping info</div>
+                        <div class="placeholder-hint">Scores · Analysis · Justification</div>
                     </div>
                 </div>
             </div>
 
             <div class="results-summary">
                 <div class="results-summary-title">
-                    📋 Results Summary — {len(mappings)} mapping(s) for <b style="color:#1d4ed8; margin-left:4px;">{html.escape(str(selected_id))}</b>
+                    📋 Results Summary —
+                    <span style="color:#6366f1;">{len(mappings)} mapping(s)</span>
+                    &nbsp;for&nbsp;
+                    <b style="color:#4f46e5;">{html.escape(str(selected_id))}</b>
                 </div>
                 <table class="results-table">
                     <thead>
@@ -665,8 +807,8 @@ def create_svg_viewer(selected_id, source_text, mappings):
         </div>
 
         <script>
-            const mappingData   = {mapping_json};
-            const summaryRows   = {summary_rows_js};
+            const mappingData = {mapping_json};
+            const summaryRows = {summary_rows_js};
 
             (function buildTable() {{
                 const tbody = document.getElementById("summary-tbody");
@@ -675,8 +817,18 @@ def create_svg_viewer(selected_id, source_text, mappings):
                     tr.onclick = function() {{ updatePanel("node_" + row.rank); }};
                     tr.innerHTML = `
                         <td><span class="rank-badge">${{row.rank}}</span></td>
-                        <td style="font-weight:500;">${{escapeHtml(row.nist_control)}}</td>
-                        <td><span class="score-pill">${{escapeHtml(row.final_percent)}}</span></td>
+                        <td style="font-weight:600; color:#1e293b;">${{escapeHtml(row.nist_control)}}</td>
+                        <td>
+                            <span style="
+                                display:inline-block;
+                                background:${{row.fill_color}};
+                                color:white;
+                                border-radius:20px;
+                                padding:2px 10px;
+                                font-weight:700;
+                                font-size:12px;
+                            ">${{escapeHtml(row.final_percent)}}</span>
+                        </td>
                     `;
                     tbody.appendChild(tr);
                 }});
@@ -696,13 +848,11 @@ def create_svg_viewer(selected_id, source_text, mappings):
                 if (!item) return;
 
                 const finalVal = parseFloat(item.final);
-                const matchLabel = finalVal >= 0.85 ? "🟢 High Match"
-                                 : finalVal >= 0.70 ? "🟡 Medium Match"
-                                 : "🔴 Low Match";
-
-                const relLabel = finalVal >= 0.85 ? "Strong"
-                               : finalVal >= 0.70 ? "Moderate"
-                               : "Weak";
+                const matchIcon = finalVal >= 0.85 ? "🟢"
+                                : finalVal >= 0.70 ? "🟡" : "🔴";
+                const matchLabel = finalVal >= 0.85 ? "High Match"
+                                 : finalVal >= 0.70 ? "Medium Match"
+                                 : "Low Match";
 
                 const domain = item.nist_control.startsWith("GV") ? "Govern"
                              : item.nist_control.startsWith("ID") ? "Identify"
@@ -712,56 +862,63 @@ def create_svg_viewer(selected_id, source_text, mappings):
                              : item.nist_control.startsWith("RC") ? "Recover"
                              : "Unknown";
 
-                panel.innerHTML = `
-                    <div class="panel-title">Mapping #${{item.rank}} Details</div>
+                const fillColor = item.fill_color;
 
-                    <div class="sub-title">ECC Control</div>
+                panel.innerHTML = `
+                    <div class="panel-header">
+                        <div class="panel-rank-badge"
+                             style="background:linear-gradient(135deg,${{fillColor}},${{fillColor}}cc);">
+                            ${{item.rank}}
+                        </div>
+                        <div>
+                            <div class="panel-title">Mapping #${{item.rank}} Details</div>
+                            <div style="font-size:11px; color:#94a3b8; margin-top:1px;">
+                                ${{escapeHtml(item.nist_control)}}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sub-title">📌 ECC Control</div>
                     <div class="content-box">
                         <b>${{escapeHtml(item.ecc_control)}}</b><br><br>
                         ${{escapeHtml(item.ecc_text)}}
                     </div>
 
-                    <div class="sub-title">NIST Control</div>
+                    <div class="sub-title">🎯 NIST Control</div>
                     <div class="content-box">
                         <b>${{escapeHtml(item.nist_control)}}</b><br><br>
                         ${{escapeHtml(item.nist_text)}}
                     </div>
 
-                    <div class="sub-title">Scores & Analysis</div>
-                    <div class="score-box">
-                        <div class="score-row">
-                            <span class="score-label">Final Score</span>
-                            <span class="score-value">${{escapeHtml(item.final)}} (${{escapeHtml(item.final_percent)}})</span>
+                    <div class="sub-title">📊 Scores & Analysis</div>
+                    <div class="score-grid">
+                        <div class="score-card score-card-main">
+                            <div class="score-card-label">Final Match Score</div>
+                            <div class="score-card-value">${{escapeHtml(item.final_percent)}}</div>
+                            <div class="score-card-sub">${{escapeHtml(item.final)}} · ${{domain}}</div>
                         </div>
-                        <div class="score-row">
-                            <span class="score-label">Confidence</span>
-                            <span class="score-value">${{matchLabel}}</span>
+                        <div class="score-card score-card-embed">
+                            <div class="score-card-label">Embedding</div>
+                            <div class="score-card-value">${{escapeHtml(item.embedding_percent)}}</div>
+                            <div class="score-card-sub">${{escapeHtml(item.embedding)}}</div>
                         </div>
-                        <div class="score-row">
-                            <span class="score-label">Relationship</span>
-                            <span class="score-value">${{relLabel}} Match</span>
-                        </div>
-                        <div class="score-row">
-                            <span class="score-label">Domain</span>
-                            <span class="score-value">${{domain}}</span>
-                        </div>
-                        <div class="score-row">
-                            <span class="score-label">Embedding Score</span>
-                            <span class="score-value">${{escapeHtml(item.embedding)}} (${{escapeHtml(item.embedding_percent)}})</span>
-                        </div>
-                        <div class="score-row">
-                            <span class="score-label">Ontology Score</span>
-                            <span class="score-value">${{escapeHtml(item.ontology)}} (${{escapeHtml(item.ontology_percent)}})</span>
+                        <div class="score-card score-card-onto">
+                            <div class="score-card-label">Ontology</div>
+                            <div class="score-card-value">${{escapeHtml(item.ontology_percent)}}</div>
+                            <div class="score-card-sub">${{escapeHtml(item.ontology)}}</div>
                         </div>
                     </div>
+                    <div class="confidence-row">
+                        ${{matchIcon}} <b>Confidence:</b> ${{matchLabel}}
+                    </div>
 
-                    <div class="sub-title">Commonality</div>
+                    <div class="sub-title">🤝 Commonality</div>
                     <div class="content-box">${{escapeHtml(item.commonality)}}</div>
 
-                    <div class="sub-title">Justification</div>
+                    <div class="sub-title">✅ Justification</div>
                     <div class="content-box">${{escapeHtml(item.justification)}}</div>
 
-                    <div class="sub-title">Differences</div>
+                    <div class="sub-title">⚡ Differences</div>
                     <div class="content-box">${{escapeHtml(item.differences)}}</div>
                 `;
             }}
@@ -814,11 +971,9 @@ if os.path.exists(DATA_FILE):
         filtered_ids = all_control_ids  # fallback to full list
 
     # ── Auto-select: if search narrows to 1 exact match, jump to it ──
-    # Use session_state to keep track of the selected control
     if "selected_id" not in st.session_state:
         st.session_state.selected_id = all_control_ids[0]
 
-    # If search term exactly matches one control ID, auto-select it
     exact_match = next(
         (cid for cid in all_control_ids if cid.lower() == search_term.strip().lower()),
         None
@@ -826,7 +981,6 @@ if os.path.exists(DATA_FILE):
     if exact_match and exact_match != st.session_state.selected_id:
         st.session_state.selected_id = exact_match
 
-    # Ensure selected_id is in filtered list for the radio
     if st.session_state.selected_id not in filtered_ids:
         radio_default_idx = 0
     else:
@@ -839,7 +993,6 @@ if os.path.exists(DATA_FILE):
         format_func=lambda x: x
     )
 
-    # Update session state when user clicks a radio button
     st.session_state.selected_id = selected_id
 
     # ── Debug expander ──────────────────────────────────────────────────
@@ -887,7 +1040,7 @@ if os.path.exists(DATA_FILE):
         st.markdown(
             f"""
             <div style="
-                background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+                background: linear-gradient(135deg, #0f172a 0%, #312e81 60%, #4c1d95 100%);
                 border-radius: 12px 0 0 12px;
                 padding: 20px 28px;
                 margin-bottom: 10px;
@@ -896,17 +1049,17 @@ if os.path.exists(DATA_FILE):
                 flex-direction: column;
                 justify-content: center;
             ">
-                <div style="font-size:11px; font-weight:600; color:#60a5fa;
+                <div style="font-size:11px; font-weight:600; color:#a5b4fc;
                             text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">
                     ECC–NIST Framework
                 </div>
                 <h1 style="margin:0; font-size:26px; color:#f8fafc;
-                           font-family:'Inter',Arial,sans-serif; font-weight:700; line-height:1.2;">
+                           font-family:'Inter',Arial,sans-serif; font-weight:800; line-height:1.2;">
                     Control Mapping Viewer
                 </h1>
                 <p style="margin-top:8px; color:#94a3b8; font-size:13px;
                           font-family:'Inter',Arial,sans-serif;">
-                    Active control: <span style="color:#60a5fa; font-weight:600;">{selected_id}</span>
+                    Active control: <span style="color:#a5b4fc; font-weight:700;">{selected_id}</span>
                 </p>
             </div>
             """,
@@ -917,8 +1070,8 @@ if os.path.exists(DATA_FILE):
         st.markdown(
             """
             <div style="
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
+                background: linear-gradient(135deg, #f0f4ff 0%, #e8edff 100%);
+                border: 1px solid #c7d2fe;
                 border-radius: 0 12px 12px 0;
                 padding: 16px 18px;
                 margin-bottom: 10px;
@@ -927,8 +1080,8 @@ if os.path.exists(DATA_FILE):
                 flex-direction: column;
                 justify-content: center;
             ">
-                <p style="margin:0 0 10px 0; font-weight:600; color:#374151;
-                          font-size:13px; text-transform:uppercase;
+                <p style="margin:0 0 10px 0; font-weight:700; color:#4f46e5;
+                          font-size:12px; text-transform:uppercase;
                           letter-spacing:0.5px;">
                     Top-K Mappings
                 </p>
@@ -949,8 +1102,8 @@ if os.path.exists(DATA_FILE):
     st.markdown(
         f"""
         <div style="margin-top:-8px; margin-bottom:12px; color:#64748b; font-size:13px;">
-            Showing <b style="color:#1d4ed8;">{len(mappings)}</b> recommended mapping(s) for
-            <b style="color:#1d4ed8;">{selected_id}</b>
+            Showing <b style="color:#6366f1;">{len(mappings)}</b> recommended mapping(s) for
+            <b style="color:#4f46e5;">{selected_id}</b>
         </div>
         """,
         unsafe_allow_html=True
@@ -967,9 +1120,9 @@ if os.path.exists(DATA_FILE):
     with col_status:
         st.markdown(
             """
-            <div style="background:#0f172a; border-radius:10px; padding:16px 14px;
-                        margin-bottom:8px;">
-                <div style="font-size:11px; font-weight:600; color:#60a5fa;
+            <div style="background: linear-gradient(135deg, #0f172a, #1e1b4b);
+                        border-radius:12px; padding:16px 14px; margin-bottom:8px;">
+                <div style="font-size:11px; font-weight:700; color:#a5b4fc;
                             text-transform:uppercase; letter-spacing:0.8px;
                             margin-bottom:10px;">
                     Processing Pipeline
@@ -992,19 +1145,17 @@ if os.path.exists(DATA_FILE):
             "Returning Top-K"
         ]
 
-        step_icons = ["📁", "📚", "🔍", "🧠", "🌐", "📊", "✨", "✅"]
-
         completed = []
         for step in steps:
             completed.append(step)
             rows_html = ""
-            for i, s in enumerate(steps):
+            for s in steps:
                 if s in completed:
                     rows_html += f'<div style="font-size:12px; color:#86efac; padding:3px 0;">✅ {s}</div>'
                 else:
                     rows_html += f'<div style="font-size:12px; color:#475569; padding:3px 0;">⬜ {s}</div>'
             pipeline_box.markdown(
-                f'<div style="background:#0f172a; border-radius:10px; padding:12px 14px;">{rows_html}</div>',
+                f'<div style="background:linear-gradient(135deg,#0f172a,#1e1b4b); border-radius:12px; padding:12px 14px;">{rows_html}</div>',
                 unsafe_allow_html=True
             )
             time.sleep(0.15)
@@ -1015,8 +1166,8 @@ if os.path.exists(DATA_FILE):
     # ── Export ──────────────────────────────────────────────────────────
     st.markdown(
         """
-        <div style="height:1px; background:#e2e8f0; margin:20px 0 16px 0;"></div>
-        <div style="font-size:15px; font-weight:600; color:#1e293b; margin-bottom:10px;">
+        <div style="height:1px; background:linear-gradient(90deg,#e8edff,#c7d2fe,#e8edff); margin:20px 0 16px 0;"></div>
+        <div style="font-size:15px; font-weight:700; color:#1e293b; margin-bottom:10px;">
             Export Mapping Report
         </div>
         """,
