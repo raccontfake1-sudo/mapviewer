@@ -8,6 +8,8 @@ import html
 import re
 import time
 
+import fpdf
+st.write("FPDF works")
 # force redeploy
 
 st.set_page_config(page_title="ECC-NIST Control Mapping Viewer", layout="wide")
