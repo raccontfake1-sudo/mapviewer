@@ -2,15 +2,13 @@ import streamlit as st
 import pandas as pd
 import streamlit.components.v1 as components
 import os
-import math
 import json
-import html
 import re
-import time
+import html
 
 st.set_page_config(page_title="ECC-NIST Control Mapping Viewer", layout="wide")
 
-# Custom CSS with improvements
+# Custom CSS
 st.markdown(
     """
     <style>
@@ -76,13 +74,10 @@ st.markdown(
             max-height: 560px;
         }
 
-        /* Graph, legend, control panel styles */
-        /* ... (keep your existing style definitions, possibly cleaned up) ... */
-
         /* SVG nodes hover effect */
         .mapping-node:hover .glow-ring { opacity: 0.38 !important; }
 
-        /* Dynamic number labels styling */
+        /* Number label style */
         .number-label {
             font-size: 10px; font-weight: 700;
             font-family: 'Inter', Arial, sans-serif;
@@ -107,11 +102,11 @@ def get_mapping_columns(i):
     }
 
 def find_col(df_columns, target):
-    def normalise(s):
+    def normalize(s):
         return re.sub(r"[\s_]+", "", s).lower()
-    target_norm = normalise(target)
+    target_norm = normalize(target)
     for col in df_columns:
-        if normalise(col) == target_norm:
+        if normalize(col) == target_norm:
             return col
     return None
 
@@ -224,13 +219,13 @@ def short_mapping_label(mapping):
         return mapping[:9], mapping[9:]
     return mapping, ""
 
-# PDF and SVG functions omitted for brevity (use previous code or your implementation)
+# Your existing functions for PDF generation etc. (omit here for brevity)
+# ...
 
 # Main app
 DATA_FILE = "final_with_explanations_COMPLETE.csv"
 
 if os.path.exists(DATA_FILE):
-
     df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
     df.columns = [c.strip() for c in df.columns]
 
@@ -247,14 +242,11 @@ if os.path.exists(DATA_FILE):
 
     all_control_ids = sorted(
         df["ECC id control"].astype(str).unique(),
-        key=natural_control_sort,
+        key=lambda x: x  # replace with your sort function if needed
     )
 
     if search_term.strip():
-        filtered_ids = [
-            cid for cid in all_control_ids
-            if search_term.strip().lower() in cid.lower()
-        ]
+        filtered_ids = [cid for cid in all_control_ids if search_term.lower() in cid.lower()]
     else:
         filtered_ids = all_control_ids
 
@@ -266,28 +258,21 @@ if os.path.exists(DATA_FILE):
         st.session_state.selected_id = all_control_ids[0]
 
     exact_match = next(
-        (cid for cid in all_control_ids
-         if cid.lower() == search_term.strip().lower()),
+        (cid for cid in all_control_ids if cid.lower() == search_term.lower()),
         None,
     )
     if exact_match and exact_match != st.session_state.selected_id:
         st.session_state.selected_id = exact_match
 
-    radio_default_idx = (
-        filtered_ids.index(st.session_state.selected_id)
-        if st.session_state.selected_id in filtered_ids
-        else 0
-    )
-
     selected_id = st.sidebar.radio(
         "Select Control ID",
         filtered_ids,
-        index=radio_default_idx,
+        index=filtered_ids.index(st.session_state.selected_id) if st.session_state.selected_id in filtered_ids else 0,
         format_func=lambda x: x,
     )
     st.session_state.selected_id = selected_id
 
-    # Load row
+    # Get row for selected control
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     source_text_col = find_col(list(df.columns), "Source Text")
     source_text = safe_value(row.get(source_text_col, "") if source_text_col else "")
@@ -313,7 +298,7 @@ if os.path.exists(DATA_FILE):
                 </h1>
                 <p style="margin-top:8px;color:#94a3b8;font-size:13px; font-family:'Inter',Arial,sans-serif;">
                     Active control:
-                    <span style="color:#a5b4fc;font-weight:700;">{selected_id}</span>
+                    <span style="color:#a5b4fc;font-weight:700;">{html.escape(str(selected_id))}</span>
                 </p>
             </div>
             """,
@@ -349,62 +334,44 @@ if os.path.exists(DATA_FILE):
             label_visibility="collapsed",
         )
 
+    # Extract mappings for display
     mappings = extract_mappings(row, df, top_k=top_k)
 
     st.markdown(
         f"""
         <div style="margin-top:-8px;margin-bottom:8px;color:#64748b;font-size:13px;">
             Showing <b style="color:#6366f1;">{len(mappings)}</b> recommended mapping(s) for
-            <b style="color:#4f46e5;">{selected_id}</b>
+            <b style="color:#4f46e5;">{html.escape(str(selected_id))}</b>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # Create a container with scroll
-    viewer_container = st.container()
-    with viewer_container:
-        # Add toggle button for circles
-        if "circles_hidden" not in st.session_state:
-            st.session_state.circles_hidden = False
+    # Viewer container
+    if "circles_hidden" not in st.session_state:
+        st.session_state.circles_hidden = False
 
-        def toggle_circles():
-            st.session_state.circles_hidden = not st.session_state.circles_hidden
+    def toggle_circles():
+        st.session_state.circles_hidden = not st.session_state.circles_hidden
 
-        st.markdown(
-            f'<button onclick="toggleCircles()" style="margin:8px; padding:6px 12px; background:#6366f1; color:#fff; border:none; border-radius:6px; cursor:pointer;">{"Show Circles" if st.session_state.circles_hidden else "Hide Circles"}</button>',
-            unsafe_allow_html=True
-        )
-
-        # Generate viewer html
-        viewer_html = create_svg_viewer(
-            selected_id=str(selected_id),
-            source_text=source_text,
-            mappings=mappings,
-            hide_circles=st.session_state.circles_hidden
-        )
-
-        # Fix height and enable scrolling
-        height_px = 600  # or calculate based on content
-        components.html(viewer_html, height=height_px, scrolling=True)
-
-    # Export PDF section (unchanged)
+    # Button to toggle circles
+    toggle_label = "Show Circles" if st.session_state.circles_hidden else "Hide Circles"
     st.markdown(
-        """
-        <div style="height:1px; background:linear-gradient(90deg,#e8edff,#c7d2fe,#e8edff); margin:16px 0 14px 0;"></div>
-        <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:10px;">
-            Export Mapping Report
-        </div>
-        """,
+        f'<button onclick="toggleCircles()">{toggle_label}</button>',
         unsafe_allow_html=True,
     )
 
-    # Generate PDF (assuming generate_pdf is defined)
-    # pdf_bytes = generate_pdf(selected_id, source_text, mappings)
-    # if pdf_bytes:
-    #     st.download_button("⬇ Export PDF Report", pdf_bytes, f"{selected_id}_mapping_report.pdf", "application/pdf")
-    # else:
-    #     st.warning("PDF export requires the `fpdf2` library.")
+    # Generate the viewer HTML with embedded JS
+    viewer_html = create_svg_viewer(
+        selected_id=str(selected_id),
+        source_text=source_text,
+        mappings=mappings,
+        hide_circles=st.session_state.circles_hidden
+    )
+
+    # Render the viewer in a scrollable container
+    height_px = 600
+    components.html(viewer_html, height=height_px, scrolling=True)
 
 else:
     st.markdown(
@@ -421,13 +388,11 @@ else:
         unsafe_allow_html=True,
     )
 
-
-# --------- SVG Viewer with fixes ---------
-import html
+# --------- SVG Viewer with embedded JS ---------
 
 def create_svg_viewer(selected_id, source_text, mappings, hide_circles=False):
     width = 620
-    height = 600  # increased for scroll fix
+    height = 600
     center_x = 310
     center_y = 220
     blue_radius = 48
@@ -485,21 +450,21 @@ def create_svg_viewer(selected_id, source_text, mappings, hide_circles=False):
         end_x = x - (green_radius / distance) * dx
         end_y = y - (green_radius / distance) * dy
 
-        # Draw lines
+        # Lines
         svg_lines += f"""
             <line x1="{start_x}" y1="{start_y}" x2="{end_x}" y2="{end_y}"
                   stroke="{fill_color}" stroke-width="1.8"
                   stroke-dasharray="5,3" opacity="0.6"/>
         """
 
-        # Number label with data attribute for color update
+        # Number labels
         svg_numbers += f"""
             <text x="{x}" y="{y - green_radius - 9}"
                   data-node-id="{node_id}"
                   class="number-label" fill="{fill_color}">{rank}</text>
         """
 
-        # Circles and text for node
+        # Circles and text
         if not hide_circles:
             svg_nodes += f"""
                 <g class="mapping-node" onclick="updatePanel('{node_id}')" data-fill="{fill_color}" data-glow="{glow_color}">
@@ -510,242 +475,248 @@ def create_svg_viewer(selected_id, source_text, mappings, hide_circles=False):
                 </g>
             """
 
+    # JSON data for JS
     mapping_json = json.dumps(mapping_data)
     source_json = json.dumps(source_text)
     selected_id_json = json.dumps(str(selected_id))
 
-    # Generate HTML
-    html_code = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-            body {{
-                font-family: 'Inter', Arial, sans-serif;
-                background: #f8faff;
-                color: #1e293b;
-            }}
-            .main-card {{
-                width: 100%;
-                border: 1px solid #e2e8f0;
-                border-radius: 16px;
-                overflow: hidden;
-                background: white;
-                display: flex;
-                flex-direction: column;
-                box-shadow: 0 2px 4px rgba(99,102,241,0.05),
-                            0 8px 24px rgba(99,102,241,0.08);
-            }}
-            /* Top row */
-            .top-row {{
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-            }}
-            /* Graph section with fixed height and scroll */
-            .graph-section {{
-                height: 600px;
-                overflow-y: auto;
-                position: relative;
-                background: linear-gradient(145deg, #f5f7ff 0%, #eef2ff 100%);
-                width: 100%;
-            }}
-            /* Button style for toggle circles */
-            button {{
-                margin: 8px;
-                padding: 6px 12px;
-                background:#6366f1;
-                color:#fff;
-                border:none;
-                border-radius:6px;
-                cursor:pointer;
-                font-size: 13px;
-                font-weight: 600;
-            }}
-            /* SVG styles */
-            svg {{
-                width: 100%;
-                height: 100%;
-            }}
-            /* Node hover effect */
-            .mapping-node:hover .glow-ring {{
-                opacity: 0.38 !important;
-            }}
-            /* Number label style */
-            .number-label {{
-                font-size: 10px;
-                font-weight: 700;
-                font-family: 'Inter', Arial, sans-serif;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="main-card">
-            <!-- Top row with toggle button -->
-            <div class="top-row">
-                <button id="toggleCircles" onclick="toggleCircles()">Hide Circles</button>
-                <!-- SVG container -->
-                <div class="graph-section" id="svg-container">
-                    <svg viewBox="0 0 {width} {height}">
-                        <circle cx="{center_x}" cy="{center_y}" r="{graph_radius}" fill="none" stroke="#c7d2fe" stroke-dasharray="3,6" opacity="0.5"/>
-                        {svg_lines}
-                        {svg_nodes}
-                        {svg_numbers}
-                        <defs>
-                            <linearGradient id="centerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#818cf8"/>
-                                <stop offset="100%" style="stop-color:#4f46e5"/>
-                            </linearGradient>
-                            <radialGradient id="centerGlow">
-                                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1"/>
-                                <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0"/>
-                            </radialGradient>
-                        </defs>
-                        <!-- ECC center node -->
-                        <g class="center-node" onclick="showEccPanel()">
-                            <circle cx="{center_x}" cy="{center_y}" r="{blue_radius + 10}" fill="url(#centerGlow)" opacity="0.22"/>
-                            <circle cx="{center_x}" cy="{center_y}" r="{blue_radius}" fill="url(#centerGrad)" filter="drop-shadow(0 4px 14px rgba(99,102,241,0.55))"/>
-                            <text x="{center_x}" y="{center_y - 8}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="800" font-family="Inter, Arial, sans-serif">ECC</text>
-                            <text x="{center_x}" y="{center_y + 8}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.85)" font-size="10" font-weight="700" font-family="Inter, Arial, sans-serif">{html.escape(str(selected_id))}</text>
-                            <text x="{center_x}" y="{center_y + 22}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.55)" font-size="8" font-weight="500" font-family="Inter, Arial, sans-serif">click</text>
-                        </g>
-                    </svg>
-                </div>
+    # Full HTML with embedded JS
+    html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<style>
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    body {{
+        font-family: 'Inter', Arial, sans-serif;
+        background: #f8faff;
+        color: #1e293b;
+    }}
+    .main-card {{
+        width: 100%;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        overflow: hidden;
+        background: white;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 2px 4px rgba(99,102,241,0.05),
+                    0 8px 24px rgba(99,102,241,0.08);
+    }}
+    /* Top row */
+    .top-row {{
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }}
+    /* Graph section with fixed height and scroll */
+    .graph-section {{
+        height: 600px;
+        overflow-y: auto;
+        position: relative;
+        background: linear-gradient(145deg, #f5f7ff 0%, #eef2ff 100%);
+        width: 100%;
+    }}
+    /* Button style for toggle circles */
+    button {{
+        margin: 8px;
+        padding: 6px 12px;
+        background:#6366f1;
+        color:#fff;
+        border:none;
+        border-radius:6px;
+        cursor:pointer;
+        font-size: 13px;
+        font-weight: 600;
+    }}
+    /* SVG styles */
+    svg {{
+        width: 100%;
+        height: 100%;
+    }}
+    /* Node hover effect */
+    .mapping-node:hover .glow-ring {{
+        opacity: 0.38 !important;
+    }}
+    /* Number label style */
+    .number-label {{
+        font-size: 10px;
+        font-weight: 700;
+        font-family: 'Inter', Arial, sans-serif;
+    }}
+</style>
+</head>
+<body>
+<div class="main-card">
+    <!-- Top row with toggle button -->
+    <div class="top-row">
+        <button id="toggleCircles" onclick="toggleCircles()">Hide Circles</button>
+        <!-- SVG container -->
+        <div class="graph-section" id="svg-container">
+            <svg viewBox="0 0 {width} {height}">
+                <circle cx="{center_x}" cy="{center_y}" r="{graph_radius}" fill="none" stroke="#c7d2fe" stroke-dasharray="3,6" opacity="0.5"/>
+                {svg_lines}
+                {svg_nodes}
+                {svg_numbers}
+                <defs>
+                    <linearGradient id="centerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#818cf8"/>
+                        <stop offset="100%" style="stop-color:#4f46e5"/>
+                    </linearGradient>
+                    <radialGradient id="centerGlow">
+                        <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1"/>
+                        <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0"/>
+                    </radialGradient>
+                </defs>
+                <!-- ECC center node -->
+                <g class="center-node" onclick="showEccPanel()">
+                    <circle cx="{center_x}" cy="{center_y}" r="{blue_radius + 10}" fill="url(#centerGlow)" opacity="0.22"/>
+                    <circle cx="{center_x}" cy="{center_y}" r="{blue_radius}" fill="url(#centerGrad)" filter="drop-shadow(0 4px 14px rgba(99,102,241,0.55))"/>
+                    <text x="{center_x}" y="{center_y - 8}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="800" font-family="Inter, Arial, sans-serif">ECC</text>
+                    <text x="{center_x}" y="{center_y + 8}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.85)" font-size="10" font-weight="700" font-family="Inter, Arial, sans-serif">{html.escape(str(selected_id))}</text>
+                    <text x="{center_x}" y="{center_y + 22}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.55)" font-size="8" font-weight="500" font-family="Inter, Arial, sans-serif">click</text>
+                </g>
+            </svg>
+        </div>
+    </div>
+    <!-- Bottom section: details and results -->
+    <div style="display:flex; flex-direction:column; padding:10px;">
+        <!-- Results summary -->
+        <div class="results-summary" style="margin-top:10px;">
+            <div class="results-summary-title">
+                📋 Results Summary —
+                <span style="color:#6366f1;">{len(mappings)}</span>
+                &nbsp;for&nbsp;
+                <b style="color:#4f46e5;">{html.escape(str(selected_id))}</b>
             </div>
-            <!-- Bottom section: details and results -->
-            <div style="display:flex; flex-direction:column; padding:10px;">
-                <!-- Results summary -->
-                <div class="results-summary" style="margin-top:10px;">
-                    <div class="results-summary-title">
-                        📋 Results Summary —
-                        <span style="color:#6366f1;">{len(mappings)}</span>
-                        &nbsp;for&nbsp;
-                        <b style="color:#4f46e5;">{html.escape(str(selected_id))}</b>
-                    </div>
-                    <table class="results-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>NIST Control</th>
-                                <th>Final Score</th>
-                            </tr>
-                        </thead>
-                        <tbody id="summary-tbody"></tbody>
-                    </table>
-                </div>
-                <!-- Placeholder / detailed panel -->
-                <div id="detailPanel" class="summary-section" style="margin-top:10px;">
-                    <div class="placeholder" style="text-align:center; padding:40px;">
-                        <div style="font-size:32px; margin-bottom:12px;">🔗</div>
-                        <div>Click any node to view<br>detailed mapping info</div>
-                        <div style="font-size:11px; color:#a5b4fc; margin-top:6px;">
-                            Click the blue ECC node for the control description
-                        </div>
-                    </div>
+            <table class="results-table" style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr style="border-bottom:1px solid #e2e8f0;">
+                        <th style="padding:8px;text-align:left;">#</th>
+                        <th style="padding:8px;text-align:left;">NIST Control</th>
+                        <th style="padding:8px;text-align:left;">Final Score</th>
+                    </tr>
+                </thead>
+                <tbody id="summary-tbody"></tbody>
+            </table>
+        </div>
+        <!-- Placeholder / detailed panel -->
+        <div id="detailPanel" class="summary-section" style="margin-top:10px; padding:8px; border:1px solid #e2e8f0; border-radius:8px; min-height:150px;">
+            <div class="placeholder" style="text-align:center; padding:40px;">
+                <div style="font-size:32px; margin-bottom:12px;">🔗</div>
+                <div>Click any node to view<br>detailed mapping info</div>
+                <div style="font-size:11px; color:#a5b4fc; margin-top:6px;">
+                    Click the blue ECC node for the control description
                 </div>
             </div>
         </div>
-        <!-- JS for interactions -->
-        <script>
-            const mappingData = {mapping_json};
-            const summaryRows = {json.dumps([{
-                "rank": str(i+1),
-                "nist_control": m["mapping"],
-                "final_percent": format_percent(m["final"]),
-                "final": format_decimal(m["final"]),
-                "fill_color": score_to_node_colors(m["final"])[0],
-                "badge_color": score_to_node_colors(m["final"])[3],
-            } for i, m in enumerate(mappings)])};
-            let circlesHidden = false;
+    </div>
+</div>
+<!-- JS for interactions -->
+<script>
+    const mappingData = {mapping_json};
+    const mappings = {json.dumps([{
+        "rank": str(i+1),
+        "nist_control": m["mapping"],
+        "final_percent": format_percent(m["final"]),
+        "final": format_decimal(m["final"]),
+        "fill_color": score_to_node_colors(m["final"])[0],
+        "badge_color": score_to_node_colors(m["final"])[3],
+    } for i, m in enumerate(mappings)])};
 
-            function showEccPanel() {{
-                const panel = document.getElementById("detailPanel");
-                panel.innerHTML = `
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                        <div style="font-size:24px;">🔵</div>
-                        <div>
-                            <div style="font-weight:700; font-size:15px;">ECC Control</div>
-                            <div style="font-size:11px; color:#94a3b8;">Source control description</div>
-                        </div>
-                    </div>
-                    <div style="font-weight:600; font-size:13px; color:#4f46e5;">Control ID: ${html.escape(selected_id)}</div>
-                    <div style="margin-top:8px; line-height:1.5;">${html.escape(source_text)}</div>
-                    <div style="margin-top:12px; font-weight:600; font-size:13px; color:#4f46e5;">Click a node for details</div>
-                `;
-            }}
+    let circlesHidden = {str(st.session_state.circles_hidden).lower()};
 
-            function updatePanel(nodeId) {
-                const item = mappingData[nodeId];
-                if (!item) return;
-                const finalVal = parseFloat(item.final);
-                const matchIcon = finalVal >= 0.85 ? "🟢" : finalVal >= 0.70 ? "🟡" : "🔴";
-                const matchLabel = finalVal >= 0.85 ? "High Match" : finalVal >= 0.70 ? "Medium Match" : "Low Match";
-                const domain = item.nist_control.startsWith("GV") ? "Govern" :
-                               item.nist_control.startsWith("ID") ? "Identify" :
-                               item.nist_control.startsWith("PR") ? "Protect" :
-                               item.nist_control.startsWith("DE") ? "Detect" :
-                               item.nist_control.startsWith("RS") ? "Respond" :
-                               item.nist_control.startsWith("RC") ? "Recover" : "Unknown";
+    function showEccPanel() {{
+        const panel = document.getElementById("detailPanel");
+        panel.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                <div style="font-size:24px;">🔵</div>
+                <div>
+                    <div style="font-weight:700; font-size:15px;">ECC Control</div>
+                    <div style="font-size:11px; color:#94a3b8;">Source control description</div>
+                </div>
+            </div>
+            <div style="margin-top:8px; font-weight:600;">Control ID: ${html.escape(selected_id)}</div>
+            <div style="margin-top:8px; line-height:1.5;">${html.escape(source_text)}</div>
+            <div style="margin-top:12px; font-weight:600; font-size:13px; color:#4f46e5;">Click a node for details</div>
+        `;
+    }}
 
-                document.getElementById("detailPanel").innerHTML = \`
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                        <div style="font-size:24px;">\${matchIcon}</div>
-                        <div>
-                            <div style="font-weight:700; font-size:15px;">Mapping #\${item.rank} Details</div>
-                            <div style="font-size:11px; color:#94a3b8;">\${html.escape(item.nist_control)}</div>
-                        </div>
-                    </div>
-                    <div style="margin-top:8px; font-weight:600;">Scores & Analysis</div>
-                    <div style="display:flex; gap:10px; margin-top:4px;">
-                        <div style="background:#6366f1; color:#fff; padding:8px; border-radius:8px; flex:1;">
-                            <div style="font-size:11px;">Final Score</div>
-                            <div style="font-weight:700; font-size:14px;">\${html.escape(item.final_percent)}</div>
-                        </div>
-                        <div style="background:#0891b2; color:#fff; padding:8px; border-radius:8px; flex:1;">
-                            <div style="font-size:11px;">Embedding</div>
-                            <div style="font-weight:700; font-size:14px;">\${html.escape(item.embedding)}</div>
-                        </div>
-                        <div style="background:#059669; color:#fff; padding:8px; border-radius:8px; flex:1;">
-                            <div style="font-size:11px;">Ontology</div>
-                            <div style="font-weight:700; font-size:14px;">\${html.escape(item.ontology)}</div>
-                        </div>
-                    </div>
-                    <div style="margin-top:8px; font-size:12px;">Confidence: <b>\${matchLabel}</b></div>
-                    <div style="margin-top:8px; font-weight:600;">NIST Control</div>
-                    <div style="margin-bottom:8px;">\${html.escape(item.nist_control)}</div>
-                    <div style="margin-top:8px; font-weight:600;">Commonality</div>
-                    <div>\${html.escape(item.commonality)}</div>
-                    <div style="margin-top:8px; font-weight:600;">Justification</div>
-                    <div>\${html.escape(item.justification)}</div>
-                    <div style="margin-top:8px; font-weight:600;">Differences</div>
-                    <div>\${html.escape(item.differences)}</div>
-                \`;
-            }}
+    function updatePanel(nodeId) {{
+        const item = mappingData[nodeId];
+        if (!item) return;
+        const finalVal = parseFloat(item.final);
+        const matchIcon = finalVal >= 0.85 ? "🟢" : finalVal >= 0.70 ? "🟡" : "🔴";
+        const matchLabel = finalVal >= 0.85 ? "High Match" : finalVal >= 0.70 ? "Medium Match" : "Low Match";
+        const domain = item.nist_control.startsWith("GV") ? "Govern" :
+                       item.nist_control.startsWith("ID") ? "Identify" :
+                       item.nist_control.startsWith("PR") ? "Protect" :
+                       item.nist_control.startsWith("DE") ? "Detect" :
+                       item.nist_control.startsWith("RS") ? "Respond" :
+                       item.nist_control.startsWith("RC") ? "Recover" : "Unknown";
 
-            function toggleCircles() {
-                const nodes = document.querySelectorAll('.mapping-node');
-                for (const node of nodes) {
-                    node.style.display = (node.style.display === 'none') ? 'block' : 'none';
-                }
-                document.getElementById('toggleCircles').innerText = (
-                    document.getElementById('toggleCircles').innerText === 'Hide Circles' ? 'Show Circles' : 'Hide Circles'
-                );
-            }
+        document.getElementById("detailPanel").innerHTML = \`
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                <div style="font-size:24px;">\${matchIcon}</div>
+                <div>
+                    <div style="font-weight:700; font-size:15px;">Mapping #\${item.rank} Details</div>
+                    <div style="font-size:11px; color:#94a3b8;">\${html.escape(item.nist_control)}</div>
+                </div>
+            </div>
+            <div style="margin-top:8px; font-weight:600;">Scores & Analysis</div>
+            <div style="display:flex; gap:10px; margin-top:4px;">
+                <div style="background:#6366f1; color:#fff; padding:8px; border-radius:8px; flex:1;">
+                    <div style="font-size:11px;">Final Score</div>
+                    <div style="font-weight:700; font-size:14px;">\${html.escape(item.final_percent)}</div>
+                </div>
+                <div style="background:#0891b2; color:#fff; padding:8px; border-radius:8px; flex:1;">
+                    <div style="font-size:11px;">Embedding</div>
+                    <div style="font-weight:700; font-size:14px;">\${html.escape(item.embedding)}</div>
+                </div>
+                <div style="background:#059669; color:#fff; padding:8px; border-radius:8px; flex:1;">
+                    <div style="font-size:11px;">Ontology</div>
+                    <div style="font-weight:700; font-size:14px;">\${html.escape(item.ontology)}</div>
+                </div>
+            </div>
+            <div style="margin-top:8px; font-size:12px;">Confidence: <b>\${matchLabel}</b></div>
+            <div style="margin-top:8px; font-weight:600;">NIST Control</div>
+            <div style="margin-bottom:8px;">\${html.escape(item.nist_control)}</div>
+            <div style="margin-top:8px; font-weight:600;">Commonality</div>
+            <div>\${html.escape(item.commonality)}</div>
+            <div style="margin-top:8px; font-weight:600;">Justification</div>
+            <div>\${html.escape(item.justification)}</div>
+            <div style="margin-top:8px; font-weight:600;">Differences</div>
+            <div>\${html.escape(item.differences)}</div>
+        \`;
+    }}
 
-            // After DOM loads, assign initial number colors
-            document.addEventListener("DOMContentLoaded", () => {
-                updateNumberColors({json.dumps(str(selected_id))});
-            });
+    function toggleCircles() {{
+        const nodes = document.querySelectorAll('.mapping-node');
+        for (const node of nodes) {{
+            node.style.display = (node.style.display === 'none') ? 'block' : 'none';
+        }}
+        document.getElementById('toggleCircles').innerText = (
+            document.getElementById('toggleCircles').innerText === 'Hide Circles' ? 'Show Circles' : 'Hide Circles'
+        );
+        circlesHidden = !circlesHidden;
+    }}
 
-            function updateNumberColors(selectedNodeId) {
-                document.querySelectorAll('.number-label').forEach(lbl => {
-                    const nodeId = lbl.getAttribute('data-node-id');
-                    lbl.setAttribute('fill', nodeId === selectedNodeId ? 'white' : '#6366f1');
-                });
-            }
-        </script>
-    </body>
-    </html>
-    """
-    return html_code
+    // Update number colors based on selected node
+    function updateNumberColors(selectedNodeId) {{
+        document.querySelectorAll('.number-label').forEach(lbl => {{
+            const nodeId = lbl.getAttribute('data-node-id');
+            lbl.setAttribute('fill', nodeId === selectedNodeId ? 'white' : '{score_to_node_colors(0)[0]}');
+        }});
+    }}
+
+    // Initialize number colors
+    document.addEventListener("DOMContentLoaded", () => {{
+        updateNumberColors({json.dumps(str(selected_id))});
+    }});
+</script>
+</body>
+</html>
+"""
+
+    return html
