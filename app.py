@@ -1145,25 +1145,27 @@ if os.path.exists(DATA_FILE):
             unsafe_allow_html=True,
         )
 
-    with header_col2:
-        st.markdown(
-            """
-            <div style="
-                background: linear-gradient(135deg,#f5f7ff 0%,#eef2ff 100%);
-                border: 1px solid #c7d2fe;
-                border-radius: 0 12px 12px 0;
-                padding: 16px 18px; margin-bottom: 10px;
-                min-height: 110px;
-                display: flex; flex-direction: column; justify-content: center;
-            ">
-                <p style="margin:0 0 10px 0;font-weight:700;color:#4f46e5;
-                          font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">
-                    Top-K Mappings
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+   with header_col2:
+    st.markdown(
+        """
+        <div style="
+            background: linear-gradient(135deg,#f5f7ff 0%,#eef2ff 100%);
+            border: 1px solid #c7d2fe;
+            border-radius: 0 12px 12px 0;
+            padding: 16px 18px;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        ">
+            <p style="margin:0 0 10px 0;font-weight:700;color:#4f46e5;
+                      font-size:12px;text-transform:uppercase;">
+                Top-K Mappings
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
         top_k = st.select_slider(
             "Top-K Recommendations",
             options=list(range(1, 6)),
