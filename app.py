@@ -870,23 +870,71 @@ if os.path.exists(DATA_FILE):
     )
 
     # ── Main viewer + right-side controls ───────────────────────────────
-    col_v, col_p = st.columns([4.4, 1.65])
+    col_left, col_graph, col_right = st.columns([1.6, 4.4, 1.65])
 
-    with col_p:
-        topk_col, pipe_col = st.columns([1, 1])
-        with topk_col:
-            st.markdown(
-                """<div class="topk-card">
-                  <div class="topk-title">Top-K</div>
-                  <div class="topk-sub">Mappings</div>
-                </div>""",
-                unsafe_allow_html=True,
-            )
-            top_k = st.select_slider(
-                "Top-K",
-                options=list(range(1, 6)),
-                value=5,
-                label_visibility="collapsed",
+# LEFT COLUMN
+with col_left:
+
+    st.markdown("""
+    <div style="
+        background:linear-gradient(135deg,#0b1728 0%,#0f2f3a 100%);
+        border:1px solid #1d2b3f;
+        border-radius:10px;
+        padding:12px;
+        height:700px;
+        overflow:auto;
+    ">
+    <div style="
+        font-size:11px;
+        font-weight:800;
+        color:#67e8f9;
+        margin-bottom:10px;
+        text-transform:uppercase;
+    ">
+        ECC Controls
+    </div>
+    """, unsafe_allow_html=True)
+
+    search_term = st.text_input(
+        "",
+        placeholder="Search ECC Control...",
+        key="search_term"
+    )
+
+    filtered = (
+        [c for c in all_ids if search_term.lower() in c.lower()]
+        if search_term else all_ids
+    )
+
+    selected_id = st.radio(
+        "",
+        filtered,
+        index=0 if st.session_state.selected_id not in filtered
+        else filtered.index(st.session_state.selected_id),
+        label_visibility="collapsed"
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# CENTER COLUMN
+with col_graph:
+    viewer_html = create_viewer(
+        str(selected_id),
+        src_text,
+        mappings
+    )
+    components.html(
+        viewer_html,
+        height=700,
+        scrolling=True
+    )
+
+# RIGHT COLUMN
+with col_right:
+    # Top-K card
+    ...
+    # Pipeline card
+    ...
             )
         with pipe_col:
             st.markdown(
