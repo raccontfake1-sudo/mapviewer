@@ -620,38 +620,76 @@ if os.path.exists(DATA_FILE):
         unsafe_allow_html=True,
     )
 
-    search_col, count_col = st.columns([1, 4])
-    with search_col:
-        search_term = st.text_input(
-            "Search",
-            placeholder="e.g. 1-1 or PR.AA",
-            key="search_term",
-            label_visibility="collapsed",
-        )
-    with count_col:
-        pass  # spacer
+left_panel, main_panel = st.columns([1.1, 4.9])
+
+with left_panel:
+
+    st.markdown(
+        """
+        <div style="
+            background:linear-gradient(135deg,#0b1728,#0f2f3a);
+            border:1px solid #1d2b3f;
+            border-radius:10px;
+            padding:12px;
+            margin-bottom:10px;
+        ">
+            <div style="
+                color:#67e8f9;
+                font-size:10px;
+                font-weight:800;
+                letter-spacing:.8px;
+                text-transform:uppercase;
+            ">
+                ECC Controls
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    search_term = st.text_input(
+        "",
+        placeholder="Search ECC Control...",
+        key="search_term",
+        label_visibility="collapsed",
+    )
 
     filtered = (
-        [c for c in all_ids if search_term.strip().lower() in c.lower()]
-        if search_term.strip() else all_ids
+        [c for c in all_ids if search_term.lower() in c.lower()]
+        if search_term.strip()
+        else all_ids
     )
+
     if not filtered:
         filtered = all_ids
 
-    exact = next((c for c in all_ids if c.lower() == search_term.strip().lower()), None)
-    if exact and exact != st.session_state.selected_id:
-        st.session_state.selected_id = exact
+    default_idx = (
+        filtered.index(st.session_state.selected_id)
+        if st.session_state.selected_id in filtered
+        else 0
+    )
 
-    default_idx = filtered.index(st.session_state.selected_id) if st.session_state.selected_id in filtered else 0
-
-    st.markdown('<div class="ctrl-radio">', unsafe_allow_html=True)
     selected_id = st.radio(
-        "Select Control ID",
+        "ECC Controls",
         filtered,
         index=default_idx,
-        horizontal=True,
         label_visibility="collapsed",
     )
+
+    st.markdown(
+        f"""
+        <div style="
+            color:#6b8298;
+            font-size:11px;
+            margin-top:6px;
+        ">
+            {len(filtered)} of {len(all_ids)} controls
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.session_state.selected_id = selected_id
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown(
