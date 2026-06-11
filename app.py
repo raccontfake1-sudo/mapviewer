@@ -76,6 +76,7 @@ st.markdown(
         }
         div[data-testid="stTextInput"] input::placeholder { color: #64748b !important; }
 
+        /* ── ECC control list ── */
         .ctrl-radio div[role="radiogroup"] {
             max-height: 370px;
             overflow-y: auto;
@@ -93,28 +94,38 @@ st.markdown(
         .ctrl-radio div[role="radiogroup"]::-webkit-scrollbar-thumb {
             background: #28415c; border-radius: 4px;
         }
+        /* label row */
         .ctrl-radio div[role="radiogroup"] label {
-            padding: 4px 10px !important;
+            padding: 5px 8px 5px 6px !important;
             margin: 0 !important;
             border-radius: 8px !important;
             border: 1px solid #1d2b3f !important;
             background: #0a1628 !important;
-            white-space: normal !important;
-            overflow-wrap: break-word !important;
-            word-break: break-word !important;
+            transition: background 0.15s ease !important;
+            flex-shrink: 0 !important;
+            align-items: flex-start !important;
+        }
+        .ctrl-radio div[role="radiogroup"] label:hover { background: #102235 !important; }
+        /* Streamlit wraps text in [data-testid="stMarkdownContainer"] > p
+           We clamp that container to 3 lines */
+        .ctrl-radio div[role="radiogroup"] label [data-testid="stMarkdownContainer"] {
+            overflow: hidden !important;
             display: -webkit-box !important;
             -webkit-line-clamp: 3 !important;
             -webkit-box-orient: vertical !important;
-            overflow: hidden !important;
-            transition: background 0.15s ease !important;
-            flex-shrink: 0 !important;
+            max-height: calc(1.45em * 3) !important;
         }
-        .ctrl-radio div[role="radiogroup"] label:hover { background: #102235 !important; }
-        .ctrl-radio div[role="radiogroup"] label div,
-        .ctrl-radio div[role="radiogroup"] label p,
-        .ctrl-radio div[role="radiogroup"] label span {
-            font-size: 12px !important; font-weight: 600 !important;
-            line-height: 1.25 !important; color: #d5e4f0 !important;
+        .ctrl-radio div[role="radiogroup"] label [data-testid="stMarkdownContainer"] p,
+        .ctrl-radio div[role="radiogroup"] label [data-testid="stMarkdownContainer"] span {
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            line-height: 1.45 !important;
+            color: #d5e4f0 !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+            margin: 0 !important;
+            display: inline !important;
         }
 
         /* Top-K card */
@@ -636,6 +647,15 @@ function selectNode(rank, event) {{
   setPanelHeader(`Mapping #${{item.rank}} — ${{item.domain}}`, `${{item.label}} · ${{item.final_pct}}`, true);
   const detail = document.getElementById("detail");
   detail.innerHTML = `
+    <!-- ECC description pinned at top -->
+    <div style="border:1px solid #1d2b3f;border-radius:8px;padding:10px 12px;background:#08111f;margin-bottom:14px;">
+      <div style="font-size:9px;font-weight:700;color:#67e8f9;text-transform:uppercase;letter-spacing:0.9px;margin-bottom:4px;">ECC Source Control</div>
+      <div style="font-size:14px;font-weight:800;color:#818cf8;margin-bottom:6px;line-height:1.2;">${{esc(ECC_ID)}}</div>
+      <div style="font-size:11px;line-height:1.7;color:#7a90a8;">${{esc(ECC_TEXT)}}</div>
+    </div>
+    <!-- divider -->
+    <div style="height:1px;background:linear-gradient(90deg,#1e293b,#4f46e5,#1e293b);margin-bottom:12px;"></div>
+    <!-- NIST mapping detail -->
     <div class="d-header">
       <div class="d-rank" style="background:${{item.color}}">${{item.rank}}</div>
       <div>
@@ -802,6 +822,39 @@ if os.path.exists(DATA_FILE):
         )
 
         st.session_state.selected_id = selected_id
+
+        # JS: truncate radio labels to 3 lines after DOM renders
+        st.markdown(
+            """<script>
+            (function truncateRadioLabels() {
+                function applyClamp() {
+                    const containers = document.querySelectorAll(
+                        '.ctrl-radio div[role="radiogroup"] label [data-testid="stMarkdownContainer"]'
+                    );
+                    containers.forEach(el => {
+                        el.style.overflow = 'hidden';
+                        el.style.display = '-webkit-box';
+                        el.style.webkitLineClamp = '3';
+                        el.style.webkitBoxOrient = 'vertical';
+                        el.style.maxHeight = 'calc(1.45em * 3)';
+                        const p = el.querySelector('p');
+                        if (p) {
+                            p.style.whiteSpace = 'normal';
+                            p.style.wordBreak = 'break-word';
+                            p.style.margin = '0';
+                        }
+                    });
+                }
+                // Try immediately, then retry after short delays (Streamlit renders async)
+                applyClamp();
+                setTimeout(applyClamp, 300);
+                setTimeout(applyClamp, 800);
+                const obs = new MutationObserver(applyClamp);
+                obs.observe(document.body, { childList: true, subtree: true });
+            })();
+            </script>""",
+            unsafe_allow_html=True,
+        )
 
     # ── RIGHT: Top-K + Workflow Steps (static label) + Export ───────────────
     with col_right:
