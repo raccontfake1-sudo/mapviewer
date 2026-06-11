@@ -203,25 +203,13 @@ st.markdown(
             box-shadow: 0 0 0 2px rgba(103,232,249,0.18) !important;
         }
 
-        /* Hide sidebar collapse/expand button */
-        button[data-testid="stBaseButton-headerNoPadding"],
-        button[data-testid="baseButton-secondary"] {
-            display: none !important;
-        }
-
-        /* Alternative: Hide by button icon/aria-label */
+        /* Hide sidebar collapse/expand button (sidebar icon button) */
         button[aria-label="More options"],
-        button[aria-label="View fullscreen"] {
-            display: none !important;
-        }
-
-        /* Hide the main menu toggle button */
-        div[data-testid="stSidebarNav"] button {
-            display: none !important;
-        }
-
-        /* Hide any buttons that might be collapse toggles */
-        .stButton button:has(svg) {
+        button[aria-label="View fullscreen"],
+        button[data-testid="stBaseButton-headerNoPadding"],
+        button[data-testid="baseButton-secondary"],
+        button[data-testid="icon-button"],
+        button.icon-button {
             display: none !important;
         }
     </style>
