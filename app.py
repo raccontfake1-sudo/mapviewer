@@ -860,11 +860,11 @@ if os.path.exists(DATA_FILE):
             label_visibility="collapsed",
         )
 
-        # "Scoring Steps" card — replaces "Pipeline", clearly labelled as static/pre-computed
+        # Scoring Steps — animated one-by-one like an upload/processing indicator
         st.markdown(
             """<div class="workflow-card">
               <div class="workflow-title">Scoring Steps</div>
-              <div class="workflow-sub">Pre-computed — not live</div>
+              <div class="workflow-sub">Processing…</div>
             </div>""",
             unsafe_allow_html=True,
         )
@@ -873,16 +873,27 @@ if os.path.exists(DATA_FILE):
             "Semantic Embeddings", "Ontology Scoring", "Confidence Match",
             "AI Explanation", "Return Top-K",
         ]
-        rows_html = "".join(
-            f'<div style="font-size:11px;color:#86efac;padding:2px 0">✓ {s}</div>'
-            for s in steps
-        )
-        st.markdown(
-            f'<div style="background:linear-gradient(135deg,#0b1728,#103044);'
-            f'border:1px solid #245064;border-radius:10px;padding:10px 12px;'
-            f'margin-top:6px">{rows_html}</div>',
-            unsafe_allow_html=True,
-        )
+        pipe_box = st.empty()
+        completed = []
+        for step in steps:
+            completed.append(step)
+            rows_html = "".join(
+                f'<div style="font-size:11px;color:#86efac;padding:2px 0;'
+                f'display:flex;align-items:center;gap:6px;">'
+                f'<span style="color:#34d399;font-size:10px;">✓</span> {s}</div>'
+                if s in completed else
+                f'<div style="font-size:11px;color:#334155;padding:2px 0;'
+                f'display:flex;align-items:center;gap:6px;">'
+                f'<span style="font-size:10px;">·</span> {s}</div>'
+                for s in steps
+            )
+            pipe_box.markdown(
+                f'<div style="background:linear-gradient(135deg,#0b1728,#103044);'
+                f'border:1px solid #245064;border-radius:10px;padding:10px 12px;'
+                f'margin-top:6px">{rows_html}</div>',
+                unsafe_allow_html=True,
+            )
+            time.sleep(0.1)
 
         # ── Export button directly under the workflow steps ──────────────────
         st.markdown(
