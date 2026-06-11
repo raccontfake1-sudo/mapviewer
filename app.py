@@ -96,10 +96,16 @@ st.markdown(
         .ctrl-radio div[role="radiogroup"] label {
             padding: 4px 10px !important;
             margin: 0 !important;
-            border-radius: 20px !important;
+            border-radius: 8px !important;
             border: 1px solid #1d2b3f !important;
             background: #0a1628 !important;
-            white-space: nowrap !important;
+            white-space: normal !important;
+            overflow-wrap: break-word !important;
+            word-break: break-word !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 3 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
             transition: background 0.15s ease !important;
             flex-shrink: 0 !important;
         }
@@ -337,13 +343,13 @@ def generate_pdf(selected_id, source_text, mappings):
 
 
 # -----------------------------------------
-# HTML Viewer  (no results table — only graph + detail panel)
+# HTML Viewer — graph left, detail right (ECC desc shown by default)
 # -----------------------------------------
 def create_viewer(selected_id, source_text, mappings):
-    W, H   = 560, 420
-    cx, cy = 280, 210
-    BR, GR = 38, 32
-    ORBIT  = 145
+    W, H   = 480, 400
+    cx, cy = 240, 200
+    BR, GR = 36, 30
+    ORBIT  = 130
 
     svg_lines = svg_nodes = svg_nums = ""
     n = len(mappings)
@@ -386,67 +392,127 @@ def create_viewer(selected_id, source_text, mappings):
         svg_nodes += f"""<g class="mnode" onclick="return selectNode({rank}, event)" data-rank="{rank}" data-color="{col}">
   <circle cx="{x:.1f}" cy="{y:.1f}" r="{GR+6}" fill="{col}" opacity="0.15" class="gring"/>
   <circle cx="{x:.1f}" cy="{y:.1f}" r="{GR}" fill="{col}"/>
-  <text x="{x:.1f}" y="{y-7:.1f}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="800" font-family="Inter,sans-serif">{code}</text>
-  <text x="{x:.1f}" y="{y+9:.1f}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.9)" font-size="13" font-weight="700" font-family="Inter,sans-serif">{html.escape(pct)}</text>
+  <text x="{x:.1f}" y="{y-7:.1f}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="12" font-weight="800" font-family="Inter,sans-serif">{code}</text>
+  <text x="{x:.1f}" y="{y+8:.1f}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.9)" font-size="11" font-weight="700" font-family="Inter,sans-serif">{html.escape(pct)}</text>
 </g>\n"""
 
     mdata_json  = json.dumps(mapping_data, ensure_ascii=False)
     src_json    = json.dumps(source_text,  ensure_ascii=False)
     src_id_json = json.dumps(str(selected_id), ensure_ascii=False)
 
+    # Build the default ECC description HTML shown on load
+    ecc_desc_escaped = html.escape(source_text) if source_text and source_text != "N/A" else \
+        '<span style="color:#475569;font-style:italic">No description available.</span>'
+
     return f"""<!DOCTYPE html><html><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
-html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;min-height:100%;overflow:auto}}
+html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;overflow:hidden;height:100%}}
 
-/* Main shell: graph left + detail right */
+/* ── outer shell ── */
 .shell{{
-  display:flex;
-  width:100%;
-  min-height:600px;
+  display:flex;width:100%;height:100vh;
   border:1px solid #1d2b3f;border-radius:12px;
   box-shadow:0 18px 42px rgba(0,0,0,0.22);
   overflow:hidden;
 }}
 
-/* Graph column */
+/* ── graph column (left, narrower) ── */
 .graph-col{{
-  flex:0 0 58%;
+  flex:0 0 50%;
   display:flex;flex-direction:column;
-  background:radial-gradient(circle at 50% 40%,rgba(20,184,166,0.14),transparent 34%),
+  background:radial-gradient(circle at 50% 42%,rgba(20,184,166,0.13),transparent 32%),
              linear-gradient(160deg,#08111f 0%,#102a43 56%,#062f3a 100%);
   border-right:1px solid #1d2b3f;
-  position:relative;overflow:hidden;
+  overflow:hidden;
 }}
-.graph-header{{display:flex;align-items:center;gap:10px;padding:14px 18px 10px;border-bottom:1px solid #1d2b3f;flex-shrink:0;}}
-.graph-badge{{background:linear-gradient(135deg,#0f766e,#2563eb);color:white;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;}}
+.graph-header{{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px 10px;
+  border-bottom:1px solid #1d2b3f;flex-shrink:0;
+}}
+.graph-badge{{
+  background:linear-gradient(135deg,#0f766e,#2563eb);
+  color:white;font-size:9px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;padding:3px 9px;border-radius:20px;
+}}
 .graph-title{{font-size:13px;font-weight:700;color:#e2e8f0}}
-.graph-subtitle{{font-size:11px;color:#8aa3b8;margin-top:1px}}
-.svg-wrap{{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 0 0}}
-.svg-wrap svg{{width:min(100%,560px);height:auto;overflow:visible}}
-.legend{{display:flex;gap:14px;padding:10px 18px 14px;border-top:1px solid #1d2b3f;flex-shrink:0;}}
+.graph-subtitle{{font-size:10px;color:#8aa3b8;margin-top:1px}}
+.svg-wrap{{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:4px 0;min-height:0;
+}}
+.svg-wrap svg{{width:100%;max-width:{W}px;height:auto;overflow:visible}}
+.legend{{
+  display:flex;gap:12px;padding:8px 16px 12px;
+  border-top:1px solid #1d2b3f;flex-shrink:0;
+}}
 .leg{{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:#8aa3b8}}
-.legdot{{width:9px;height:9px;border-radius:50%;flex-shrink:0}}
+.legdot{{width:8px;height:8px;border-radius:50%;flex-shrink:0}}
 
-/* Detail column — no table, just detail panel */
-.right-col{{flex:1;min-width:280px;display:flex;flex-direction:column;background:#0b1424;overflow:hidden;}}
-.detail-header{{padding:12px 16px 8px;border-bottom:1px solid #1d2b3f;flex-shrink:0;}}
+/* ── detail column (right, wider) ── */
+.right-col{{
+  flex:1;min-width:0;
+  display:flex;flex-direction:column;
+  background:#0b1424;overflow:hidden;
+}}
+.detail-header{{
+  padding:12px 16px 8px;
+  border-bottom:1px solid #1d2b3f;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+}}
 .detail-h-title{{font-size:12px;font-weight:700;color:#e2e8f0}}
 .detail-h-sub{{font-size:10px;color:#6b8298;margin-top:2px}}
-.detail-col{{flex:1;min-height:0;overflow-y:auto;padding:14px 16px 22px;scrollbar-width:thin;scrollbar-color:#28415c #0b1424;overscroll-behavior:contain;}}
+.back-btn{{
+  font-size:10px;font-weight:600;color:#67e8f9;
+  background:none;border:1px solid #245064;border-radius:6px;
+  padding:3px 8px;cursor:pointer;display:none;
+  transition:background 0.15s;
+}}
+.back-btn:hover{{background:#0d2034}}
+
+.detail-col{{
+  flex:1;min-height:0;overflow-y:auto;
+  padding:14px 16px 22px;
+  scrollbar-width:thin;scrollbar-color:#28415c #0b1424;
+  overscroll-behavior:contain;
+}}
 .detail-col::-webkit-scrollbar{{width:4px}}
 .detail-col::-webkit-scrollbar-track{{background:#0b1424}}
 .detail-col::-webkit-scrollbar-thumb{{background:#28415c;border-radius:4px}}
-.placeholder{{color:#6b8298;font-size:12px;text-align:center;padding:28px 16px;border:1px dashed #28415c;border-radius:10px;margin-top:6px;line-height:1.8;}}
+
+/* ── ECC description default view ── */
+.ecc-default{{}}
+.ecc-ctrl-id{{
+  font-size:18px;font-weight:800;color:#818cf8;
+  margin-bottom:6px;line-height:1.2;
+}}
+.ecc-ctrl-label{{
+  font-size:9px;font-weight:700;color:#67e8f9;
+  text-transform:uppercase;letter-spacing:0.9px;margin-bottom:10px;
+}}
+.ecc-desc-box{{
+  border:1px solid #1d2b3f;border-radius:8px;
+  padding:10px 12px;font-size:12px;line-height:1.8;
+  color:#a8bacb;background:#08111f;
+}}
+.ecc-hint{{
+  margin-top:12px;padding:8px 12px;border-radius:8px;
+  background:#0a0f1e;border:1px solid #1e293b;
+  font-size:10px;color:#6366f1;font-weight:600;
+}}
+
+/* ── mapping detail view ── */
 .d-header{{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #1d2b3f}}
 .d-rank{{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0;}}
-.d-title{{font-size:14px;font-weight:700;color:#f1f5f9}}
+.d-title{{font-size:13px;font-weight:700;color:#f1f5f9;line-height:1.3}}
 .d-sub{{font-size:10px;color:#8aa3b8;margin-top:2px}}
 .stitle{{font-size:9px;font-weight:700;color:#67e8f9;text-transform:uppercase;letter-spacing:0.8px;margin-top:10px;margin-bottom:3px;}}
-.cbox{{border:1px solid #1d2b3f;border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.6;color:#a8bacb;background:#08111f;white-space:pre-wrap;}}
+.cbox{{border:1px solid #1d2b3f;border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.6;color:#a8bacb;background:#08111f;white-space:pre-wrap;word-break:break-word;}}
 .sgrid{{display:grid;grid-template-columns:1fr 1fr;gap:6px}}
 .scard{{border-radius:8px;padding:8px 10px;text-align:center}}
 .scard.main{{background:linear-gradient(135deg,#0f766e,#2563eb);grid-column:1/-1}}
@@ -456,30 +522,34 @@ html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;min-h
 .sval{{font-size:18px;font-weight:800;color:white;line-height:1}}
 .ssub{{font-size:9px;color:rgba(255,255,255,0.6);margin-top:2px}}
 .conf-row{{display:flex;align-items:center;gap:6px;margin-top:6px;padding:6px 10px;border-radius:8px;background:#08111f;border:1px solid #1d2b3f;font-size:11px;color:#a8bacb;font-weight:500;}}
-.mnode,.cnode{{cursor:pointer;pointer-events:all;transition:filter 0.15s ease,opacity 0.15s ease}}
-.mnode circle,.cnode circle{{pointer-events:visiblePainted;transition:stroke 0.15s ease,opacity 0.15s ease,transform 0.15s ease}}
+
+/* ── node interaction ── */
+.mnode,.cnode{{cursor:pointer;pointer-events:all;transition:filter 0.15s ease}}
+.mnode circle,.cnode circle{{pointer-events:visiblePainted;transition:stroke 0.15s ease,opacity 0.15s ease}}
 .mnode:hover .gring{{opacity:0.35!important}}
 .mnode.selected .gring{{opacity:0.42!important}}
 .mnode.selected circle:not(.gring){{stroke:white;stroke-width:2.5;vector-effect:non-scaling-stroke}}
 .cnode:hover circle:first-child{{opacity:0.35!important}}
 
-/* Responsive: stack columns on narrow viewports */
-@media (max-width: 700px) {{
-  .shell {{ flex-direction: column; min-height: unset; }}
-  .graph-col {{ flex: none; border-right: none; border-bottom: 1px solid #1d2b3f; }}
-  .right-col {{ min-width: 0; }}
+/* ── responsive ── */
+@media (max-width:680px){{
+  .shell{{flex-direction:column;height:auto}}
+  .graph-col{{flex:none}}
+  .svg-wrap{{padding:8px}}
+  .right-col{{min-height:360px}}
 }}
 </style>
 </head>
 <body>
 <div class="shell">
-  <!-- Graph panel -->
+
+  <!-- ── Graph panel (left) ── -->
   <div class="graph-col">
     <div class="graph-header">
-      <div><div class="graph-badge">Control Mapping Graph</div></div>
+      <div><div class="graph-badge">Mapping Graph</div></div>
       <div style="margin-left:6px">
-        <div class="graph-title">ECC-NIST Mapping</div>
-        <div class="graph-subtitle">Click any node to inspect</div>
+        <div class="graph-title">ECC-NIST</div>
+        <div class="graph-subtitle">Click a node to inspect</div>
       </div>
     </div>
     <div class="svg-wrap">
@@ -489,9 +559,9 @@ html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;min-h
         <g class="cnode" onclick="return showEcc(event)">
           <circle cx="{cx}" cy="{cy}" r="{BR+12}" fill="#6366f1" opacity="0.12"/>
           <circle cx="{cx}" cy="{cy}" r="{BR}" fill="url(#cgrad)" filter="drop-shadow(0 0 10px rgba(99,102,241,0.5))"/>
-          <text x="{cx}" y="{cy-9}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="800" font-family="Inter,sans-serif">ECC</text>
-          <text x="{cx}" y="{cy+8}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.8)" font-size="11" font-weight="700" font-family="Inter,sans-serif">{html.escape(str(selected_id))}</text>
-          <text x="{cx}" y="{cy+22}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.4)" font-size="8" font-family="Inter,sans-serif">click</text>
+          <text x="{cx}" y="{cy-9}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="800" font-family="Inter,sans-serif">ECC</text>
+          <text x="{cx}" y="{cy+8}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.8)" font-size="10" font-weight="700" font-family="Inter,sans-serif">{html.escape(str(selected_id))}</text>
+          <text x="{cx}" y="{cy+21}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.35)" font-size="8" font-family="Inter,sans-serif">click</text>
         </g>
         {svg_nodes}
         {svg_nums}
@@ -504,25 +574,33 @@ html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;min-h
       </svg>
     </div>
     <div class="legend">
-      <div class="leg"><div class="legdot" style="background:#059669"></div>High &gt;=85%</div>
-      <div class="leg"><div class="legdot" style="background:#d97706"></div>Mid &gt;=70%</div>
+      <div class="leg"><div class="legdot" style="background:#059669"></div>High ≥85%</div>
+      <div class="leg"><div class="legdot" style="background:#d97706"></div>Mid ≥70%</div>
       <div class="leg"><div class="legdot" style="background:#dc2626"></div>Low &lt;70%</div>
     </div>
   </div>
 
-  <!-- Detail panel (no results table) -->
+  <!-- ── Detail panel (right) ── -->
   <div class="right-col">
     <div class="detail-header">
-      <div class="detail-h-title">Mapping Detail</div>
-      <div class="detail-h-sub">Click a node to view full details</div>
+      <div>
+        <div class="detail-h-title" id="panel-title">ECC Control</div>
+        <div class="detail-h-sub" id="panel-sub">Click a node for mapping details</div>
+      </div>
+      <button class="back-btn" id="back-btn" onclick="showEcc()">← Back</button>
     </div>
     <div class="detail-col" id="detail">
-      <div class="placeholder">
-        Select a node to view full mapping details<br>
-        <span style="color:#334155;font-size:10px">Click the indigo ECC node for the source control</span>
+      <!-- Default: ECC description shown immediately on load -->
+      <div class="ecc-default">
+        <div class="ecc-ctrl-label">ECC Source Control</div>
+        <div class="ecc-ctrl-id">{html.escape(str(selected_id))}</div>
+        <div class="stitle">Description</div>
+        <div class="ecc-desc-box">{ecc_desc_escaped}</div>
+        <div class="ecc-hint">Click any outer node to view its NIST mapping details</div>
       </div>
     </div>
   </div>
+
 </div>
 <script>
 const MD       = {mdata_json};
@@ -532,7 +610,15 @@ let activeRank = null;
 
 function esc(t) {{
   if (!t) return "N/A";
-  return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+  return String(t)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}}
+
+function setPanelHeader(title, sub, showBack) {{
+  document.getElementById("panel-title").textContent = title;
+  document.getElementById("panel-sub").textContent   = sub;
+  document.getElementById("back-btn").style.display  = showBack ? "block" : "none";
 }}
 
 function setActive(rank) {{
@@ -547,12 +633,13 @@ function selectNode(rank, event) {{
   const item = MD[`node_${{rank}}`];
   if (!item) return false;
   setActive(rank);
+  setPanelHeader(`Mapping #${{item.rank}} — ${{item.domain}}`, `${{item.label}} · ${{item.final_pct}}`, true);
   const detail = document.getElementById("detail");
   detail.innerHTML = `
     <div class="d-header">
       <div class="d-rank" style="background:${{item.color}}">${{item.rank}}</div>
       <div>
-        <div class="d-title">Mapping #${{item.rank}} — ${{esc(item.nist_control)}}</div>
+        <div class="d-title">${{esc(item.nist_control)}}</div>
         <div class="d-sub">${{item.domain}} · ${{item.label}}</div>
       </div>
     </div>
@@ -575,9 +662,7 @@ function selectNode(rank, event) {{
     </div>
     <div class="conf-row"><b style="color:#e2e8f0">Confidence:</b>&nbsp;${{item.label}}</div>
     <div class="stitle">NIST Control Text</div>
-    <div class="cbox"><b style="color:#818cf8">${{esc(item.nist_control)}}</b>
-
-${{esc(item.nist_text)}}</div>
+    <div class="cbox"><b style="color:#818cf8">${{esc(item.nist_control)}}</b>&#10;&#10;${{esc(item.nist_text)}}</div>
     <div class="stitle">Commonality</div>
     <div class="cbox">${{esc(item.commonality)}}</div>
     <div class="stitle">Justification</div>
@@ -593,23 +678,18 @@ function showEcc(event) {{
   if (event) {{ event.preventDefault(); event.stopPropagation(); }}
   document.querySelectorAll(".mnode").forEach(g => g.classList.remove("selected"));
   activeRank = null;
-  document.getElementById("detail").innerHTML = `
-    <div class="d-header">
-      <div class="d-rank" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">E</div>
-      <div>
-        <div class="d-title">ECC Control — ${{esc(ECC_ID)}}</div>
-        <div class="d-sub">Source control description</div>
-      </div>
-    </div>
-    <div class="stitle">Control ID</div>
-    <div class="cbox"><b style="color:#818cf8;font-size:14px">${{esc(ECC_ID)}}</b></div>
-    <div class="stitle">Description</div>
-    <div class="cbox" style="line-height:1.8">${{esc(ECC_TEXT)}}</div>
-    <div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#0a0f1e;border:1px solid #1e293b;font-size:10px;color:#6366f1;font-weight:600">
-      Click any outer node to view its NIST mapping details
+  setPanelHeader("ECC Control", "Click a node for mapping details", false);
+  const detail = document.getElementById("detail");
+  detail.innerHTML = `
+    <div class="ecc-default">
+      <div class="ecc-ctrl-label">ECC Source Control</div>
+      <div class="ecc-ctrl-id">${{esc(ECC_ID)}}</div>
+      <div class="stitle">Description</div>
+      <div class="ecc-desc-box">${{esc(ECC_TEXT)}}</div>
+      <div class="ecc-hint">Click any outer node to view its NIST mapping details</div>
     </div>
   `;
-  document.getElementById("detail").scrollTop = 0;
+  detail.scrollTop = 0;
   return false;
 }}
 </script>
@@ -795,32 +875,10 @@ if os.path.exists(DATA_FILE):
         else:
             st.warning("PDF export requires fpdf2 — install with: pip install fpdf2")
 
-    # ── CENTER: ECC Description + Preview Image + Graph Viewer ───────────────
+    # ── CENTER: Graph Viewer (ECC desc + details live inside the HTML panel) ──
     with col_center:
-        # ECC Description card
-        st.markdown(
-            f"""<div class="ecc-desc-card">
-              <div class="ecc-desc-label">ECC Control Description</div>
-              <div class="ecc-desc-id">{html.escape(str(selected_id))}</div>
-              <div class="ecc-desc-text">{html.escape(src_text) if src_text != "N/A" else
-                '<span style="color:#475569;font-style:italic">No description available for this control.</span>'}</div>
-            </div>""",
-            unsafe_allow_html=True,
-        )
-
-        # Preview image (the uploaded mapping detail screenshot)
-        if _PREVIEW_IMG_B64:
-            st.markdown(
-                f"""<div class="preview-card">
-                  <div class="preview-label">Sample Mapping Detail View</div>
-                  <img src="data:image/png;base64,{_PREVIEW_IMG_B64}" alt="Mapping detail preview" />
-                </div>""",
-                unsafe_allow_html=True,
-            )
-
-        # Interactive graph viewer
         viewer_html = create_viewer(str(selected_id), src_text, mappings)
-        components.html(viewer_html, height=640, scrolling=True)
+        components.html(viewer_html, height=680, scrolling=True)
 
 else:
     st.markdown(
