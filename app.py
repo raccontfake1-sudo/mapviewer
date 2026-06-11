@@ -781,7 +781,7 @@ with left_panel:
         )
     else:
         st.warning("PDF export requires `fpdf2` — install with: `pip install fpdf2`")
-    else:
+        else:
         st.markdown(
         f"""<div style="background:#1e293b;border:1px solid #dc2626;border-radius:10px;
                         padding:24px;margin-top:30px;">
