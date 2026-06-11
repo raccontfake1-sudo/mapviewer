@@ -864,7 +864,7 @@ if os.path.exists(DATA_FILE):
         st.markdown(
             """<div class="workflow-card">
               <div class="workflow-title">Scoring Steps</div>
-              <div class="workflow-sub">Processing…</div>
+              <div class="workflow-sub">Pre-computed snapshot — results are cached, not run live</div>
             </div>""",
             unsafe_allow_html=True,
         )
@@ -878,13 +878,9 @@ if os.path.exists(DATA_FILE):
         for step in steps:
             completed.append(step)
             rows_html = "".join(
-                f'<div style="font-size:11px;color:#86efac;padding:2px 0;'
-                f'display:flex;align-items:center;gap:6px;">'
-                f'<span style="color:#34d399;font-size:10px;">✓</span> {s}</div>'
+                f'<div style="font-size:11px;color:#86efac;padding:2px 0">OK {s}</div>'
                 if s in completed else
-                f'<div style="font-size:11px;color:#334155;padding:2px 0;'
-                f'display:flex;align-items:center;gap:6px;">'
-                f'<span style="font-size:10px;">·</span> {s}</div>'
+                f'<div style="font-size:11px;color:#334155;padding:2px 0">-- {s}</div>'
                 for s in steps
             )
             pipe_box.markdown(
@@ -893,7 +889,7 @@ if os.path.exists(DATA_FILE):
                 f'margin-top:6px">{rows_html}</div>',
                 unsafe_allow_html=True,
             )
-            time.sleep(0.1)
+            time.sleep(0.12)
 
         # ── Export button directly under the workflow steps ──────────────────
         # ── Export button directly under the workflow steps ──────────────────
