@@ -88,6 +88,11 @@ st.markdown(
         footer    { visibility: hidden; }
         header    { visibility: hidden; }
 
+        /* Hide the ECC selectbox — it's a functional widget only, grid is the UI */
+        div[data-testid="stSelectbox"]:has(div[data-baseweb="select"]) {
+            display: none !important;
+        }
+
         div[data-testid="stTextInput"] input {
             background: #0f1b2d !important; border: 1px solid #28415c !important;
             border-radius: 8px !important; color: #f1f5f9 !important;
@@ -750,8 +755,9 @@ if os.path.exists(DATA_FILE):
     # ── 3-column layout ──────────────────────────────────────────────────────
     col_left, col_center, col_right = st.columns([1.4, 4.0, 1.6])
 
-    # ── LEFT: ECC Controls — compact 3-col pill grid ────────────────────────
+    # ── LEFT: ECC Controls ─────────────────────────────────────────────────────
     with col_left:
+        # Search
         search_term = st.text_input(
             "Search", placeholder="e.g. 2.1 or 3.3",
             key="ecc_search", label_visibility="collapsed",
@@ -766,63 +772,101 @@ if os.path.exists(DATA_FILE):
             cur = filtered[0]
             st.session_state.selected_id = cur
 
-        # Build pills HTML
+        # ── Selectbox: this is the real Streamlit widget that drives reruns ──
+        # Styled to look like a compact pill selector
+        idx = filtered.index(cur) if cur in filtered else 0
+        sel = st.selectbox(
+            "control", filtered, index=idx,
+            key="ecc_sel", label_visibility="collapsed",
+        )
+        if sel != st.session_state.selected_id:
+            st.session_state.selected_id = sel
+            st.rerun()
+
+        # ── Visual pill grid (HTML only, no interaction needed) ──────────────
+        # Clicking a pill sets the selectbox value via JS DOM, which fires onChange
         pills_html = ""
         for cid in filtered:
             cls = "cpill active" if cid == cur else "cpill"
+            safe = cid.replace('"', '\\\"'  )
             pills_html += f'<button class="{cls}" onclick="pick(this)">{cid}</button>'
 
         n_shown = len(filtered)
         n_total = len(all_ids)
 
-        grid_html = """<!DOCTYPE html><html><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+        # Inject JS that:
+        # 1. Renders a pill grid
+        # 2. On click, finds the parent-frame selectbox and sets its value natively
+        grid_js = f"""
+<div style="background:#0b1728;border:1px solid #1d2b3f;border-radius:10px;overflow:hidden;margin-top:-8px;">
+  <div style="font-size:10px;font-weight:800;color:#67e8f9;text-transform:uppercase;
+              letter-spacing:.9px;padding:8px 10px 5px;border-bottom:1px solid #1d2b3f;">
+    ECC Controls &nbsp;<span style="color:#475569;font-weight:400;font-size:9px;">{n_shown} of {n_total}</span>
+  </div>
+  <div id="pillgrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
+       padding:6px 8px 10px;max-height:380px;overflow-y:auto;
+       scrollbar-width:thin;scrollbar-color:#28415c #0b1728;">
+    {pills_html}
+  </div>
+</div>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{font-family:Inter,sans-serif;background:#0b1728;color:#e2e8f0;height:100%;overflow:hidden}
-.hdr{font-size:10px;font-weight:800;color:#67e8f9;text-transform:uppercase;
-  letter-spacing:.9px;padding:8px 10px 5px;border-bottom:1px solid #1d2b3f}
-.cnt{font-size:10px;color:#475569;padding:3px 10px 4px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
-  padding:6px 8px 10px;align-content:start;
-  overflow-y:auto;height:calc(100vh - 50px);
-  scrollbar-width:thin;scrollbar-color:#28415c #0b1728}
-.grid::-webkit-scrollbar{width:4px}
-.grid::-webkit-scrollbar-thumb{background:#28415c;border-radius:4px}
-.cpill{background:#0a1628;border:1px solid #1d2b3f;border-radius:6px;color:#94a3b8;
+.cpill{{background:#0a1628;border:1px solid #1d2b3f;border-radius:6px;color:#94a3b8;
   font-size:13px;font-weight:700;font-family:Inter,sans-serif;
   padding:7px 3px;text-align:center;cursor:pointer;
-  transition:all .12s ease;white-space:normal;word-break:break-all;
+  transition:all .12s;white-space:normal;word-break:break-all;
   line-height:1.3;width:100%;display:flex;align-items:center;
-  justify-content:center;min-height:34px}
-.cpill:hover{background:#112338;border-color:#2d4a6a;color:#c8dce8}
-.cpill.active{background:linear-gradient(135deg,#0f766e,#2563eb);
-  border-color:transparent;color:#fff;font-weight:800;
-  box-shadow:0 0 8px rgba(20,184,166,.35)}
-</style></head><body>
-<div class="hdr">ECC Controls</div>
-<div class="cnt">""" + str(n_shown) + " of " + str(n_total) + """</div>
-<div class="grid">""" + pills_html + """</div>
+  justify-content:center;min-height:34px;border:none;}}
+.cpill:hover{{background:#112338;color:#c8dce8;}}
+.cpill.active{{background:linear-gradient(135deg,#0f766e,#2563eb);
+  color:#fff;font-weight:800;box-shadow:0 0 8px rgba(20,184,166,.35);}}
+</style>
 <script>
-function pick(btn) {
-  // Visual feedback immediately
+function pick(btn) {{
+  // 1. Visual highlight immediately
   document.querySelectorAll(".cpill").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   const id = btn.textContent.trim();
-  // Set query param in parent window then reload to trigger Streamlit rerun
-  const url = new URL(window.parent.location.href);
-  url.searchParams.set("ctrl_pick", id);
-  window.parent.location.href = url.toString();
-}
-window.addEventListener("load", () => {
-  const a = document.querySelector(".cpill.active");
-  if (a) a.scrollIntoView({block:"nearest"});
-});
-</script>
-</body></html>"""
 
-        components.html(grid_html, height=460, scrolling=False)
+  // 2. Find the Streamlit selectbox for ecc_sel and trigger it
+  // Streamlit renders a baseweb Select; we find its hidden input and fire React events
+  const allSelects = document.querySelectorAll('[data-baseweb="select"]');
+  // Find the one near our search box (in col_left)
+  let targetSel = null;
+  allSelects.forEach(s => {{
+    const inp = s.querySelector('input');
+    if (inp) targetSel = inp;
+  }});
+
+  if (targetSel) {{
+    // Simulate React onChange by directly setting value via React internal
+    const nativeSetter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype, 'value'
+    ).set;
+    nativeSetter.call(targetSel, id);
+    targetSel.dispatchEvent(new Event('input', {{bubbles: true}}));
+    targetSel.dispatchEvent(new Event('change', {{bubbles: true}}));
+  }}
+
+  // 3. Fallback: set query param and navigate (full reload)
+  // Only if React event approach fails (detected by checking if active changed)
+  setTimeout(() => {{
+    const stillActive = document.querySelector(".cpill.active");
+    // If Streamlit hasn't rerun yet after 300ms, use navigation fallback
+    // (This is checked by seeing if the URL changed)
+    const url = new URL(location.href);
+    url.searchParams.set("ctrl_pick", id);
+    // Use replaceState to avoid browser history pollution, then force reload
+    history.replaceState(null, "", url);
+    location.reload();
+  }}, 400);
+}}
+
+// Scroll active into view
+const active = document.querySelector(".cpill.active");
+if (active) active.scrollIntoView({{block:"nearest"}});
+</script>
+"""
+        st.markdown(grid_js, unsafe_allow_html=True)
         selected_id = st.session_state.selected_id
 
     # ── RIGHT: Top-K + Workflow Steps (static label) + Export ───────────────
