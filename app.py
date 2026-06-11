@@ -1,4 +1,5 @@
 import streamlit as st
+import urllib.parse
 import pandas as pd
 import streamlit.components.v1 as components
 import os
@@ -88,10 +89,7 @@ st.markdown(
         footer    { visibility: hidden; }
         header    { visibility: hidden; }
 
-        /* Hide the ECC selectbox — it's a functional widget only, grid is the UI */
-        div[data-testid="stSelectbox"]:has(div[data-baseweb="select"]) {
-            display: none !important;
-        }
+
 
         div[data-testid="stTextInput"] input {
             background: #0f1b2d !important; border: 1px solid #28415c !important;
@@ -755,9 +753,8 @@ if os.path.exists(DATA_FILE):
     # ── 3-column layout ──────────────────────────────────────────────────────
     col_left, col_center, col_right = st.columns([1.4, 4.0, 1.6])
 
-    # ── LEFT: ECC Controls ─────────────────────────────────────────────────────
+    # ── LEFT: ECC Controls ──────────────────────────────────────────────────
     with col_left:
-        # Search
         search_term = st.text_input(
             "Search", placeholder="e.g. 2.1 or 3.3",
             key="ecc_search", label_visibility="collapsed",
@@ -772,101 +769,60 @@ if os.path.exists(DATA_FILE):
             cur = filtered[0]
             st.session_state.selected_id = cur
 
-        # ── Selectbox: this is the real Streamlit widget that drives reruns ──
-        # Styled to look like a compact pill selector
-        idx = filtered.index(cur) if cur in filtered else 0
-        sel = st.selectbox(
-            "control", filtered, index=idx,
-            key="ecc_sel", label_visibility="collapsed",
-        )
-        if sel != st.session_state.selected_id:
-            st.session_state.selected_id = sel
-            st.rerun()
-
-        # ── Visual pill grid (HTML only, no interaction needed) ──────────────
-        # Clicking a pill sets the selectbox value via JS DOM, which fires onChange
+        # Build pill buttons — each one is a real anchor link with ?ctrl_pick=ID
+        # No JS needed: clicking navigates, Streamlit reruns, query param handler at
+        # top of app picks it up, updates session_state, clears param, reruns again.
+        base_url = "?"
         pills_html = ""
         for cid in filtered:
             cls = "cpill active" if cid == cur else "cpill"
-            safe = cid.replace('"', '\\\"'  )
-            pills_html += f'<button class="{cls}" onclick="pick(this)">{cid}</button>'
+            href = "?" + urllib.parse.urlencode({"ctrl_pick": cid})
+            pills_html += f'<a class="{cls}" href="{href}">{cid}</a>'
 
         n_shown = len(filtered)
         n_total = len(all_ids)
 
-        # Inject JS that:
-        # 1. Renders a pill grid
-        # 2. On click, finds the parent-frame selectbox and sets its value natively
-        grid_js = f"""
-<div style="background:#0b1728;border:1px solid #1d2b3f;border-radius:10px;overflow:hidden;margin-top:-8px;">
+        grid_html = f"""
+<div style="background:#0b1728;border:1px solid #1d2b3f;border-radius:10px;
+            overflow:hidden;margin-top:4px;">
   <div style="font-size:10px;font-weight:800;color:#67e8f9;text-transform:uppercase;
               letter-spacing:.9px;padding:8px 10px 5px;border-bottom:1px solid #1d2b3f;">
-    ECC Controls &nbsp;<span style="color:#475569;font-weight:400;font-size:9px;">{n_shown} of {n_total}</span>
+    ECC Controls
+    <span style="color:#475569;font-weight:400;font-size:9px;margin-left:6px;">
+      {n_shown} of {n_total}
+    </span>
   </div>
-  <div id="pillgrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
-       padding:6px 8px 10px;max-height:380px;overflow-y:auto;
-       scrollbar-width:thin;scrollbar-color:#28415c #0b1728;">
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
+              padding:6px 8px 10px;max-height:400px;overflow-y:auto;
+              scrollbar-width:thin;scrollbar-color:#28415c #0b1728;">
     {pills_html}
   </div>
 </div>
 <style>
-.cpill{{background:#0a1628;border:1px solid #1d2b3f;border-radius:6px;color:#94a3b8;
-  font-size:13px;font-weight:700;font-family:Inter,sans-serif;
+.cpill{{
+  background:#0a1628;border:1px solid #1d2b3f;border-radius:6px;
+  color:#94a3b8;font-size:13px;font-weight:700;font-family:Inter,sans-serif;
   padding:7px 3px;text-align:center;cursor:pointer;
   transition:all .12s;white-space:normal;word-break:break-all;
   line-height:1.3;width:100%;display:flex;align-items:center;
-  justify-content:center;min-height:34px;border:none;}}
-.cpill:hover{{background:#112338;color:#c8dce8;}}
-.cpill.active{{background:linear-gradient(135deg,#0f766e,#2563eb);
-  color:#fff;font-weight:800;box-shadow:0 0 8px rgba(20,184,166,.35);}}
+  justify-content:center;min-height:34px;text-decoration:none;
+}}
+.cpill:hover{{background:#112338;border-color:#2d4a6a;color:#c8dce8;}}
+.cpill.active{{
+  background:linear-gradient(135deg,#0f766e,#2563eb);
+  border-color:transparent;color:#fff;font-weight:800;
+  box-shadow:0 0 8px rgba(20,184,166,.35);
+}}
 </style>
 <script>
-function pick(btn) {{
-  // 1. Visual highlight immediately
-  document.querySelectorAll(".cpill").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
-  const id = btn.textContent.trim();
-
-  // 2. Find the Streamlit selectbox for ecc_sel and trigger it
-  // Streamlit renders a baseweb Select; we find its hidden input and fire React events
-  const allSelects = document.querySelectorAll('[data-baseweb="select"]');
-  // Find the one near our search box (in col_left)
-  let targetSel = null;
-  allSelects.forEach(s => {{
-    const inp = s.querySelector('input');
-    if (inp) targetSel = inp;
-  }});
-
-  if (targetSel) {{
-    // Simulate React onChange by directly setting value via React internal
-    const nativeSetter = Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype, 'value'
-    ).set;
-    nativeSetter.call(targetSel, id);
-    targetSel.dispatchEvent(new Event('input', {{bubbles: true}}));
-    targetSel.dispatchEvent(new Event('change', {{bubbles: true}}));
-  }}
-
-  // 3. Fallback: set query param and navigate (full reload)
-  // Only if React event approach fails (detected by checking if active changed)
-  setTimeout(() => {{
-    const stillActive = document.querySelector(".cpill.active");
-    // If Streamlit hasn't rerun yet after 300ms, use navigation fallback
-    // (This is checked by seeing if the URL changed)
-    const url = new URL(location.href);
-    url.searchParams.set("ctrl_pick", id);
-    // Use replaceState to avoid browser history pollution, then force reload
-    history.replaceState(null, "", url);
-    location.reload();
-  }}, 400);
-}}
-
-// Scroll active into view
-const active = document.querySelector(".cpill.active");
-if (active) active.scrollIntoView({{block:"nearest"}});
+// Scroll active pill into view on page load
+(function(){{
+  const a = document.querySelector(".cpill.active");
+  if (a) a.scrollIntoView({{block:"nearest", behavior:"smooth"}});
+}})();
 </script>
 """
-        st.markdown(grid_js, unsafe_allow_html=True)
+        st.markdown(grid_html, unsafe_allow_html=True)
         selected_id = st.session_state.selected_id
 
     # ── RIGHT: Top-K + Workflow Steps (static label) + Export ───────────────
