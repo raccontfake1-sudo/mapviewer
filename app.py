@@ -896,15 +896,24 @@ if os.path.exists(DATA_FILE):
             time.sleep(0.1)
 
         # ── Export button directly under the workflow steps ──────────────────
+        # ── Export button directly under the workflow steps ──────────────────
         st.markdown(
             """<div style="height:1px;background:linear-gradient(90deg,#1e293b,#4f46e5,#1e293b);
-                           margin:10px 0 8px"></div>
-               <div style="font-size:11px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">
-                 Export Report
-               </div>""",
+                           margin:10px 0 8px"></div>""",
             unsafe_allow_html=True,
         )
-        # We need the data prepared first; use a placeholder, fill after data is ready
+        # CSS: make the download button label flex so arrow sits on the right
+        st.markdown(
+            """<style>
+            div[data-testid="stDownloadButton"] button {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                gap: 8px !important;
+            }
+            </style>""",
+            unsafe_allow_html=True,
+        )
         export_placeholder = st.empty()
 
     # ── Prepare data ─────────────────────────────────────────────────────────
@@ -918,7 +927,7 @@ if os.path.exists(DATA_FILE):
     with export_placeholder:
         if pdf_bytes:
             st.download_button(
-                label="⬇ Download PDF Report",
+                label="Export Report  ⬇",
                 data=pdf_bytes,
                 file_name=f"{selected_id}_mapping_report.pdf",
                 mime="application/pdf",
