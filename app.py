@@ -56,20 +56,20 @@ st.markdown(
         }
         div[data-testid="stTextInput"] input::placeholder { color: #64748b !important; }
 
-        /* horizontal scrollable radio pills */
+        /* vertical scrollable radio pills for left panel */
         .ctrl-radio div[role="radiogroup"] {
-            max-height: 52px;
-            overflow-x: auto;
-            overflow-y: hidden;
+            max-height: 370px;
+            overflow-y: auto;
+            overflow-x: hidden;
             display: flex !important;
-            flex-direction: row !important;
+            flex-direction: column !important;
             flex-wrap: nowrap;
             gap: 4px !important;
-            padding-bottom: 4px;
+            padding-right: 4px;
             scrollbar-width: thin;
             scrollbar-color: #28415c #07111f;
         }
-        .ctrl-radio div[role="radiogroup"]::-webkit-scrollbar { height: 4px; }
+        .ctrl-radio div[role="radiogroup"]::-webkit-scrollbar { width: 4px; }
         .ctrl-radio div[role="radiogroup"]::-webkit-scrollbar-track { background: #07111f; }
         .ctrl-radio div[role="radiogroup"]::-webkit-scrollbar-thumb {
             background: #28415c; border-radius: 4px;
@@ -345,7 +345,7 @@ def create_viewer(selected_id, source_text, mappings):
 
     return f"""<!DOCTYPE html><html><head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href__="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;min-height:100%;overflow:auto}}
@@ -609,68 +609,64 @@ if os.path.exists(DATA_FILE):
         unsafe_allow_html=True,
     )
 
-    # ── Control Picker Bar ─────────────────────────────────────────────
-    st.markdown(
-        """<div style="background:linear-gradient(135deg,#0b1728 0%,#0f2f3a 100%);
-                       border:1px solid #1d2b3f;border-radius:10px;
-                       padding:10px 16px 12px;margin-bottom:10px;">
-             <div style="font-size:9px;font-weight:800;color:#67e8f9;
-                         text-transform:uppercase;letter-spacing:0.8px;
-                         margin-bottom:6px;">🔍 ECC Controls — Search &amp; Select</div>""",
-        unsafe_allow_html=True,
-    )
+    # ═══════════════════════════════════════════════════════════════════
+    # NEW LAYOUT: 3 columns — Left (controls+search) | Center (graph) | Right (top-k+pipeline)
+    # ═══════════════════════════════════════════════════════════════════
+    col_left, col_center, col_right = st.columns([1.4, 4.0, 1.6])
 
-    search_col, count_col = st.columns([1, 4])
-    with search_col:
+    # ── LEFT COLUMN: ECC Controls Search & Select ─────────────────────
+    with col_left:
+        st.markdown(
+            """<div style="background:linear-gradient(135deg,#0b1728 0%,#0f2f3a 100%);
+                           border:1px solid #1d2b3f;border-radius:10px;
+                           padding:10px 14px 12px;margin-bottom:0;">
+                 <div style="font-size:9px;font-weight:800;color:#67e8f9;
+                             text-transform:uppercase;letter-spacing:0.8px;
+                             margin-bottom:8px;">🔍 ECC Controls</div>""",
+            unsafe_allow_html=True,
+        )
+
         search_term = st.text_input(
             "Search",
             placeholder="e.g. 1-1 or PR.AA",
             key="search_term",
             label_visibility="collapsed",
         )
-    with count_col:
-        pass  # spacer
 
-    filtered = (
-        [c for c in all_ids if search_term.strip().lower() in c.lower()]
-        if search_term.strip() else all_ids
-    )
-    if not filtered:
-        filtered = all_ids
+        filtered = (
+            [c for c in all_ids if search_term.strip().lower() in c.lower()]
+            if search_term.strip() else all_ids
+        )
+        if not filtered:
+            filtered = all_ids
 
-    exact = next((c for c in all_ids if c.lower() == search_term.strip().lower()), None)
-    if exact and exact != st.session_state.selected_id:
-        st.session_state.selected_id = exact
+        exact = next((c for c in all_ids if c.lower() == search_term.strip().lower()), None)
+        if exact and exact != st.session_state.selected_id:
+            st.session_state.selected_id = exact
 
-    default_idx = filtered.index(st.session_state.selected_id) if st.session_state.selected_id in filtered else 0
+        default_idx = filtered.index(st.session_state.selected_id) if st.session_state.selected_id in filtered else 0
 
-    st.markdown('<div class="ctrl-radio">', unsafe_allow_html=True)
-    selected_id = st.radio(
-        "Select Control ID",
-        filtered,
-        index=default_idx,
-        horizontal=True,
-        label_visibility="collapsed",
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="ctrl-radio">', unsafe_allow_html=True)
+        selected_id = st.radio(
+            "Select Control ID",
+            filtered,
+            index=default_idx,
+            horizontal=False,
+            label_visibility="collapsed",
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown(
-        f'<div style="font-size:10px;color:#6b8298;padding-top:4px;">'
-        f'{len(filtered)} of {len(all_ids)} controls shown</div>'
-        '</div>',  # close the outer picker div
-        unsafe_allow_html=True,
-    )
+        st.markdown(
+            f'<div style="font-size:10px;color:#6b8298;padding-top:4px;">'
+            f'{len(filtered)} of {len(all_ids)} controls</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
-    st.session_state.selected_id = selected_id
+        st.session_state.selected_id = selected_id
 
-    row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
-    src_col  = find_col(list(df.columns), "Source Text")
-    src_text = safe_value(row.get(src_col, "") if src_col else "")
-
-    # ── Main viewer + right-side controls ───────────────────────────────
-    col_v, col_p = st.columns([4.4, 1.65])
-
-    with col_p:
+    # ── RIGHT COLUMN: Top-K + Pipeline ────────────────────────────────
+    with col_right:
         # Top-K
         st.markdown(
             """<div class="topk-card">
@@ -686,7 +682,7 @@ if os.path.exists(DATA_FILE):
             label_visibility="collapsed",
         )
 
-        # Pipeline — stacked directly below Top-K
+        # Pipeline
         st.markdown(
             """<div class="pipeline-card">
               <div class="pipeline-title">Pipeline</div>
@@ -717,9 +713,14 @@ if os.path.exists(DATA_FILE):
             )
             time.sleep(0.12)
 
+    # ── Prepare data ──────────────────────────────────────────────────
+    row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
+    src_col  = find_col(list(df.columns), "Source Text")
+    src_text = safe_value(row.get(src_col, "") if src_col else "")
     mappings = extract_mappings(row, df, top_k=top_k)
 
-    with col_v:
+    # ── CENTER COLUMN: Graph Viewer ───────────────────────────────────
+    with col_center:
         viewer_html = create_viewer(str(selected_id), src_text, mappings)
         components.html(viewer_html, height=700, scrolling=True)
 
