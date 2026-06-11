@@ -7,6 +7,7 @@ import json
 import html
 import re
 import time
+import base64
 
 st.set_page_config(page_title="ECC-NIST Control Mapping Viewer", layout="wide")
 
@@ -33,15 +34,35 @@ st.markdown(
         }
         .main .block-container > div:first-child { margin-top: 0 !important; }
 
+        /* Responsive: on small screens, stack columns */
+        @media (max-width: 768px) {
+            .main .block-container,
+            .block-container,
+            div[data-testid="stAppViewBlockContainer"] {
+                padding: 0.4rem 0.5rem 1rem !important;
+            }
+            div[data-testid="stHorizontalBlock"] {
+                flex-direction: column !important;
+            }
+            div[data-testid="stHorizontalBlock"] > div {
+                width: 100% !important;
+                min-width: 0 !important;
+                flex: none !important;
+            }
+        }
+
         .stDownloadButton button {
             background: linear-gradient(135deg,#0f766e,#2563eb) !important;
             color: white !important; border: none !important;
             border-radius: 8px !important; font-weight: 600 !important;
             font-size: 14px !important; padding: 10px 22px !important;
             width: 100% !important;
+            transition: all 0.2s ease !important;
         }
         .stDownloadButton button:hover {
             background: linear-gradient(135deg,#0d9488,#1d4ed8) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 15px rgba(20,184,166,0.3) !important;
         }
 
         #MainMenu { visibility: hidden; }
@@ -90,6 +111,7 @@ st.markdown(
             line-height: 1.25 !important; color: #d5e4f0 !important;
         }
 
+        /* Top-K card */
         .topk-card {
             background: linear-gradient(135deg,#0b1728,#0f2f3a);
             border: 1px solid #245064; border-radius: 8px;
@@ -99,14 +121,49 @@ st.markdown(
             text-transform: uppercase; letter-spacing: 0.7px; }
         .topk-sub { font-size: 11px; color: #8bd3dd !important; margin-top: 3px; }
 
-        .pipeline-card {
+        /* Workflow card — replaces pipeline, clearly labelled as static */
+        .workflow-card {
             background: linear-gradient(135deg,#0b1728,#103044);
             border: 1px solid #245064; border-radius: 8px;
             padding: 10px 12px 6px; min-height: 54px; margin-top: 10px;
         }
-        .pipeline-title { font-size: 10px; font-weight: 800; color: #ffffff !important;
+        .workflow-title { font-size: 10px; font-weight: 800; color: #ffffff !important;
             text-transform: uppercase; letter-spacing: 0.7px; }
-        .pipeline-sub { font-size: 11px; color: #8bd3dd !important; margin-top: 3px; }
+        .workflow-sub { font-size: 11px; color: #64748b !important; margin-top: 3px; }
+
+        /* ECC description card */
+        .ecc-desc-card {
+            background: linear-gradient(135deg,#0b1a2e,#0e2a40);
+            border: 1px solid #245064; border-radius: 10px;
+            padding: 14px 16px 12px; margin-bottom: 10px;
+        }
+        .ecc-desc-label {
+            font-size: 9px; font-weight: 800; color: #67e8f9;
+            text-transform: uppercase; letter-spacing: 0.9px; margin-bottom: 6px;
+        }
+        .ecc-desc-id {
+            font-size: 16px; font-weight: 800; color: #818cf8;
+            margin-bottom: 4px; line-height: 1.2;
+        }
+        .ecc-desc-text {
+            font-size: 12px; color: #94a3b8; line-height: 1.75;
+        }
+
+        /* Preview image card */
+        .preview-card {
+            background: #060e1c;
+            border: 1px solid #1d2b3f; border-radius: 10px;
+            overflow: hidden; margin-bottom: 10px;
+        }
+        .preview-label {
+            font-size: 9px; font-weight: 800; color: #67e8f9;
+            text-transform: uppercase; letter-spacing: 0.9px;
+            padding: 8px 12px 4px;
+        }
+        .preview-card img {
+            width: 100%; display: block;
+            border-radius: 0 0 10px 10px;
+        }
 
         [data-testid="stSelectSlider"],
         [data-testid="stSlider"] { padding-top: 0 !important; margin-top: -8px !important; }
@@ -280,7 +337,7 @@ def generate_pdf(selected_id, source_text, mappings):
 
 
 # -----------------------------------------
-# HTML Viewer
+# HTML Viewer  (no results table — only graph + detail panel)
 # -----------------------------------------
 def create_viewer(selected_id, source_text, mappings):
     W, H   = 560, 420
@@ -291,7 +348,6 @@ def create_viewer(selected_id, source_text, mappings):
     svg_lines = svg_nodes = svg_nums = ""
     n = len(mappings)
     mapping_data = {}
-    summary_rows = []
 
     for idx, item in enumerate(mappings):
         angle = (2 * math.pi / n) * idx - math.pi / 2
@@ -320,7 +376,6 @@ def create_viewer(selected_id, source_text, mappings):
                 "Recover"  if item["mapping"].startswith("RC") else "Unknown"
             ),
         }
-        summary_rows.append({"rank": str(rank), "nist": item["mapping"], "pct": pct, "color": col})
 
         dx, dy = x - cx, y - cy
         dist = math.sqrt(dx*dx + dy*dy)
@@ -336,19 +391,36 @@ def create_viewer(selected_id, source_text, mappings):
 </g>\n"""
 
     mdata_json  = json.dumps(mapping_data, ensure_ascii=False)
-    srows_json  = json.dumps(summary_rows, ensure_ascii=False)
     src_json    = json.dumps(source_text,  ensure_ascii=False)
     src_id_json = json.dumps(str(selected_id), ensure_ascii=False)
-    n_mappings  = len(mappings)
 
     return f"""<!DOCTYPE html><html><head>
 <meta charset="utf-8">
-<link rel="stylesheet" href__="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;min-height:100%;overflow:auto}}
-.shell{{display:flex;width:100%;height:680px;min-height:680px;overflow:hidden;border:1px solid #1d2b3f;border-radius:12px;box-shadow:0 18px 42px rgba(0,0,0,0.22);}}
-.graph-col{{flex:0 0 58%;display:flex;flex-direction:column;background:radial-gradient(circle at 50% 40%,rgba(20,184,166,0.14),transparent 34%),linear-gradient(160deg,#08111f 0%,#102a43 56%,#062f3a 100%);border-right:1px solid #1d2b3f;position:relative;overflow:hidden;}}
+
+/* Main shell: graph left + detail right */
+.shell{{
+  display:flex;
+  width:100%;
+  min-height:600px;
+  border:1px solid #1d2b3f;border-radius:12px;
+  box-shadow:0 18px 42px rgba(0,0,0,0.22);
+  overflow:hidden;
+}}
+
+/* Graph column */
+.graph-col{{
+  flex:0 0 58%;
+  display:flex;flex-direction:column;
+  background:radial-gradient(circle at 50% 40%,rgba(20,184,166,0.14),transparent 34%),
+             linear-gradient(160deg,#08111f 0%,#102a43 56%,#062f3a 100%);
+  border-right:1px solid #1d2b3f;
+  position:relative;overflow:hidden;
+}}
 .graph-header{{display:flex;align-items:center;gap:10px;padding:14px 18px 10px;border-bottom:1px solid #1d2b3f;flex-shrink:0;}}
 .graph-badge{{background:linear-gradient(135deg,#0f766e,#2563eb);color:white;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;}}
 .graph-title{{font-size:13px;font-weight:700;color:#e2e8f0}}
@@ -358,19 +430,12 @@ html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;min-h
 .legend{{display:flex;gap:14px;padding:10px 18px 14px;border-top:1px solid #1d2b3f;flex-shrink:0;}}
 .leg{{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:#8aa3b8}}
 .legdot{{width:9px;height:9px;border-radius:50%;flex-shrink:0}}
-.right-col{{flex:1;min-width:320px;display:flex;flex-direction:column;background:#0b1424;overflow:hidden;}}
-.tbl-section{{flex-shrink:0;border-bottom:1px solid #1d2b3f}}
-.tbl-header{{padding:12px 16px 8px;background:#0b1424}}
-.tbl-title{{font-size:12px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:6px}}
-.tbl-sub{{font-size:10px;color:#6b8298;margin-top:2px}}
-table{{width:100%;border-collapse:collapse;font-size:12px}}
-th{{background:linear-gradient(135deg,#0f766e,#2563eb);color:white;padding:8px 12px;text-align:left;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;}}
-td{{padding:8px 12px;border-bottom:1px solid #1d2b3f;color:#cbd5e1;vertical-align:middle}}
-tr:last-child td{{border-bottom:none}}
-tr.trow:hover td{{background:#142337;cursor:pointer}}
-tr.trow.active td{{background:#0f2f3a}}
-.rbadge{{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#14b8a6,#2563eb);color:white;border-radius:50%;width:20px;height:20px;font-weight:700;font-size:9px;}}
-.score-pill{{display:inline-block;color:white;border-radius:20px;padding:2px 9px;font-weight:700;font-size:10px;}}
+
+/* Detail column — no table, just detail panel */
+.right-col{{flex:1;min-width:280px;display:flex;flex-direction:column;background:#0b1424;overflow:hidden;}}
+.detail-header{{padding:12px 16px 8px;border-bottom:1px solid #1d2b3f;flex-shrink:0;}}
+.detail-h-title{{font-size:12px;font-weight:700;color:#e2e8f0}}
+.detail-h-sub{{font-size:10px;color:#6b8298;margin-top:2px}}
 .detail-col{{flex:1;min-height:0;overflow-y:auto;padding:14px 16px 22px;scrollbar-width:thin;scrollbar-color:#28415c #0b1424;overscroll-behavior:contain;}}
 .detail-col::-webkit-scrollbar{{width:4px}}
 .detail-col::-webkit-scrollbar-track{{background:#0b1424}}
@@ -397,10 +462,18 @@ tr.trow.active td{{background:#0f2f3a}}
 .mnode.selected .gring{{opacity:0.42!important}}
 .mnode.selected circle:not(.gring){{stroke:white;stroke-width:2.5;vector-effect:non-scaling-stroke}}
 .cnode:hover circle:first-child{{opacity:0.35!important}}
+
+/* Responsive: stack columns on narrow viewports */
+@media (max-width: 700px) {{
+  .shell {{ flex-direction: column; min-height: unset; }}
+  .graph-col {{ flex: none; border-right: none; border-bottom: 1px solid #1d2b3f; }}
+  .right-col {{ min-width: 0; }}
+}}
 </style>
 </head>
 <body>
 <div class="shell">
+  <!-- Graph panel -->
   <div class="graph-col">
     <div class="graph-header">
       <div><div class="graph-badge">Control Mapping Graph</div></div>
@@ -436,20 +509,16 @@ tr.trow.active td{{background:#0f2f3a}}
       <div class="leg"><div class="legdot" style="background:#dc2626"></div>Low &lt;70%</div>
     </div>
   </div>
+
+  <!-- Detail panel (no results table) -->
   <div class="right-col">
-    <div class="tbl-section">
-      <div class="tbl-header">
-        <div class="tbl-title">Results - <span style="color:#6366f1">{n_mappings} mapping(s)</span>&nbsp;for&nbsp;<b style="color:#818cf8">{html.escape(str(selected_id))}</b></div>
-        <div class="tbl-sub">Click a row or node to view full details below</div>
-      </div>
-      <table>
-        <thead><tr><th>#</th><th>NIST Control</th><th>Score</th></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
+    <div class="detail-header">
+      <div class="detail-h-title">Mapping Detail</div>
+      <div class="detail-h-sub">Click a node to view full details</div>
     </div>
     <div class="detail-col" id="detail">
       <div class="placeholder">
-        Select a node or row to view full mapping details<br>
+        Select a node to view full mapping details<br>
         <span style="color:#334155;font-size:10px">Click the indigo ECC node for the source control</span>
       </div>
     </div>
@@ -457,23 +526,9 @@ tr.trow.active td{{background:#0f2f3a}}
 </div>
 <script>
 const MD       = {mdata_json};
-const SR       = {srows_json};
 const ECC_TEXT = {src_json};
 const ECC_ID   = {src_id_json};
 let activeRank = null;
-
-SR.forEach(r => {{
-  const tr = document.createElement("tr");
-  tr.className = "trow";
-  tr.dataset.rank = r.rank;
-  tr.onclick = () => selectNode(parseInt(r.rank));
-  tr.innerHTML = `
-    <td><span class="rbadge">${{r.rank}}</span></td>
-    <td style="font-weight:600;color:#e2e8f0;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${{esc(r.nist)}}</td>
-    <td><span class="score-pill" style="background:${{r.color}}">${{r.pct}}</span></td>
-  `;
-  document.getElementById("tbody").appendChild(tr);
-}});
 
 function esc(t) {{
   if (!t) return "N/A";
@@ -481,9 +536,6 @@ function esc(t) {{
 }}
 
 function setActive(rank) {{
-  document.querySelectorAll(".trow").forEach(r => r.classList.remove("active"));
-  const row = document.querySelector(`.trow[data-rank="${{rank}}"]`);
-  if (row) row.classList.add("active");
   document.querySelectorAll(".mnode").forEach(g => g.classList.remove("selected"));
   const node = document.querySelector(`.mnode[data-rank="${{rank}}"]`);
   if (node) node.classList.add("selected");
@@ -500,15 +552,15 @@ function selectNode(rank, event) {{
     <div class="d-header">
       <div class="d-rank" style="background:${{item.color}}">${{item.rank}}</div>
       <div>
-        <div class="d-title">Mapping #${{item.rank}} - ${{esc(item.nist_control)}}</div>
-        <div class="d-sub">${{item.domain}} - ${{item.label}}</div>
+        <div class="d-title">Mapping #${{item.rank}} — ${{esc(item.nist_control)}}</div>
+        <div class="d-sub">${{item.domain}} · ${{item.label}}</div>
       </div>
     </div>
     <div class="sgrid">
       <div class="scard main">
         <div class="slabel">Final Match Score</div>
         <div class="sval">${{item.final_pct}}</div>
-        <div class="ssub">${{item.final}} raw - ${{item.domain}}</div>
+        <div class="ssub">${{item.final}} raw · ${{item.domain}}</div>
       </div>
       <div class="scard emb">
         <div class="slabel">Embedding</div>
@@ -521,7 +573,7 @@ function selectNode(rank, event) {{
         <div class="ssub">${{item.ont}}</div>
       </div>
     </div>
-    <div class="conf-row"><b style="color:#e2e8f0">Confidence:</b> ${{item.label}}</div>
+    <div class="conf-row"><b style="color:#e2e8f0">Confidence:</b>&nbsp;${{item.label}}</div>
     <div class="stitle">NIST Control Text</div>
     <div class="cbox"><b style="color:#818cf8">${{esc(item.nist_control)}}</b>
 
@@ -540,13 +592,12 @@ ${{esc(item.nist_text)}}</div>
 function showEcc(event) {{
   if (event) {{ event.preventDefault(); event.stopPropagation(); }}
   document.querySelectorAll(".mnode").forEach(g => g.classList.remove("selected"));
-  document.querySelectorAll(".trow").forEach(r => r.classList.remove("active"));
   activeRank = null;
   document.getElementById("detail").innerHTML = `
     <div class="d-header">
       <div class="d-rank" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">E</div>
       <div>
-        <div class="d-title">ECC Control - ${{esc(ECC_ID)}}</div>
+        <div class="d-title">ECC Control — ${{esc(ECC_ID)}}</div>
         <div class="d-sub">Source control description</div>
       </div>
     </div>
@@ -570,6 +621,13 @@ function showEcc(event) {{
 # -----------------------------------------
 DATA_FILE = "final_with_explanations_COMPLETE.csv"
 
+# Load the preview image as base64 for embedding
+_PREVIEW_IMG_B64 = ""
+_PREVIEW_IMG_PATH = os.path.join(os.path.dirname(__file__), "mapping_preview.png")
+if os.path.exists(_PREVIEW_IMG_PATH):
+    with open(_PREVIEW_IMG_PATH, "rb") as _f:
+        _PREVIEW_IMG_B64 = base64.b64encode(_f.read()).decode()
+
 if os.path.exists(DATA_FILE):
     df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
     df.columns = [c.strip() for c in df.columns]
@@ -583,13 +641,14 @@ if os.path.exists(DATA_FILE):
     if "selected_id" not in st.session_state:
         st.session_state.selected_id = all_ids[0]
 
-    # App header
+    # ── App Header ──────────────────────────────────────────────────────────
     st.markdown(
         f"""<div style="
             background:linear-gradient(135deg,#08111f 0%,#0f2f3a 58%,#164e63 100%);
             border:1px solid #245064;border-radius:10px;padding:12px 20px;
             display:flex;align-items:center;gap:18px;
-            box-shadow:0 10px 30px rgba(0,0,0,0.18);margin-bottom:10px;">
+            box-shadow:0 10px 30px rgba(0,0,0,0.18);margin-bottom:10px;
+            flex-wrap:wrap;">
           <div style="flex-shrink:0;width:40px;height:40px;border-radius:50%;
                       background:linear-gradient(135deg,#14b8a6,#2563eb);
                       display:flex;align-items:center;justify-content:center;
@@ -607,10 +666,10 @@ if os.path.exists(DATA_FILE):
         unsafe_allow_html=True,
     )
 
-    # 3-column layout: Left (controls+search) | Center (graph) | Right (top-k+pipeline)
+    # ── 3-column layout ──────────────────────────────────────────────────────
     col_left, col_center, col_right = st.columns([1.4, 4.0, 1.6])
 
-    # LEFT COLUMN - ECC Controls Search and Select
+    # ── LEFT: ECC Controls Search + Select ───────────────────────────────────
     with col_left:
         st.markdown(
             """<div style="background:linear-gradient(135deg,#0b1728 0%,#0f2f3a 100%);
@@ -664,8 +723,9 @@ if os.path.exists(DATA_FILE):
 
         st.session_state.selected_id = selected_id
 
-    # RIGHT COLUMN - Top-K and Pipeline
+    # ── RIGHT: Top-K + Workflow Steps (static label) + Export ───────────────
     with col_right:
+        # Top-K card
         st.markdown(
             """<div class="topk-card">
               <div class="topk-title">Top-K</div>
@@ -680,68 +740,87 @@ if os.path.exists(DATA_FILE):
             label_visibility="collapsed",
         )
 
+        # "Scoring Steps" card — replaces "Pipeline", clearly labelled as static/pre-computed
         st.markdown(
-            """<div class="pipeline-card">
-              <div class="pipeline-title">Pipeline</div>
-              <div class="pipeline-sub">Status</div>
+            """<div class="workflow-card">
+              <div class="workflow-title">Scoring Steps</div>
+              <div class="workflow-sub">Pre-computed — not live</div>
             </div>""",
             unsafe_allow_html=True,
         )
-        pipe_box = st.empty()
         steps = [
             "Load ECC Control", "Load NIST Controls", "Extract Metadata",
             "Semantic Embeddings", "Ontology Scoring", "Confidence Match",
             "AI Explanation", "Return Top-K",
         ]
-        completed = []
-        for step in steps:
-            completed.append(step)
-            rows_html = "".join(
-                f'<div style="font-size:11px;color:#86efac;padding:2px 0">OK {s}</div>'
-                if s in completed else
-                f'<div style="font-size:11px;color:#334155;padding:2px 0">-- {s}</div>'
-                for s in steps
-            )
-            pipe_box.markdown(
-                f'<div style="background:linear-gradient(135deg,#0b1728,#103044);'
-                f'border:1px solid #245064;border-radius:10px;padding:10px 12px;'
-                f'margin-top:6px">{rows_html}</div>',
-                unsafe_allow_html=True,
-            )
-            time.sleep(0.12)
+        rows_html = "".join(
+            f'<div style="font-size:11px;color:#86efac;padding:2px 0">✓ {s}</div>'
+            for s in steps
+        )
+        st.markdown(
+            f'<div style="background:linear-gradient(135deg,#0b1728,#103044);'
+            f'border:1px solid #245064;border-radius:10px;padding:10px 12px;'
+            f'margin-top:6px">{rows_html}</div>',
+            unsafe_allow_html=True,
+        )
 
-    # Prepare data (before rendering center column)
+        # ── Export button directly under the workflow steps ──────────────────
+        st.markdown(
+            """<div style="height:1px;background:linear-gradient(90deg,#1e293b,#4f46e5,#1e293b);
+                           margin:10px 0 8px"></div>
+               <div style="font-size:11px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">
+                 Export Report
+               </div>""",
+            unsafe_allow_html=True,
+        )
+        # We need the data prepared first; use a placeholder, fill after data is ready
+        export_placeholder = st.empty()
+
+    # ── Prepare data ─────────────────────────────────────────────────────────
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     src_col  = find_col(list(df.columns), "Source Text")
     src_text = safe_value(row.get(src_col, "") if src_col else "")
     mappings = extract_mappings(row, df, top_k=top_k)
 
-    # CENTER COLUMN - Graph Viewer + Export below
-    with col_center:
-        viewer_html = create_viewer(str(selected_id), src_text, mappings)
-        components.html(viewer_html, height=700, scrolling=True)
-
-        # Export directly under the graph
-        pdf_bytes = generate_pdf(selected_id, src_text, mappings)
-
-        st.markdown(
-            """<div style="height:1px;background:linear-gradient(90deg,#1e293b,#4f46e5,#1e293b);
-                           margin:6px 0 8px"></div>
-               <div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">
-                 Export Mapping Report
-               </div>""",
-            unsafe_allow_html=True,
-        )
-
+    # Fill export button now that data is ready
+    pdf_bytes = generate_pdf(selected_id, src_text, mappings)
+    with export_placeholder:
         if pdf_bytes:
             st.download_button(
-                label="Download PDF Report",
+                label="⬇ Download PDF Report",
                 data=pdf_bytes,
                 file_name=f"{selected_id}_mapping_report.pdf",
                 mime="application/pdf",
             )
         else:
-            st.warning("PDF export requires fpdf2 - install with: pip install fpdf2")
+            st.warning("PDF export requires fpdf2 — install with: pip install fpdf2")
+
+    # ── CENTER: ECC Description + Preview Image + Graph Viewer ───────────────
+    with col_center:
+        # ECC Description card
+        st.markdown(
+            f"""<div class="ecc-desc-card">
+              <div class="ecc-desc-label">ECC Control Description</div>
+              <div class="ecc-desc-id">{html.escape(str(selected_id))}</div>
+              <div class="ecc-desc-text">{html.escape(src_text) if src_text != "N/A" else
+                '<span style="color:#475569;font-style:italic">No description available for this control.</span>'}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+        # Preview image (the uploaded mapping detail screenshot)
+        if _PREVIEW_IMG_B64:
+            st.markdown(
+                f"""<div class="preview-card">
+                  <div class="preview-label">Sample Mapping Detail View</div>
+                  <img src="data:image/png;base64,{_PREVIEW_IMG_B64}" alt="Mapping detail preview" />
+                </div>""",
+                unsafe_allow_html=True,
+            )
+
+        # Interactive graph viewer
+        viewer_html = create_viewer(str(selected_id), src_text, mappings)
+        components.html(viewer_html, height=640, scrolling=True)
 
 else:
     st.markdown(
