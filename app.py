@@ -27,39 +27,41 @@ st.markdown(
         section[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
         .side-head {
             border: 1px solid #1d2b3f;
-            border-radius: 8px;
-            padding: 9px 10px;
-            margin-bottom: 8px;
+            border-radius: 6px;
+            padding: 5px 8px;
+            margin-bottom: 6px;
             background: linear-gradient(135deg,#0b1728 0%,#0f2f3a 100%);
         }
         .side-kicker {
             color: #67e8f9 !important;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 800;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.6px;
             text-transform: uppercase;
+            margin-bottom: 1px;
         }
         .side-title {
             color: #f8fafc !important;
-            font-size: 15px;
+            font-size: 12px;
             font-weight: 800;
-            line-height: 1.2;
-            margin-top: 2px;
+            line-height: 1.1;
+            margin-top: 1px;
         }
         .side-count {
             color: #8aa3b8 !important;
-            font-size: 11px;
-            margin: -2px 0 8px;
+            font-size: 9px;
+            margin: 2px 0 4px;
         }
         section[data-testid="stSidebar"] input[type="text"] {
             background: #0f1b2d !important; border: 1px solid #28415c !important;
-            border-radius: 8px !important; color: #f1f5f9 !important;
-            font-size: 13px !important; padding: 7px 10px !important;
+            border-radius: 6px !important; color: #f1f5f9 !important;
+            font-size: 11px !important; padding: 5px 7px !important;
+            height: 28px !important;
         }
-        section[data-testid="stSidebar"] input[type="text"]::placeholder { color: #64748b !important; }
+        section[data-testid="stSidebar"] input[type="text"]::placeholder { color: #64748b !important; font-size: 10px !important; }
         section[data-testid="stSidebar"] .stTextInput,
         section[data-testid="stSidebar"] .stRadio {
-            margin-bottom: 0.35rem !important;
+            margin-bottom: 0.25rem !important;
         }
         section[data-testid="stSidebar"] div[role="radiogroup"] {
             max-height: calc(100vh - 190px);
@@ -76,9 +78,9 @@ st.markdown(
             border-radius: 4px;
         }
         section[data-testid="stSidebar"] div[role="radiogroup"] label {
-            padding: 4px 7px !important;
+            padding: 3px 5px !important;
             margin: 1px 0 !important;
-            border-radius: 6px !important;
+            border-radius: 4px !important;
             transition: background 0.15s ease !important;
         }
         section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
@@ -87,9 +89,9 @@ st.markdown(
         section[data-testid="stSidebar"] div[role="radiogroup"] label div,
         section[data-testid="stSidebar"] div[role="radiogroup"] label p,
         section[data-testid="stSidebar"] div[role="radiogroup"] label span {
-            font-size: 12px !important;
+            font-size: 10px !important;
             font-weight: 600 !important;
-            line-height: 1.25 !important;
+            line-height: 1.15 !important;
             text-transform: none !important;
             letter-spacing: 0 !important;
             color: #d5e4f0 !important;
