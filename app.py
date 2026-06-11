@@ -17,7 +17,6 @@ st.markdown(
         html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
         .stApp { background: #08111f; color: #e2e8f0; }
 
-        /* ── Hide sidebar entirely + collapse arrow ── */
         section[data-testid="stSidebar"] { display: none !important; }
         [data-testid="collapsedControl"],
         div[data-testid="stSidebarCollapsedControl"],
@@ -39,6 +38,7 @@ st.markdown(
             color: white !important; border: none !important;
             border-radius: 8px !important; font-weight: 600 !important;
             font-size: 14px !important; padding: 10px 22px !important;
+            width: 100% !important;
         }
         .stDownloadButton button:hover {
             background: linear-gradient(135deg,#0d9488,#1d4ed8) !important;
@@ -48,7 +48,6 @@ st.markdown(
         footer    { visibility: hidden; }
         header    { visibility: hidden; }
 
-        /* search input in main area */
         div[data-testid="stTextInput"] input {
             background: #0f1b2d !important; border: 1px solid #28415c !important;
             border-radius: 8px !important; color: #f1f5f9 !important;
@@ -56,7 +55,6 @@ st.markdown(
         }
         div[data-testid="stTextInput"] input::placeholder { color: #64748b !important; }
 
-        /* vertical scrollable radio pills for left panel */
         .ctrl-radio div[role="radiogroup"] {
             max-height: 370px;
             overflow-y: auto;
@@ -123,9 +121,9 @@ st.markdown(
 )
 
 
-# ─────────────────────────────────────────
+# -----------------------------------------
 # Helpers
-# ─────────────────────────────────────────
+# -----------------------------------------
 def get_mapping_columns(i):
     suffix = "" if i == 1 else f" {i}"
     return {
@@ -183,12 +181,12 @@ def short_mapping_label(mapping):
     if ":" in mapping:
         code, name = mapping.split(":", 1)
         code, name = code.strip(), name.strip()
-        return code, (name[:11] + "…" if len(name) > 12 else name)
+        return code, (name[:11] + "..." if len(name) > 12 else name)
     parts = re.split(r"[-]", mapping)
     if len(parts) >= 2:
         number = "-".join(parts[:-1])
         name = parts[-1]
-        return number, (name[:11] + "…" if len(name) > 12 else name)
+        return number, (name[:11] + "..." if len(name) > 12 else name)
     return (mapping[:9], mapping[9:]) if len(mapping) > 9 else (mapping, "")
 
 def extract_mappings(row, df, top_k=5):
@@ -225,14 +223,14 @@ def extract_mappings(row, df, top_k=5):
     return sorted(results, key=lambda x: x["final"], reverse=True)[:top_k]
 
 def score_to_colors(score):
-    if score >= 0.85:   return "#059669", "#34d399", "High Match",   "🟢"
-    elif score >= 0.70: return "#d97706", "#fcd34d", "Medium Match", "🟡"
-    else:               return "#dc2626", "#fca5a5", "Low Match",    "🔴"
+    if score >= 0.85:   return "#059669", "#34d399", "High Match",   "green"
+    elif score >= 0.70: return "#d97706", "#fcd34d", "Medium Match", "yellow"
+    else:               return "#dc2626", "#fca5a5", "Low Match",    "red"
 
 
-# ─────────────────────────────────────────
+# -----------------------------------------
 # PDF Export
-# ─────────────────────────────────────────
+# -----------------------------------------
 def generate_pdf(selected_id, source_text, mappings):
     try: from fpdf import FPDF
     except ImportError: return None
@@ -281,14 +279,14 @@ def generate_pdf(selected_id, source_text, mappings):
     return bytes(pdf.output())
 
 
-# ─────────────────────────────────────────
+# -----------------------------------------
 # HTML Viewer
-# ─────────────────────────────────────────
+# -----------------------------------------
 def create_viewer(selected_id, source_text, mappings):
-    W, H     = 560, 420
-    cx, cy   = 280, 210
-    BR, GR   = 38, 32
-    ORBIT    = 145
+    W, H   = 560, 420
+    cx, cy = 280, 210
+    BR, GR = 38, 32
+    ORBIT  = 145
 
     svg_lines = svg_nodes = svg_nums = ""
     n = len(mappings)
@@ -299,11 +297,11 @@ def create_viewer(selected_id, source_text, mappings):
         angle = (2 * math.pi / n) * idx - math.pi / 2
         x = cx + ORBIT * math.cos(angle)
         y = cy + ORBIT * math.sin(angle)
-        rank   = idx + 1
-        nid    = f"node_{rank}"
+        rank  = idx + 1
+        nid   = f"node_{rank}"
         col, badge, label, icon = score_to_colors(item["final"])
-        pct    = format_percent(item["final"])
-        code   = html.escape(item["short_code"])
+        pct   = format_percent(item["final"])
+        code  = html.escape(item["short_code"])
 
         mapping_data[nid] = {
             "rank": str(rank), "nist_control": item["mapping"],
@@ -314,12 +312,12 @@ def create_viewer(selected_id, source_text, mappings):
             "commonality": item["commonality"], "justification": item["justification"],
             "differences": item["differences"], "color": col, "icon": icon, "label": label,
             "domain": (
-                "Govern" if item["mapping"].startswith("GV") else
+                "Govern"   if item["mapping"].startswith("GV") else
                 "Identify" if item["mapping"].startswith("ID") else
-                "Protect" if item["mapping"].startswith("PR") else
-                "Detect" if item["mapping"].startswith("DE") else
-                "Respond" if item["mapping"].startswith("RS") else
-                "Recover" if item["mapping"].startswith("RC") else "Unknown"
+                "Protect"  if item["mapping"].startswith("PR") else
+                "Detect"   if item["mapping"].startswith("DE") else
+                "Respond"  if item["mapping"].startswith("RS") else
+                "Recover"  if item["mapping"].startswith("RC") else "Unknown"
             ),
         }
         summary_rows.append({"rank": str(rank), "nist": item["mapping"], "pct": pct, "color": col})
@@ -337,9 +335,9 @@ def create_viewer(selected_id, source_text, mappings):
   <text x="{x:.1f}" y="{y+9:.1f}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.9)" font-size="13" font-weight="700" font-family="Inter,sans-serif">{html.escape(pct)}</text>
 </g>\n"""
 
-    mdata_json  = json.dumps(mapping_data,  ensure_ascii=False)
-    srows_json  = json.dumps(summary_rows,  ensure_ascii=False)
-    src_json    = json.dumps(source_text,   ensure_ascii=False)
+    mdata_json  = json.dumps(mapping_data, ensure_ascii=False)
+    srows_json  = json.dumps(summary_rows, ensure_ascii=False)
+    src_json    = json.dumps(source_text,  ensure_ascii=False)
     src_id_json = json.dumps(str(selected_id), ensure_ascii=False)
     n_mappings  = len(mappings)
 
@@ -407,7 +405,7 @@ tr.trow.active td{{background:#0f2f3a}}
     <div class="graph-header">
       <div><div class="graph-badge">Control Mapping Graph</div></div>
       <div style="margin-left:6px">
-        <div class="graph-title">ECC–NIST Mapping</div>
+        <div class="graph-title">ECC-NIST Mapping</div>
         <div class="graph-subtitle">Click any node to inspect</div>
       </div>
     </div>
@@ -433,15 +431,15 @@ tr.trow.active td{{background:#0f2f3a}}
       </svg>
     </div>
     <div class="legend">
-      <div class="leg"><div class="legdot" style="background:#059669"></div>High ≥85%</div>
-      <div class="leg"><div class="legdot" style="background:#d97706"></div>Mid ≥70%</div>
+      <div class="leg"><div class="legdot" style="background:#059669"></div>High &gt;=85%</div>
+      <div class="leg"><div class="legdot" style="background:#d97706"></div>Mid &gt;=70%</div>
       <div class="leg"><div class="legdot" style="background:#dc2626"></div>Low &lt;70%</div>
     </div>
   </div>
   <div class="right-col">
     <div class="tbl-section">
       <div class="tbl-header">
-        <div class="tbl-title">📋 Results — <span style="color:#6366f1">{n_mappings} mapping(s)</span>&nbsp;for&nbsp;<b style="color:#818cf8">{html.escape(str(selected_id))}</b></div>
+        <div class="tbl-title">Results - <span style="color:#6366f1">{n_mappings} mapping(s)</span>&nbsp;for&nbsp;<b style="color:#818cf8">{html.escape(str(selected_id))}</b></div>
         <div class="tbl-sub">Click a row or node to view full details below</div>
       </div>
       <table>
@@ -451,15 +449,15 @@ tr.trow.active td{{background:#0f2f3a}}
     </div>
     <div class="detail-col" id="detail">
       <div class="placeholder">
-        🔗 Select a node or row to view full mapping details<br>
+        Select a node or row to view full mapping details<br>
         <span style="color:#334155;font-size:10px">Click the indigo ECC node for the source control</span>
       </div>
     </div>
   </div>
 </div>
 <script>
-const MD   = {mdata_json};
-const SR   = {srows_json};
+const MD       = {mdata_json};
+const SR       = {srows_json};
 const ECC_TEXT = {src_json};
 const ECC_ID   = {src_id_json};
 let activeRank = null;
@@ -478,39 +476,39 @@ SR.forEach(r => {{
 }});
 
 function esc(t) {{
-  if(!t) return "N/A";
+  if (!t) return "N/A";
   return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
 }}
 
 function setActive(rank) {{
   document.querySelectorAll(".trow").forEach(r => r.classList.remove("active"));
   const row = document.querySelector(`.trow[data-rank="${{rank}}"]`);
-  if(row) row.classList.add("active");
+  if (row) row.classList.add("active");
   document.querySelectorAll(".mnode").forEach(g => g.classList.remove("selected"));
   const node = document.querySelector(`.mnode[data-rank="${{rank}}"]`);
-  if(node) node.classList.add("selected");
+  if (node) node.classList.add("selected");
   activeRank = rank;
 }}
 
 function selectNode(rank, event) {{
-  if(event) {{ event.preventDefault(); event.stopPropagation(); }}
+  if (event) {{ event.preventDefault(); event.stopPropagation(); }}
   const item = MD[`node_${{rank}}`];
-  if(!item) return false;
+  if (!item) return false;
   setActive(rank);
   const detail = document.getElementById("detail");
   detail.innerHTML = `
     <div class="d-header">
       <div class="d-rank" style="background:${{item.color}}">${{item.rank}}</div>
       <div>
-        <div class="d-title">Mapping #${{item.rank}} — ${{esc(item.nist_control)}}</div>
-        <div class="d-sub">${{item.domain}} · ${{item.label}} ${{item.icon}}</div>
+        <div class="d-title">Mapping #${{item.rank}} - ${{esc(item.nist_control)}}</div>
+        <div class="d-sub">${{item.domain}} - ${{item.label}}</div>
       </div>
     </div>
     <div class="sgrid">
       <div class="scard main">
         <div class="slabel">Final Match Score</div>
         <div class="sval">${{item.final_pct}}</div>
-        <div class="ssub">${{item.final}} raw · ${{item.domain}}</div>
+        <div class="ssub">${{item.final}} raw - ${{item.domain}}</div>
       </div>
       <div class="scard emb">
         <div class="slabel">Embedding</div>
@@ -523,16 +521,16 @@ function selectNode(rank, event) {{
         <div class="ssub">${{item.ont}}</div>
       </div>
     </div>
-    <div class="conf-row">${{item.icon}} <b style="color:#e2e8f0">Confidence:</b> ${{item.label}}</div>
-    <div class="stitle">🎯 NIST Control Text</div>
+    <div class="conf-row"><b style="color:#e2e8f0">Confidence:</b> ${{item.label}}</div>
+    <div class="stitle">NIST Control Text</div>
     <div class="cbox"><b style="color:#818cf8">${{esc(item.nist_control)}}</b>
 
 ${{esc(item.nist_text)}}</div>
-    <div class="stitle">🤝 Commonality</div>
+    <div class="stitle">Commonality</div>
     <div class="cbox">${{esc(item.commonality)}}</div>
-    <div class="stitle">✅ Justification</div>
+    <div class="stitle">Justification</div>
     <div class="cbox">${{esc(item.justification)}}</div>
-    <div class="stitle">⚡ Differences</div>
+    <div class="stitle">Differences</div>
     <div class="cbox">${{esc(item.differences)}}</div>
   `;
   detail.scrollTop = 0;
@@ -540,24 +538,24 @@ ${{esc(item.nist_text)}}</div>
 }}
 
 function showEcc(event) {{
-  if(event) {{ event.preventDefault(); event.stopPropagation(); }}
+  if (event) {{ event.preventDefault(); event.stopPropagation(); }}
   document.querySelectorAll(".mnode").forEach(g => g.classList.remove("selected"));
   document.querySelectorAll(".trow").forEach(r => r.classList.remove("active"));
   activeRank = null;
   document.getElementById("detail").innerHTML = `
     <div class="d-header">
-      <div class="d-rank" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">⬡</div>
+      <div class="d-rank" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">E</div>
       <div>
-        <div class="d-title">ECC Control — ${{esc(ECC_ID)}}</div>
+        <div class="d-title">ECC Control - ${{esc(ECC_ID)}}</div>
         <div class="d-sub">Source control description</div>
       </div>
     </div>
-    <div class="stitle">🏷️ Control ID</div>
+    <div class="stitle">Control ID</div>
     <div class="cbox"><b style="color:#818cf8;font-size:14px">${{esc(ECC_ID)}}</b></div>
-    <div class="stitle">📄 Description</div>
+    <div class="stitle">Description</div>
     <div class="cbox" style="line-height:1.8">${{esc(ECC_TEXT)}}</div>
     <div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#0a0f1e;border:1px solid #1e293b;font-size:10px;color:#6366f1;font-weight:600">
-      💡 Click any outer node to view its NIST mapping details
+      Click any outer node to view its NIST mapping details
     </div>
   `;
   document.getElementById("detail").scrollTop = 0;
@@ -567,9 +565,9 @@ function showEcc(event) {{
 </body></html>"""
 
 
-# ─────────────────────────────────────────
+# -----------------------------------------
 # Main app
-# ─────────────────────────────────────────
+# -----------------------------------------
 DATA_FILE = "final_with_explanations_COMPLETE.csv"
 
 if os.path.exists(DATA_FILE):
@@ -585,7 +583,7 @@ if os.path.exists(DATA_FILE):
     if "selected_id" not in st.session_state:
         st.session_state.selected_id = all_ids[0]
 
-    # ── App header ──────────────────────────────────────────────────────
+    # App header
     st.markdown(
         f"""<div style="
             background:linear-gradient(135deg,#08111f 0%,#0f2f3a 58%,#164e63 100%);
@@ -598,7 +596,7 @@ if os.path.exists(DATA_FILE):
                       font-size:16px;font-weight:800;color:white;">E</div>
           <div>
             <div style="font-size:10px;font-weight:700;color:#67e8f9;
-                        text-transform:uppercase;letter-spacing:1px;">ECC–NIST Framework</div>
+                        text-transform:uppercase;letter-spacing:1px;">ECC-NIST Framework</div>
             <div style="font-size:20px;font-weight:800;color:#f8fafc;line-height:1.2;
                         font-family:'Inter',sans-serif;">Control Mapping Viewer</div>
             <div style="font-size:12px;color:#8aa3b8;margin-top:2px;">
@@ -609,20 +607,18 @@ if os.path.exists(DATA_FILE):
         unsafe_allow_html=True,
     )
 
-    # ═══════════════════════════════════════════════════════════════════
-    # NEW LAYOUT: 3 columns — Left (controls+search) | Center (graph) | Right (top-k+pipeline)
-    # ═══════════════════════════════════════════════════════════════════
+    # 3-column layout: Left (controls+search) | Center (graph) | Right (top-k+pipeline)
     col_left, col_center, col_right = st.columns([1.4, 4.0, 1.6])
 
-    # ── LEFT COLUMN: ECC Controls Search & Select ─────────────────────
+    # LEFT COLUMN - ECC Controls Search and Select
     with col_left:
         st.markdown(
             """<div style="background:linear-gradient(135deg,#0b1728 0%,#0f2f3a 100%);
                            border:1px solid #1d2b3f;border-radius:10px;
-                           padding:10px 14px 12px;margin-bottom:0;">
+                           padding:10px 14px 12px;">
                  <div style="font-size:9px;font-weight:800;color:#67e8f9;
                              text-transform:uppercase;letter-spacing:0.8px;
-                             margin-bottom:8px;">🔍 ECC Controls</div>""",
+                             margin-bottom:8px;">ECC Controls</div>""",
             unsafe_allow_html=True,
         )
 
@@ -644,7 +640,10 @@ if os.path.exists(DATA_FILE):
         if exact and exact != st.session_state.selected_id:
             st.session_state.selected_id = exact
 
-        default_idx = filtered.index(st.session_state.selected_id) if st.session_state.selected_id in filtered else 0
+        default_idx = (
+            filtered.index(st.session_state.selected_id)
+            if st.session_state.selected_id in filtered else 0
+        )
 
         st.markdown('<div class="ctrl-radio">', unsafe_allow_html=True)
         selected_id = st.radio(
@@ -665,9 +664,8 @@ if os.path.exists(DATA_FILE):
 
         st.session_state.selected_id = selected_id
 
-    # ── RIGHT COLUMN: Top-K + Pipeline ────────────────────────────────
+    # RIGHT COLUMN - Top-K and Pipeline
     with col_right:
-        # Top-K
         st.markdown(
             """<div class="topk-card">
               <div class="topk-title">Top-K</div>
@@ -682,7 +680,6 @@ if os.path.exists(DATA_FILE):
             label_visibility="collapsed",
         )
 
-        # Pipeline
         st.markdown(
             """<div class="pipeline-card">
               <div class="pipeline-title">Pipeline</div>
@@ -700,9 +697,9 @@ if os.path.exists(DATA_FILE):
         for step in steps:
             completed.append(step)
             rows_html = "".join(
-                f'<div style="font-size:11px;color:#86efac;padding:2px 0">✅ {s}</div>'
+                f'<div style="font-size:11px;color:#86efac;padding:2px 0">OK {s}</div>'
                 if s in completed else
-                f'<div style="font-size:11px;color:#334155;padding:2px 0">⬜ {s}</div>'
+                f'<div style="font-size:11px;color:#334155;padding:2px 0">-- {s}</div>'
                 for s in steps
             )
             pipe_box.markdown(
@@ -713,44 +710,45 @@ if os.path.exists(DATA_FILE):
             )
             time.sleep(0.12)
 
-    # ── Prepare data ──────────────────────────────────────────────────
+    # Prepare data (before rendering center column)
     row = df[df["ECC id control"].astype(str) == str(selected_id)].iloc[0]
     src_col  = find_col(list(df.columns), "Source Text")
     src_text = safe_value(row.get(src_col, "") if src_col else "")
     mappings = extract_mappings(row, df, top_k=top_k)
 
-    # ── CENTER COLUMN: Graph Viewer ───────────────────────────────────
+    # CENTER COLUMN - Graph Viewer + Export below
     with col_center:
         viewer_html = create_viewer(str(selected_id), src_text, mappings)
         components.html(viewer_html, height=700, scrolling=True)
 
-    # ── Export ─────────────────────────────────────────────────────────
-    st.markdown(
-        """<div style="height:1px;background:linear-gradient(90deg,#1e293b,#4f46e5,#1e293b);
-                       margin:12px 0 10px"></div>
-           <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">
-             Export Mapping Report
-           </div>""",
-        unsafe_allow_html=True,
-    )
+        # Export directly under the graph
+        pdf_bytes = generate_pdf(selected_id, src_text, mappings)
 
-    pdf_bytes = generate_pdf(selected_id, src_text, mappings)
-    if pdf_bytes:
-        st.download_button(
-            label="⬇  Export PDF Report",
-            data=pdf_bytes,
-            file_name=f"{selected_id}_mapping_report.pdf",
-            mime="application/pdf",
+        st.markdown(
+            """<div style="height:1px;background:linear-gradient(90deg,#1e293b,#4f46e5,#1e293b);
+                           margin:6px 0 8px"></div>
+               <div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">
+                 Export Mapping Report
+               </div>""",
+            unsafe_allow_html=True,
         )
-    else:
-        st.warning("PDF export requires `fpdf2` — install with: `pip install fpdf2`")
+
+        if pdf_bytes:
+            st.download_button(
+                label="Download PDF Report",
+                data=pdf_bytes,
+                file_name=f"{selected_id}_mapping_report.pdf",
+                mime="application/pdf",
+            )
+        else:
+            st.warning("PDF export requires fpdf2 - install with: pip install fpdf2")
 
 else:
     st.markdown(
         f"""<div style="background:#1e293b;border:1px solid #dc2626;border-radius:10px;
                         padding:24px;margin-top:30px;">
           <div style="font-size:16px;font-weight:700;color:#fca5a5;margin-bottom:8px;">
-            ⚠️ Data file not found
+            Data file not found
           </div>
           <div style="color:#94a3b8;font-size:14px;">
             Make sure <code style="color:#818cf8">{DATA_FILE}</code> is in the same folder.
