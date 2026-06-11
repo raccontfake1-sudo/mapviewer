@@ -713,18 +713,6 @@ if os.path.exists(DATA_FILE):
     if "selected_id" not in st.session_state:
         st.session_state.selected_id = all_ids[0]
 
-    # ── Handle grid pill click — query param triggers rerun ─────────────────
-    _qp = st.query_params
-    if "ctrl_pick" in _qp:
-        _picked = _qp["ctrl_pick"]
-        if _picked in all_ids and _picked != st.session_state.selected_id:
-            st.session_state.selected_id = _picked
-            st.query_params.clear()
-            st.rerun()
-        elif _picked in all_ids:
-            # Already matches, just clear the param
-            st.query_params.clear()
-
     # ── App Header ──────────────────────────────────────────────────────────
     st.markdown(
         f"""<div style="
@@ -769,61 +757,91 @@ if os.path.exists(DATA_FILE):
             cur = filtered[0]
             st.session_state.selected_id = cur
 
-        # Build pill buttons — each one is a real anchor link with ?ctrl_pick=ID
-        # No JS needed: clicking navigates, Streamlit reruns, query param handler at
-        # top of app picks it up, updates session_state, clears param, reruns again.
-        base_url = "?"
-        pills_html = ""
-        for cid in filtered:
-            cls = "cpill active" if cid == cur else "cpill"
-            href = "?" + urllib.parse.urlencode({"ctrl_pick": cid})
-            pills_html += f'<a class="{cls}" href="{href}">{cid}</a>'
-
         n_shown = len(filtered)
         n_total = len(all_ids)
 
-        grid_html = f"""
-<div style="background:#0b1728;border:1px solid #1d2b3f;border-radius:10px;
-            overflow:hidden;margin-top:4px;">
-  <div style="font-size:10px;font-weight:800;color:#67e8f9;text-transform:uppercase;
-              letter-spacing:.9px;padding:8px 10px 5px;border-bottom:1px solid #1d2b3f;">
-    ECC Controls
-    <span style="color:#475569;font-weight:400;font-size:9px;margin-left:6px;">
-      {n_shown} of {n_total}
-    </span>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
-              padding:6px 8px 10px;max-height:400px;overflow-y:auto;
-              scrollbar-width:thin;scrollbar-color:#28415c #0b1728;">
-    {pills_html}
-  </div>
-</div>
-<style>
-.cpill{{
-  background:#0a1628;border:1px solid #1d2b3f;border-radius:6px;
-  color:#94a3b8;font-size:13px;font-weight:700;font-family:Inter,sans-serif;
-  padding:7px 3px;text-align:center;cursor:pointer;
-  transition:all .12s;white-space:normal;word-break:break-all;
-  line-height:1.3;width:100%;display:flex;align-items:center;
-  justify-content:center;min-height:34px;text-decoration:none;
-}}
-.cpill:hover{{background:#112338;border-color:#2d4a6a;color:#c8dce8;}}
-.cpill.active{{
-  background:linear-gradient(135deg,#0f766e,#2563eb);
-  border-color:transparent;color:#fff;font-weight:800;
-  box-shadow:0 0 8px rgba(20,184,166,.35);
-}}
-</style>
-<script>
-// Scroll active pill into view on page load
-(function(){{
-  const a = document.querySelector(".cpill.active");
-  if (a) a.scrollIntoView({{block:"nearest", behavior:"smooth"}});
-}})();
-</script>
-"""
-        st.markdown(grid_html, unsafe_allow_html=True)
-        selected_id = st.session_state.selected_id
+        st.markdown(
+            f'''<div style="font-size:9px;font-weight:700;color:#67e8f9;
+                text-transform:uppercase;letter-spacing:.9px;margin:4px 0 2px;">
+                ECC Controls
+                <span style="color:#475569;font-weight:400;margin-left:6px;">
+                {n_shown} of {n_total}</span></div>''',
+            unsafe_allow_html=True,
+        )
+
+        # Native st.radio — Streamlit handles all state and reruns natively.
+        # CSS below converts the vertical radio list into a 3-column pill grid.
+        st.markdown('''<style>
+        /* Wrap the radio group in a 3-col grid */
+        div[data-testid="stRadio"] > div[role="radiogroup"] {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 5px !important;
+            max-height: 420px !important;
+            overflow-y: auto !important;
+            padding: 4px 2px !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: #28415c #0b1728 !important;
+        }
+        div[data-testid="stRadio"] > div[role="radiogroup"]::-webkit-scrollbar { width: 4px; }
+        div[data-testid="stRadio"] > div[role="radiogroup"]::-webkit-scrollbar-thumb {
+            background: #28415c; border-radius: 4px;
+        }
+        /* Each label becomes a pill */
+        div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+            background: #0a1628 !important;
+            border: 1px solid #1d2b3f !important;
+            border-radius: 6px !important;
+            padding: 6px 2px !important;
+            margin: 0 !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-height: 34px !important;
+            transition: background .12s !important;
+        }
+        div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
+            background: #112338 !important;
+            border-color: #2d4a6a !important;
+        }
+        /* Hide the actual radio circle dot */
+        div[data-testid="stRadio"] > div[role="radiogroup"] > label > div:first-child {
+            display: none !important;
+        }
+        /* The text span */
+        div[data-testid="stRadio"] > div[role="radiogroup"] > label span[data-baseweb] {
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            color: #94a3b8 !important;
+            font-family: Inter, sans-serif !important;
+            line-height: 1.3 !important;
+            word-break: break-all !important;
+            white-space: normal !important;
+            text-align: center !important;
+        }
+        /* Selected state — target checked input sibling */
+        div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
+            background: linear-gradient(135deg,#0f766e,#2563eb) !important;
+            border-color: transparent !important;
+            box-shadow: 0 0 8px rgba(20,184,166,.35) !important;
+        }
+        div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) span[data-baseweb] {
+            color: #fff !important;
+            font-weight: 800 !important;
+        }
+        </style>''', unsafe_allow_html=True)
+
+        idx = filtered.index(cur) if cur in filtered else 0
+        selected_id = st.radio(
+            "ecc_control",
+            filtered,
+            index=idx,
+            key="ecc_radio",
+            label_visibility="collapsed",
+        )
+        if selected_id != st.session_state.selected_id:
+            st.session_state.selected_id = selected_id
 
     # ── RIGHT: Top-K + Workflow Steps (static label) + Export ───────────────
     with col_right:
