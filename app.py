@@ -791,58 +791,59 @@ html,body{{
   height:100vh;padding:0;
 }}
 .header{{
-  font-size:9px;font-weight:800;color:#67e8f9;
+  font-size:10px;font-weight:800;color:#67e8f9;
   text-transform:uppercase;letter-spacing:0.9px;
-  padding:10px 10px 6px;border-bottom:1px solid #1d2b3f;
+  padding:8px 10px 5px;border-bottom:1px solid #1d2b3f;
   flex-shrink:0;
 }}
 .count{{
-  font-size:10px;color:#475569;padding:4px 10px 6px;
-  flex-shrink:0;
+  font-size:10px;color:#475569;padding:3px 10px 4px;flex-shrink:0;
 }}
 .grid{{
   flex:1;overflow-y:auto;overflow-x:hidden;
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:4px;
+  gap:5px;
   padding:6px 8px 10px;
   align-content:start;
   scrollbar-width:thin;
   scrollbar-color:#28415c #0b1728;
 }}
-.grid::-webkit-scrollbar{{width:3px}}
+.grid::-webkit-scrollbar{{width:4px}}
 .grid::-webkit-scrollbar-track{{background:#0b1728}}
-.grid::-webkit-scrollbar-thumb{{background:#28415c;border-radius:3px}}
+.grid::-webkit-scrollbar-thumb{{background:#28415c;border-radius:4px}}
 .cpill{{
   background:#0a1628;
   border:1px solid #1d2b3f;
   border-radius:6px;
   color:#94a3b8;
-  font-size:11px;font-weight:600;
+  font-size:13px;
+  font-weight:700;
   font-family:'Inter',sans-serif;
-  padding:5px 4px;
+  padding:7px 3px;
   text-align:center;
   cursor:pointer;
   transition:all 0.12s ease;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  white-space:normal;
+  word-break:break-all;
+  line-height:1.3;
   width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:34px;
 }}
 .cpill:hover{{
-  background:#102235;
+  background:#112338;
   border-color:#2d4a6a;
   color:#c8dce8;
 }}
 .cpill.active{{
   background:linear-gradient(135deg,#0f766e,#2563eb);
   border-color:transparent;
-  color:white;
-  box-shadow:0 0 8px rgba(20,184,166,0.3);
-}}
-@media(max-width:400px){{
-  .grid{{grid-template-columns:repeat(2,1fr);}}
-  .cpill{{font-size:10px;}}
+  color:#fff;
+  font-weight:800;
+  box-shadow:0 0 8px rgba(20,184,166,0.35);
 }}
 </style>
 </head><body>
