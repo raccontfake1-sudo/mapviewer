@@ -34,18 +34,18 @@ st.markdown(
         }
         .side-kicker {
             color: #67e8f9 !important;
-            font-size: 8px;
+            font-size: 9px;
             font-weight: 800;
-            letter-spacing: 0.6px;
+            letter-spacing: 0.7px;
             text-transform: uppercase;
-            margin-bottom: 1px;
+            margin-bottom: 2px;
         }
         .side-title {
             color: #f8fafc !important;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 800;
-            line-height: 1.1;
-            margin-top: 1px;
+            line-height: 1.2;
+            margin-top: 2px;
         }
         .side-count {
             color: #8aa3b8 !important;
@@ -78,10 +78,13 @@ st.markdown(
             border-radius: 4px;
         }
         section[data-testid="stSidebar"] div[role="radiogroup"] label {
-            padding: 3px 5px !important;
+            padding: 4px 6px !important;
             margin: 1px 0 !important;
             border-radius: 4px !important;
             transition: background 0.15s ease !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
         }
         section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
             background: #102235 !important;
@@ -89,9 +92,9 @@ st.markdown(
         section[data-testid="stSidebar"] div[role="radiogroup"] label div,
         section[data-testid="stSidebar"] div[role="radiogroup"] label p,
         section[data-testid="stSidebar"] div[role="radiogroup"] label span {
-            font-size: 10px !important;
+            font-size: 12px !important;
             font-weight: 600 !important;
-            line-height: 1.15 !important;
+            line-height: 1.3 !important;
             text-transform: none !important;
             letter-spacing: 0 !important;
             color: #d5e4f0 !important;
@@ -99,9 +102,9 @@ st.markdown(
 
         section[data-testid="stSidebar"] label,
         section[data-testid="stSidebar"] label p {
-            font-size: 10px !important; font-weight: 600 !important;
-            text-transform: uppercase !important; letter-spacing: 0.8px !important;
-            color: #7892a8 !important; margin-bottom: 4px !important;
+            font-size: 11px !important; font-weight: 700 !important;
+            text-transform: uppercase !important; letter-spacing: 0.9px !important;
+            color: #7892a8 !important; margin-bottom: 6px !important;
         }
 
         .main .block-container,
