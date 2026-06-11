@@ -878,7 +878,7 @@ if os.path.exists(DATA_FILE):
         for step in steps:
             completed.append(step)
             rows_html = "".join(
-                f'<div style="font-size:11px;color:#86efac;padding:2px 0">OK {s}</div>'
+                f'<div style="font-size:11px;color:#86efac;padding:2px 0"><span style="display:inline-block;width:14px;height:14px;background:#22c55e;border-radius:3px;text-align:center;font-size:9px;line-height:14px;margin-right:5px;font-weight:800;">&#10003;</span>{s}</div>'
                 if s in completed else
                 f'<div style="font-size:11px;color:#334155;padding:2px 0">-- {s}</div>'
                 for s in steps
