@@ -15,7 +15,7 @@ st.markdown(
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-        .stApp { background: #0a1628; color: #e2e8f0; }
+        .stApp { background: #08111f; color: #e2e8f0; }
 
         section[data-testid="stSidebar"] {
             background: #07111f;
@@ -27,41 +27,39 @@ st.markdown(
         section[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
         .side-head {
             border: 1px solid #1d2b3f;
-            border-radius: 6px;
-            padding: 5px 8px;
-            margin-bottom: 6px;
+            border-radius: 8px;
+            padding: 9px 10px;
+            margin-bottom: 8px;
             background: linear-gradient(135deg,#0b1728 0%,#0f2f3a 100%);
         }
         .side-kicker {
             color: #67e8f9 !important;
-            font-size: 8px;
+            font-size: 9px;
             font-weight: 800;
-            letter-spacing: 0.6px;
+            letter-spacing: 0.8px;
             text-transform: uppercase;
-            margin-bottom: 1px;
         }
         .side-title {
             color: #f8fafc !important;
-            font-size: 12px;
+            font-size: 15px;
             font-weight: 800;
-            line-height: 1.1;
-            margin-top: 1px;
+            line-height: 1.2;
+            margin-top: 2px;
         }
         .side-count {
             color: #8aa3b8 !important;
-            font-size: 9px;
-            margin: 2px 0 4px;
+            font-size: 11px;
+            margin: -2px 0 8px;
         }
         section[data-testid="stSidebar"] input[type="text"] {
             background: #0f1b2d !important; border: 1px solid #28415c !important;
-            border-radius: 6px !important; color: #f1f5f9 !important;
-            font-size: 11px !important; padding: 5px 7px !important;
-            height: 28px !important;
+            border-radius: 8px !important; color: #f1f5f9 !important;
+            font-size: 13px !important; padding: 7px 10px !important;
         }
-        section[data-testid="stSidebar"] input[type="text"]::placeholder { color: #64748b !important; font-size: 10px !important; }
+        section[data-testid="stSidebar"] input[type="text"]::placeholder { color: #64748b !important; }
         section[data-testid="stSidebar"] .stTextInput,
         section[data-testid="stSidebar"] .stRadio {
-            margin-bottom: 0.25rem !important;
+            margin-bottom: 0.35rem !important;
         }
         section[data-testid="stSidebar"] div[role="radiogroup"] {
             max-height: calc(100vh - 190px);
@@ -78,9 +76,9 @@ st.markdown(
             border-radius: 4px;
         }
         section[data-testid="stSidebar"] div[role="radiogroup"] label {
-            padding: 3px 5px !important;
+            padding: 4px 7px !important;
             margin: 1px 0 !important;
-            border-radius: 4px !important;
+            border-radius: 6px !important;
             transition: background 0.15s ease !important;
         }
         section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
@@ -89,9 +87,9 @@ st.markdown(
         section[data-testid="stSidebar"] div[role="radiogroup"] label div,
         section[data-testid="stSidebar"] div[role="radiogroup"] label p,
         section[data-testid="stSidebar"] div[role="radiogroup"] label span {
-            font-size: 10px !important;
+            font-size: 12px !important;
             font-weight: 600 !important;
-            line-height: 1.15 !important;
+            line-height: 1.25 !important;
             text-transform: none !important;
             letter-spacing: 0 !important;
             color: #d5e4f0 !important;
@@ -108,7 +106,7 @@ st.markdown(
         .block-container,
         div[data-testid="stAppViewBlockContainer"] {
             padding: 0.65rem 1rem 1.25rem !important;
-            margin-top: -15px !important;
+            margin-top: 0 !important;
             max-width: 1540px !important;
         }
         .main .block-container > div:first-child { margin-top: 0 !important; }
@@ -152,7 +150,6 @@ st.markdown(
             border-radius: 8px;
             padding: 10px 12px 6px;
             min-height: 54px;
-            margin-top: 10px;
         }
         .pipeline-title {
             font-size: 10px;
@@ -203,16 +200,6 @@ st.markdown(
             background: #67e8f9 !important;
             border-color: #ffffff !important;
             box-shadow: 0 0 0 2px rgba(103,232,249,0.18) !important;
-        }
-
-        /* Hide sidebar collapse/expand button (sidebar icon button) */
-        button[aria-label="More options"],
-        button[aria-label="View fullscreen"],
-        button[data-testid="stBaseButton-headerNoPadding"],
-        button[data-testid="baseButton-secondary"],
-        button[data-testid="icon-button"],
-        button.icon-button {
-            display: none !important;
         }
     </style>
     """,
@@ -382,10 +369,11 @@ def generate_pdf(selected_id, source_text, mappings):
 # HTML Viewer
 # ─────────────────────────────────────────
 def create_viewer(selected_id, source_text, mappings):
+    # Graph geometry
     W, H     = 560, 420
     cx, cy   = 280, 210
-    BR, GR   = 38, 32
-    ORBIT    = 145
+    BR, GR   = 38, 32      # blue/green radius
+    ORBIT    = 145          # orbit radius
 
     svg_lines = svg_nodes = svg_nums = ""
     n = len(mappings)
@@ -424,19 +412,22 @@ def create_viewer(selected_id, source_text, mappings):
             "pct": pct, "color": col,
         })
 
+        # connector line
         dx, dy = x - cx, y - cy
         dist = math.sqrt(dx*dx + dy*dy)
         sx = cx + (BR / dist) * dx;  sy = cy + (BR / dist) * dy
         ex = x  - (GR / dist) * dx;  ey = y  - (GR / dist) * dy
         svg_lines += f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" y2="{ey:.1f}" stroke="{col}" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.55"/>\n'
 
-        svg_nums += f'<text x="{x:.1f}" y="{y - GR - 8:.1f}" text-anchor="middle" fill="{col}" font-size="14" font-weight="800" font-family="Inter,sans-serif">#{rank}</text>\n'
+        # rank label
+        svg_nums += f'<text x="{x:.1f}" y="{y - GR - 8:.1f}" text-anchor="middle" fill="{col}" font-size="10" font-weight="700" font-family="Inter,sans-serif">#{rank}</text>\n'
 
+        # node group  ← onclick stores rank in JS, nodes never removed
         svg_nodes += f"""<g class="mnode" onclick="return selectNode({rank}, event)" data-rank="{rank}" data-color="{col}">
   <circle cx="{x:.1f}" cy="{y:.1f}" r="{GR+6}" fill="{col}" opacity="0.15" class="gring"/>
   <circle cx="{x:.1f}" cy="{y:.1f}" r="{GR}" fill="{col}"/>
-  <text x="{x:.1f}" y="{y-8:.1f}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="800" font-family="Inter,sans-serif">{code}</text>
-  <text x="{x:.1f}" y="{y+10:.1f}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.9)" font-size="16" font-weight="700" font-family="Inter,sans-serif">{html.escape(pct)}</text>
+  <text x="{x:.1f}" y="{y-7:.1f}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="800" font-family="Inter,sans-serif">{code}</text>
+  <text x="{x:.1f}" y="{y+9:.1f}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.9)" font-size="13" font-weight="700" font-family="Inter,sans-serif">{html.escape(pct)}</text>
 </g>\n"""
 
     mdata_json   = json.dumps(mapping_data,  ensure_ascii=False)
@@ -447,28 +438,30 @@ def create_viewer(selected_id, source_text, mappings):
 
     return f"""<!DOCTYPE html><html><head>
 <meta charset="utf-8">
-<link rel="stylesheet" href__="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
-html,body{{font-family:'Inter',sans-serif;background:#0a1628;color:#e2e8f0;min-height:100%;overflow:auto}}
+html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;min-height:100%;overflow:auto}}
 
+/* ── outer shell: two columns side-by-side, full viewport ── */
 .shell{{
   display:flex;width:100%;height:680px;min-height:680px;overflow:hidden;
   border:1px solid #1d2b3f;border-radius:12px;
   box-shadow:0 18px 42px rgba(0,0,0,0.22);
 }}
 
+/* ── LEFT: graph ── */
 .graph-col{{
   flex:0 0 58%;
   display:flex;flex-direction:column;
-  background:radial-gradient(circle at 50% 40%,rgba(37,99,235,0.14),transparent 34%),
-             linear-gradient(160deg,#0a1628 0%,#102a43 56%,#0f1e3d 100%);
+  background:radial-gradient(circle at 50% 40%,rgba(20,184,166,0.14),transparent 34%),
+             linear-gradient(160deg,#08111f 0%,#102a43 56%,#062f3a 100%);
   border-right:1px solid #1d2b3f;
   position:relative;overflow:hidden;
 }}
 .graph-header{{
   display:flex;align-items:center;gap:10px;
-  padding:10px 16px 6px;
+  padding:14px 18px 10px;
   border-bottom:1px solid #1d2b3f;
   flex-shrink:0;
 }}
@@ -488,15 +481,17 @@ html,body{{font-family:'Inter',sans-serif;background:#0a1628;color:#e2e8f0;min-h
 .leg{{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:#8aa3b8}}
 .legdot{{width:9px;height:9px;border-radius:50%;flex-shrink:0}}
 
+/* ── RIGHT: table + detail, scrolls independently ── */
 .right-col{{
   flex:1;min-width:320px;display:flex;flex-direction:column;
   background:#0b1424;overflow:hidden;
 }}
 
+/* Summary table (sticky top of right col) */
 .tbl-section{{flex-shrink:0;border-bottom:1px solid #1d2b3f}}
-.tbl-header{{padding:10px 16px 6px;background:#0b1424}}
+.tbl-header{{padding:12px 16px 8px;background:#0b1424}}
 .tbl-title{{font-size:12px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:6px}}
-.tbl-sub{{font-size:10px;color:#6b8298;margin-top:1px}}
+.tbl-sub{{font-size:10px;color:#6b8298;margin-top:2px}}
 table{{width:100%;border-collapse:collapse;font-size:12px}}
 th{{
   background:linear-gradient(135deg,#0f766e,#2563eb);
@@ -518,6 +513,7 @@ tr.trow.active td{{background:#0f2f3a}}
   padding:2px 9px;font-weight:700;font-size:10px;
 }}
 
+/* Detail panel (scrollable) */
 .detail-col{{
   flex:1;min-height:0;overflow-y:auto;padding:14px 16px 22px;
   scrollbar-width:thin;scrollbar-color:#28415c #0b1424;
@@ -533,6 +529,7 @@ tr.trow.active td{{background:#0f2f3a}}
   border-radius:10px;margin-top:6px;line-height:1.8;
 }}
 
+/* Detail card elements */
 .d-header{{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #1d2b3f}}
 .d-rank{{
   width:28px;height:28px;border-radius:50%;
@@ -549,10 +546,8 @@ tr.trow.active td{{background:#0f2f3a}}
 }}
 .cbox{{
   border:1px solid #1d2b3f;border-radius:8px;
-  padding:8px 10px;font-size:11px;line-height:1.4;
-  color:#a8bacb;background:#08111f;
-  white-space:normal;
-  display:inline-block;
+  padding:8px 10px;font-size:11px;line-height:1.6;
+  color:#a8bacb;background:#08111f;white-space:pre-wrap;
 }}
 
 .sgrid{{display:grid;grid-template-columns:1fr 1fr;gap:6px}}
@@ -571,6 +566,7 @@ tr.trow.active td{{background:#0f2f3a}}
   font-size:11px;color:#a8bacb;font-weight:500;
 }}
 
+/* SVG nodes */
 .mnode,.cnode{{cursor:pointer;pointer-events:all;transition:filter 0.15s ease,opacity 0.15s ease}}
 .mnode circle,.cnode circle{{pointer-events:visiblePainted;transition:stroke 0.15s ease,opacity 0.15s ease,transform 0.15s ease}}
 .mnode:hover .gring{{opacity:0.35!important}}
@@ -582,6 +578,7 @@ tr.trow.active td{{background:#0f2f3a}}
 <body>
 <div class="shell">
 
+  <!-- LEFT: graph -->
   <div class="graph-col">
     <div class="graph-header">
       <div>
@@ -595,21 +592,25 @@ tr.trow.active td{{background:#0f2f3a}}
 
     <div class="svg-wrap">
       <svg width="{W}" height="{H}" viewBox="0 0 {W} {H}">
+        <!-- orbit ring -->
         <circle cx="{cx}" cy="{cy}" r="{ORBIT}"
                 fill="none" stroke="#1e293b" stroke-width="1"
                 stroke-dasharray="3,6"/>
 
         {svg_lines}
 
+        <!-- ECC centre -->
         <g class="cnode" onclick="return showEcc(event)">
           <circle cx="{cx}" cy="{cy}" r="{BR+12}" fill="#6366f1" opacity="0.12"/>
           <circle cx="{cx}" cy="{cy}" r="{BR}"
                   fill="url(#cgrad)" filter="drop-shadow(0 0 10px rgba(99,102,241,0.5))"/>
-          <text x="{cx}" y="{cy-8}" text-anchor="middle" dominant-baseline="middle"
-                fill="white" font-size="16" font-weight="800" font-family="Inter,sans-serif">{html.escape(str(selected_id))}</text>
-          <text x="{cx}" y="{cy+10}" text-anchor="middle" dominant-baseline="middle"
-                fill="rgba(255,255,255,0.5)" font-size="12" font-weight="700"
-                font-family="Inter,sans-serif">click</text>
+          <text x="{cx}" y="{cy-9}" text-anchor="middle" dominant-baseline="middle"
+                fill="white" font-size="14" font-weight="800" font-family="Inter,sans-serif">ECC</text>
+          <text x="{cx}" y="{cy+8}" text-anchor="middle" dominant-baseline="middle"
+                fill="rgba(255,255,255,0.8)" font-size="11" font-weight="700"
+                font-family="Inter,sans-serif">{html.escape(str(selected_id))}</text>
+          <text x="{cx}" y="{cy+22}" text-anchor="middle" dominant-baseline="middle"
+                fill="rgba(255,255,255,0.4)" font-size="8" font-family="Inter,sans-serif">click</text>
         </g>
 
         {svg_nodes}
@@ -631,8 +632,10 @@ tr.trow.active td{{background:#0f2f3a}}
     </div>
   </div>
 
+  <!-- RIGHT: table + detail -->
   <div class="right-col">
 
+    <!-- summary table -->
     <div class="tbl-section">
       <div class="tbl-header">
         <div class="tbl-title">📋 Results — <span style="color:#6366f1">{n_mappings} mapping(s)</span>&nbsp;for&nbsp;<b style="color:#818cf8">{html.escape(str(selected_id))}</b></div>
@@ -644,6 +647,7 @@ tr.trow.active td{{background:#0f2f3a}}
       </table>
     </div>
 
+    <!-- detail (scrollable) -->
     <div class="detail-col" id="detail">
       <div class="placeholder">
         🔗 Select a node or row to view full mapping details<br>
@@ -661,6 +665,7 @@ const ECC_TEXT = {src_json};
 const ECC_ID   = {src_id_json};
 let activeRank = null;
 
+/* ── Build summary table ── */
 SR.forEach(r => {{
   const tr = document.createElement("tr");
   tr.className = "trow";
@@ -681,9 +686,11 @@ function esc(t) {{
 }}
 
 function setActive(rank) {{
+  /* highlight table row */
   document.querySelectorAll(".trow").forEach(r => r.classList.remove("active"));
   const row = document.querySelector(`.trow[data-rank="${{rank}}"]`);
   if(row) row.classList.add("active");
+  /* highlight SVG node */
   document.querySelectorAll(".mnode").forEach(g => g.classList.remove("selected"));
   const node = document.querySelector(`.mnode[data-rank="${{rank}}"]`);
   if(node) node.classList.add("selected");
@@ -729,16 +736,18 @@ function selectNode(rank, event) {{
     <div class="conf-row">${{item.icon}} <b style="color:#e2e8f0">Confidence:</b> ${{item.label}}</div>
 
     <div class="stitle">🎯 NIST Control Text</div>
-    <div class="cbox" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><b style="color:#818cf8">${{esc(item.nist_control)}}</b> ${{esc(item.nist_text)}}</div>
+    <div class="cbox"><b style="color:#818cf8">${{esc(item.nist_control)}}</b>
+
+${{esc(item.nist_text)}}</div>
 
     <div class="stitle">🤝 Commonality</div>
-    <div class="cbox" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${{esc(item.commonality)}}</div>
+    <div class="cbox">${{esc(item.commonality)}}</div>
 
     <div class="stitle">✅ Justification</div>
-    <div class="cbox" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${{esc(item.justification)}}</div>
+    <div class="cbox">${{esc(item.justification)}}</div>
 
     <div class="stitle">⚡ Differences</div>
-    <div class="cbox" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${{esc(item.differences)}}</div>
+    <div class="cbox">${{esc(item.differences)}}</div>
   `;
   detail.scrollTop = 0;
   return false;
@@ -749,6 +758,7 @@ function showEcc(event) {{
     event.preventDefault();
     event.stopPropagation();
   }}
+  /* deselect nodes */
   document.querySelectorAll(".mnode").forEach(g => g.classList.remove("selected"));
   document.querySelectorAll(".trow").forEach(r => r.classList.remove("active"));
   activeRank = null;
@@ -764,7 +774,7 @@ function showEcc(event) {{
     <div class="stitle">🏷️ Control ID</div>
     <div class="cbox"><b style="color:#818cf8;font-size:14px">${{esc(ECC_ID)}}</b></div>
     <div class="stitle">📄 Description</div>
-    <div class="cbox" style="line-height:1.4;white-space:normal;display:inline-block;">${{esc(ECC_TEXT)}}</div>
+    <div class="cbox" style="line-height:1.8">${{esc(ECC_TEXT)}}</div>
     <div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#0a0f1e;border:1px solid #1e293b;font-size:10px;color:#6366f1;font-weight:600">
       💡 Click any outer node to view its NIST mapping details
     </div>
@@ -789,7 +799,6 @@ if os.path.exists(DATA_FILE):
         st.error("Column 'ECC id control' was not found in the CSV file.")
         st.stop()
 
-    # ── Sidebar: ECC Controls with search ──
     st.sidebar.markdown(
         """
         <div class="side-head">
@@ -836,13 +845,17 @@ if os.path.exists(DATA_FILE):
 
     st.markdown(
         f"""<div style="
-            background:linear-gradient(135deg,#08111f 0%,#0f1e3d 58%,#162e63 100%);
+            background:linear-gradient(135deg,#08111f 0%,#0f2f3a 58%,#164e63 100%);
             border:1px solid #245064;
             border-radius:10px;padding:12px 20px;
             display:flex;align-items:center;gap:18px;
             box-shadow:0 10px 30px rgba(0,0,0,0.18);
-            margin-bottom:10px;margin-top:-5px;
+            margin-bottom:10px;
         ">
+          <div style="flex-shrink:0;width:40px;height:40px;border-radius:50%;
+                      background:linear-gradient(135deg,#14b8a6,#2563eb);
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:16px;font-weight:800;color:white;">E</div>
           <div>
             <div style="font-size:10px;font-weight:700;color:#67e8f9;
                         text-transform:uppercase;letter-spacing:1px;">ECC–NIST Framework</div>
@@ -856,44 +869,37 @@ if os.path.exists(DATA_FILE):
         unsafe_allow_html=True,
     )
 
-    # ── Main viewer + right-side controls ──
+    # ── Main viewer + right-side controls ───────────────────────────────
     col_v, col_p = st.columns([4.4, 1.65])
 
     with col_p:
-        # Top-K card + slider
-        st.markdown(
-            """<div class="topk-card">
-              <div class="topk-title">Top-K</div>
-              <div class="topk-sub">Mappings</div>
-            </div>""",
-            unsafe_allow_html=True,
-        )
-        top_k = st.select_slider(
-            "Top-K",
-            options=list(range(1, 6)),
-            value=5,
-            label_visibility="collapsed",
-        )
-
-        # Pipeline card stacked below Top-K
-        st.markdown(
-            """<div class="pipeline-card">
-              <div class="pipeline-title">Pipeline</div>
-              <div class="pipeline-sub">Status</div>
-            </div>""",
-            unsafe_allow_html=True,
-        )
+        topk_col, pipe_col = st.columns([1, 1])
+        with topk_col:
+            st.markdown(
+                """<div class="topk-card">
+                  <div class="topk-title">Top-K</div>
+                  <div class="topk-sub">Mappings</div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+            top_k = st.select_slider(
+                "Top-K",
+                options=list(range(1, 6)),
+                value=5,
+                label_visibility="collapsed",
+            )
+        with pipe_col:
+            st.markdown(
+                """<div class="pipeline-card">
+                  <div class="pipeline-title">Pipeline</div>
+                  <div class="pipeline-sub">Status</div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
         pipe_box = st.empty()
-        steps = [
-            "Load ECC Control",
-            "Load NIST Controls",
-            "Extract Metadata",
-            "Semantic Embeddings",
-            "Ontology Scoring",
-            "Confidence Match",
-            "AI Explanation",
-            "Return Top-K",
-        ]
+        steps = ["Load ECC Control","Load NIST Controls","Extract Metadata",
+                 "Semantic Embeddings","Ontology Scoring","Confidence Match",
+                 "AI Explanation","Return Top-K"]
         completed = []
         for step in steps:
             completed.append(step)
@@ -906,7 +912,7 @@ if os.path.exists(DATA_FILE):
             pipe_box.markdown(
                 f'<div style="background:linear-gradient(135deg,#0b1728,#103044);'
                 f'border:1px solid #245064;border-radius:10px;padding:10px 12px;'
-                f'margin-top:6px">{rows_html}</div>',
+                f'margin-top:8px">{rows_html}</div>',
                 unsafe_allow_html=True,
             )
             time.sleep(0.12)
@@ -917,7 +923,7 @@ if os.path.exists(DATA_FILE):
         viewer_html = create_viewer(str(selected_id), src_text, mappings)
         components.html(viewer_html, height=700, scrolling=True)
 
-    # ── Export ──
+    # ── Export (only thing below) ──────────────────────────────────────
     st.markdown(
         """<div style="height:1px;background:linear-gradient(90deg,#1e293b,#4f46e5,#1e293b);
                        margin:12px 0 10px"></div>
