@@ -880,27 +880,13 @@ if os.path.exists(DATA_FILE):
             rows = ""
             for s in steps:
                 if s in completed:
-                    rows += (
-                        f'<div style="font-size:11px;color:#86efac;padding:2px 0;'
-                        f'display:flex;align-items:center;gap:6px;">'
-                        f'<span style="display:inline-flex;align-items:center;justify-content:center;'
-                        f'width:14px;height:14px;background:#22c55e;border-radius:3px;'
-                        f'color:#fff;font-size:10px;font-weight:900;flex-shrink:0;">&#10003;</span>'
-                        f'{s}</div>'
-                    )
+                    rows += f'<div style="font-size:11px;color:#86efac;padding:2px 0;">✅ {s}</div>'
                 else:
-                    rows += (
-                        f'<div style="font-size:11px;color:#334155;padding:2px 0;'
-                        f'display:flex;align-items:center;gap:6px;">'
-                        f'<span style="display:inline-flex;align-items:center;justify-content:center;'
-                        f'width:14px;height:14px;border:1px solid #1d2b3f;border-radius:3px;'
-                        f'flex-shrink:0;"></span>'
-                        f'{s}</div>'
-                    )
+                    rows += f'<div style="font-size:11px;color:#334155;padding:2px 0;">⬜ {s}</div>'
             pipe_box.markdown(
-                f'''<div style="background:linear-gradient(135deg,#0b1728,#103044);
-border:1px solid #245064;border-radius:10px;padding:10px 12px;
-margin-top:6px">''' + rows + '''</div>''',
+                f'<div style="background:linear-gradient(135deg,#0b1728,#103044);'
+                f'border:1px solid #245064;border-radius:10px;padding:10px 12px;'
+                f'margin-top:6px">' + rows + '</div>',
                 unsafe_allow_html=True,
             )
             time.sleep(0.12)
