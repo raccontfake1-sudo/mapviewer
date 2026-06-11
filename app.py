@@ -710,6 +710,18 @@ if os.path.exists(DATA_FILE):
     if "selected_id" not in st.session_state:
         st.session_state.selected_id = all_ids[0]
 
+    # ── Handle grid pill click — query param triggers rerun ─────────────────
+    _qp = st.query_params
+    if "ctrl_pick" in _qp:
+        _picked = _qp["ctrl_pick"]
+        if _picked in all_ids and _picked != st.session_state.selected_id:
+            st.session_state.selected_id = _picked
+            st.query_params.clear()
+            st.rerun()
+        elif _picked in all_ids:
+            # Already matches, just clear the param
+            st.query_params.clear()
+
     # ── App Header ──────────────────────────────────────────────────────────
     st.markdown(
         f"""<div style="
@@ -738,150 +750,79 @@ if os.path.exists(DATA_FILE):
     # ── 3-column layout ──────────────────────────────────────────────────────
     col_left, col_center, col_right = st.columns([1.4, 4.0, 1.6])
 
-    # ── LEFT: ECC Controls — custom compact grid picker ────────────────────────
+    # ── LEFT: ECC Controls — compact 3-col pill grid ────────────────────────
     with col_left:
-        # Search box (Streamlit native — reads from session_state)
-        search_key = "search_v6"
         search_term = st.text_input(
-            "Search",
-            placeholder="e.g. 2.1 or 3.3",
-            key=search_key,
-            label_visibility="collapsed",
+            "Search", placeholder="e.g. 2.1 or 3.3",
+            key="ecc_search", label_visibility="collapsed",
         )
-
         filtered = (
             [c for c in all_ids if search_term.strip().lower() in c.lower()]
             if search_term.strip() else all_ids
-        )
-        if not filtered:
-            filtered = all_ids
-
-        # If search exactly matches one item, auto-select it
-        exact = next((c for c in all_ids if c.lower() == search_term.strip().lower()), None)
-        if exact:
-            st.session_state.selected_id = exact
+        ) or all_ids
 
         cur = st.session_state.selected_id
         if cur not in filtered:
             cur = filtered[0]
             st.session_state.selected_id = cur
 
-        # Build compact pill-grid HTML — 3 columns, tight, fully custom
-        # Build compact pill-grid HTML — 3 columns, tight, fully custom
+        # Build pills HTML
         pills_html = ""
         for cid in filtered:
-            active_cls = "active" if cid == cur else ""
-            pills_html += f'<button class="cpill {active_cls}" onclick="pickCtrl(this,&quot;{cid}&quot;)">{cid}</button>'
+            cls = "cpill active" if cid == cur else "cpill"
+            pills_html += f'<button class="{cls}" onclick="pick(this)">{cid}</button>'
 
-        import json as _json
-        selected_id_json = _json.dumps(cur)
+        n_shown = len(filtered)
+        n_total = len(all_ids)
 
-        ctrl_html = f"""<!DOCTYPE html><html><head>
+        grid_html = """<!DOCTYPE html><html><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-*{{box-sizing:border-box;margin:0;padding:0}}
-html,body{{
-  font-family:'Inter',sans-serif;
-  background:#0b1728;color:#e2e8f0;
-  height:100%;overflow:hidden;
-}}
-.wrap{{
-  display:flex;flex-direction:column;
-  height:100vh;padding:0;
-}}
-.header{{
-  font-size:10px;font-weight:800;color:#67e8f9;
-  text-transform:uppercase;letter-spacing:0.9px;
-  padding:8px 10px 5px;border-bottom:1px solid #1d2b3f;
-  flex-shrink:0;
-}}
-.count{{
-  font-size:10px;color:#475569;padding:3px 10px 4px;flex-shrink:0;
-}}
-.grid{{
-  flex:1;overflow-y:auto;overflow-x:hidden;
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:5px;
-  padding:6px 8px 10px;
-  align-content:start;
-  scrollbar-width:thin;
-  scrollbar-color:#28415c #0b1728;
-}}
-.grid::-webkit-scrollbar{{width:4px}}
-.grid::-webkit-scrollbar-track{{background:#0b1728}}
-.grid::-webkit-scrollbar-thumb{{background:#28415c;border-radius:4px}}
-.cpill{{
-  background:#0a1628;
-  border:1px solid #1d2b3f;
-  border-radius:6px;
-  color:#94a3b8;
-  font-size:13px;
-  font-weight:700;
-  font-family:'Inter',sans-serif;
-  padding:7px 3px;
-  text-align:center;
-  cursor:pointer;
-  transition:all 0.12s ease;
-  white-space:normal;
-  word-break:break-all;
-  line-height:1.3;
-  width:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  min-height:34px;
-}}
-.cpill:hover{{
-  background:#112338;
-  border-color:#2d4a6a;
-  color:#c8dce8;
-}}
-.cpill.active{{
-  background:linear-gradient(135deg,#0f766e,#2563eb);
-  border-color:transparent;
-  color:#fff;
-  font-weight:800;
-  box-shadow:0 0 8px rgba(20,184,166,0.35);
-}}
-</style>
-</head><body>
-<div class="wrap">
-  <div class="header">ECC Controls</div>
-  <div class="count" id="cnt">{len(filtered)} of {len(all_ids)}</div>
-  <div class="grid" id="grid">{pills_html}</div>
-</div>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:Inter,sans-serif;background:#0b1728;color:#e2e8f0;height:100%;overflow:hidden}
+.hdr{font-size:10px;font-weight:800;color:#67e8f9;text-transform:uppercase;
+  letter-spacing:.9px;padding:8px 10px 5px;border-bottom:1px solid #1d2b3f}
+.cnt{font-size:10px;color:#475569;padding:3px 10px 4px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
+  padding:6px 8px 10px;align-content:start;
+  overflow-y:auto;height:calc(100vh - 50px);
+  scrollbar-width:thin;scrollbar-color:#28415c #0b1728}
+.grid::-webkit-scrollbar{width:4px}
+.grid::-webkit-scrollbar-thumb{background:#28415c;border-radius:4px}
+.cpill{background:#0a1628;border:1px solid #1d2b3f;border-radius:6px;color:#94a3b8;
+  font-size:13px;font-weight:700;font-family:Inter,sans-serif;
+  padding:7px 3px;text-align:center;cursor:pointer;
+  transition:all .12s ease;white-space:normal;word-break:break-all;
+  line-height:1.3;width:100%;display:flex;align-items:center;
+  justify-content:center;min-height:34px}
+.cpill:hover{background:#112338;border-color:#2d4a6a;color:#c8dce8}
+.cpill.active{background:linear-gradient(135deg,#0f766e,#2563eb);
+  border-color:transparent;color:#fff;font-weight:800;
+  box-shadow:0 0 8px rgba(20,184,166,.35)}
+</style></head><body>
+<div class="hdr">ECC Controls</div>
+<div class="cnt">""" + str(n_shown) + " of " + str(n_total) + """</div>
+<div class="grid">""" + pills_html + """</div>
 <script>
-function pickCtrl(btn, id) {{
-  // Use button's visible text as the real ID (avoids HTML entity encoding issues)
-  const realId = btn.textContent.trim();
-  document.querySelectorAll('.cpill').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+function pick(btn) {
+  // Visual feedback immediately
+  document.querySelectorAll(".cpill").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  const id = btn.textContent.trim();
+  // Set query param in parent window then reload to trigger Streamlit rerun
   const url = new URL(window.parent.location.href);
-  url.searchParams.set('ctrl_pick', realId);
-  window.parent.history.replaceState(null, '', url);
-  window.parent.postMessage({{type:'streamlit:setComponentValue', value: realId}}, '*');
-}}
-// Scroll active pill into view on load
-window.addEventListener('load', () => {{
-  const active = document.querySelector('.cpill.active');
-  if (active) active.scrollIntoView({{block:'nearest'}});
-}});
+  url.searchParams.set("ctrl_pick", id);
+  window.parent.location.href = url.toString();
+}
+window.addEventListener("load", () => {
+  const a = document.querySelector(".cpill.active");
+  if (a) a.scrollIntoView({block:"nearest"});
+});
 </script>
 </body></html>"""
 
-        # Render the custom picker — height sized to fit panel
-        components.html(ctrl_html, height=430, scrolling=False)
-
-        # Read selection from query params (set by the JS above)
-        qp = st.query_params
-        if "ctrl_pick" in qp:
-            picked = qp["ctrl_pick"]
-            if picked in all_ids and picked != st.session_state.selected_id:
-                st.session_state.selected_id = picked
-                st.rerun()
-
+        components.html(grid_html, height=460, scrolling=False)
         selected_id = st.session_state.selected_id
 
     # ── RIGHT: Top-K + Workflow Steps (static label) + Export ───────────────
