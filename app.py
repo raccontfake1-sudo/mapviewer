@@ -35,19 +35,38 @@ st.markdown(
         .main .block-container > div:first-child { margin-top: 0 !important; }
 
         /* Responsive: on small screens, stack columns */
+        /* ── Responsive: phone & tablet ── */
         @media (max-width: 768px) {
             .main .block-container,
             .block-container,
             div[data-testid="stAppViewBlockContainer"] {
-                padding: 0.4rem 0.5rem 1rem !important;
+                padding: 0.3rem 0.3rem 1rem !important;
             }
+            /* Stack columns vertically on mobile */
             div[data-testid="stHorizontalBlock"] {
                 flex-direction: column !important;
+                gap: 8px !important;
             }
             div[data-testid="stHorizontalBlock"] > div {
                 width: 100% !important;
                 min-width: 0 !important;
                 flex: none !important;
+            }
+            /* Make header wrap nicely */
+            div[data-testid="stAppViewBlockContainer"] > div:first-child div {
+                font-size: 16px !important;
+            }
+            /* Download button full width */
+            .stDownloadButton button {
+                font-size: 13px !important;
+                padding: 8px 14px !important;
+            }
+        }
+        @media (max-width: 480px) {
+            .main .block-container,
+            .block-container,
+            div[data-testid="stAppViewBlockContainer"] {
+                padding: 0.2rem 0.2rem 0.8rem !important;
             }
         }
 
@@ -76,57 +95,7 @@ st.markdown(
         }
         div[data-testid="stTextInput"] input::placeholder { color: #64748b !important; }
 
-        /* ── ECC control list ── */
-        .ctrl-radio div[role="radiogroup"] {
-            max-height: 370px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            display: flex !important;
-            flex-direction: column !important;
-            flex-wrap: nowrap;
-            gap: 4px !important;
-            padding-right: 4px;
-            scrollbar-width: thin;
-            scrollbar-color: #28415c #07111f;
-        }
-        .ctrl-radio div[role="radiogroup"]::-webkit-scrollbar { width: 4px; }
-        .ctrl-radio div[role="radiogroup"]::-webkit-scrollbar-track { background: #07111f; }
-        .ctrl-radio div[role="radiogroup"]::-webkit-scrollbar-thumb {
-            background: #28415c; border-radius: 4px;
-        }
-        /* label row */
-        .ctrl-radio div[role="radiogroup"] label {
-            padding: 5px 8px 5px 6px !important;
-            margin: 0 !important;
-            border-radius: 8px !important;
-            border: 1px solid #1d2b3f !important;
-            background: #0a1628 !important;
-            transition: background 0.15s ease !important;
-            flex-shrink: 0 !important;
-            align-items: flex-start !important;
-        }
-        .ctrl-radio div[role="radiogroup"] label:hover { background: #102235 !important; }
-        /* Streamlit wraps text in [data-testid="stMarkdownContainer"] > p
-           We clamp that container to 3 lines */
-        .ctrl-radio div[role="radiogroup"] label [data-testid="stMarkdownContainer"] {
-            overflow: hidden !important;
-            display: -webkit-box !important;
-            -webkit-line-clamp: 3 !important;
-            -webkit-box-orient: vertical !important;
-            max-height: calc(1.45em * 3) !important;
-        }
-        .ctrl-radio div[role="radiogroup"] label [data-testid="stMarkdownContainer"] p,
-        .ctrl-radio div[role="radiogroup"] label [data-testid="stMarkdownContainer"] span {
-            font-size: 12px !important;
-            font-weight: 600 !important;
-            line-height: 1.45 !important;
-            color: #d5e4f0 !important;
-            white-space: normal !important;
-            word-break: break-word !important;
-            overflow-wrap: break-word !important;
-            margin: 0 !important;
-            display: inline !important;
-        }
+        /* ECC control list — rendered as custom HTML component */
 
         /* Top-K card */
         .topk-card {
@@ -769,22 +738,14 @@ if os.path.exists(DATA_FILE):
     # ── 3-column layout ──────────────────────────────────────────────────────
     col_left, col_center, col_right = st.columns([1.4, 4.0, 1.6])
 
-    # ── LEFT: ECC Controls Search + Select ───────────────────────────────────
+    # ── LEFT: ECC Controls — custom compact grid picker ────────────────────────
     with col_left:
-        st.markdown(
-            """<div style="background:linear-gradient(135deg,#0b1728 0%,#0f2f3a 100%);
-                           border:1px solid #1d2b3f;border-radius:10px;
-                           padding:10px 14px 12px;">
-                 <div style="font-size:9px;font-weight:800;color:#67e8f9;
-                             text-transform:uppercase;letter-spacing:0.8px;
-                             margin-bottom:8px;">ECC Controls</div>""",
-            unsafe_allow_html=True,
-        )
-
+        # Search box (Streamlit native — reads from session_state)
+        search_key = "search_v6"
         search_term = st.text_input(
             "Search",
-            placeholder="e.g. 1-1 or PR.AA",
-            key="search_term",
+            placeholder="e.g. 2.1 or 3.3",
+            key=search_key,
             label_visibility="collapsed",
         )
 
@@ -795,66 +756,132 @@ if os.path.exists(DATA_FILE):
         if not filtered:
             filtered = all_ids
 
+        # If search exactly matches one item, auto-select it
         exact = next((c for c in all_ids if c.lower() == search_term.strip().lower()), None)
-        if exact and exact != st.session_state.selected_id:
+        if exact:
             st.session_state.selected_id = exact
 
-        default_idx = (
-            filtered.index(st.session_state.selected_id)
-            if st.session_state.selected_id in filtered else 0
-        )
+        cur = st.session_state.selected_id
+        if cur not in filtered:
+            cur = filtered[0]
+            st.session_state.selected_id = cur
 
-        st.markdown('<div class="ctrl-radio">', unsafe_allow_html=True)
-        selected_id = st.radio(
-            "Select Control ID",
-            filtered,
-            index=default_idx,
-            horizontal=False,
-            label_visibility="collapsed",
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Build compact pill-grid HTML — 3 columns, tight, fully custom
+        # Build compact pill-grid HTML — 3 columns, tight, fully custom
+        pills_html = ""
+        for cid in filtered:
+            active_cls = "active" if cid == cur else ""
+            pills_html += f'<button class="cpill {active_cls}" onclick="pickCtrl(this,&quot;{cid}&quot;)">{cid}</button>'
 
-        st.markdown(
-            f'<div style="font-size:10px;color:#6b8298;padding-top:4px;">'
-            f'{len(filtered)} of {len(all_ids)} controls</div>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
+        import json as _json
+        selected_id_json = _json.dumps(cur)
 
-        st.session_state.selected_id = selected_id
+        ctrl_html = f"""<!DOCTYPE html><html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+html,body{{
+  font-family:'Inter',sans-serif;
+  background:#0b1728;color:#e2e8f0;
+  height:100%;overflow:hidden;
+}}
+.wrap{{
+  display:flex;flex-direction:column;
+  height:100vh;padding:0;
+}}
+.header{{
+  font-size:9px;font-weight:800;color:#67e8f9;
+  text-transform:uppercase;letter-spacing:0.9px;
+  padding:10px 10px 6px;border-bottom:1px solid #1d2b3f;
+  flex-shrink:0;
+}}
+.count{{
+  font-size:10px;color:#475569;padding:4px 10px 6px;
+  flex-shrink:0;
+}}
+.grid{{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:4px;
+  padding:6px 8px 10px;
+  align-content:start;
+  scrollbar-width:thin;
+  scrollbar-color:#28415c #0b1728;
+}}
+.grid::-webkit-scrollbar{{width:3px}}
+.grid::-webkit-scrollbar-track{{background:#0b1728}}
+.grid::-webkit-scrollbar-thumb{{background:#28415c;border-radius:3px}}
+.cpill{{
+  background:#0a1628;
+  border:1px solid #1d2b3f;
+  border-radius:6px;
+  color:#94a3b8;
+  font-size:11px;font-weight:600;
+  font-family:'Inter',sans-serif;
+  padding:5px 4px;
+  text-align:center;
+  cursor:pointer;
+  transition:all 0.12s ease;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  width:100%;
+}}
+.cpill:hover{{
+  background:#102235;
+  border-color:#2d4a6a;
+  color:#c8dce8;
+}}
+.cpill.active{{
+  background:linear-gradient(135deg,#0f766e,#2563eb);
+  border-color:transparent;
+  color:white;
+  box-shadow:0 0 8px rgba(20,184,166,0.3);
+}}
+@media(max-width:400px){{
+  .grid{{grid-template-columns:repeat(2,1fr);}}
+  .cpill{{font-size:10px;}}
+}}
+</style>
+</head><body>
+<div class="wrap">
+  <div class="header">ECC Controls</div>
+  <div class="count" id="cnt">{len(filtered)} of {len(all_ids)}</div>
+  <div class="grid" id="grid">{pills_html}</div>
+</div>
+<script>
+function pickCtrl(btn, id) {{
+  // Use button's visible text as the real ID (avoids HTML entity encoding issues)
+  const realId = btn.textContent.trim();
+  document.querySelectorAll('.cpill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const url = new URL(window.parent.location.href);
+  url.searchParams.set('ctrl_pick', realId);
+  window.parent.history.replaceState(null, '', url);
+  window.parent.postMessage({{type:'streamlit:setComponentValue', value: realId}}, '*');
+}}
+// Scroll active pill into view on load
+window.addEventListener('load', () => {{
+  const active = document.querySelector('.cpill.active');
+  if (active) active.scrollIntoView({{block:'nearest'}});
+}});
+</script>
+</body></html>"""
 
-        # JS: truncate radio labels to 3 lines after DOM renders
-        st.markdown(
-            """<script>
-            (function truncateRadioLabels() {
-                function applyClamp() {
-                    const containers = document.querySelectorAll(
-                        '.ctrl-radio div[role="radiogroup"] label [data-testid="stMarkdownContainer"]'
-                    );
-                    containers.forEach(el => {
-                        el.style.overflow = 'hidden';
-                        el.style.display = '-webkit-box';
-                        el.style.webkitLineClamp = '3';
-                        el.style.webkitBoxOrient = 'vertical';
-                        el.style.maxHeight = 'calc(1.45em * 3)';
-                        const p = el.querySelector('p');
-                        if (p) {
-                            p.style.whiteSpace = 'normal';
-                            p.style.wordBreak = 'break-word';
-                            p.style.margin = '0';
-                        }
-                    });
-                }
-                // Try immediately, then retry after short delays (Streamlit renders async)
-                applyClamp();
-                setTimeout(applyClamp, 300);
-                setTimeout(applyClamp, 800);
-                const obs = new MutationObserver(applyClamp);
-                obs.observe(document.body, { childList: true, subtree: true });
-            })();
-            </script>""",
-            unsafe_allow_html=True,
-        )
+        # Render the custom picker — height sized to fit panel
+        components.html(ctrl_html, height=430, scrolling=False)
+
+        # Read selection from query params (set by the JS above)
+        qp = st.query_params
+        if "ctrl_pick" in qp:
+            picked = qp["ctrl_pick"]
+            if picked in all_ids and picked != st.session_state.selected_id:
+                st.session_state.selected_id = picked
+                st.rerun()
+
+        selected_id = st.session_state.selected_id
 
     # ── RIGHT: Top-K + Workflow Steps (static label) + Export ───────────────
     with col_right:
