@@ -28,8 +28,8 @@ st.markdown(
         .side-head {
             border: 1px solid #1d2b3f;
             border-radius: 6px;
-            padding: 5px 8px;
-            margin-bottom: 6px;
+            padding: 4px 8px;
+            margin-bottom: 4px;
             background: linear-gradient(135deg,#0b1728 0%,#0f2f3a 100%);
         }
         .side-kicker {
@@ -38,33 +38,36 @@ st.markdown(
             font-weight: 800;
             letter-spacing: 0.7px;
             text-transform: uppercase;
-            margin-bottom: 2px;
+            margin-bottom: 0;
+            margin-top: 0;
         }
         .side-title {
             color: #f8fafc !important;
             font-size: 14px;
             font-weight: 800;
-            line-height: 1.2;
-            margin-top: 2px;
+            line-height: 1.1;
+            margin-top: 1px;
+            margin-bottom: 0;
         }
         .side-count {
             color: #8aa3b8 !important;
             font-size: 9px;
-            margin: 2px 0 4px;
+            margin: 1px 0 2px;
         }
         section[data-testid="stSidebar"] input[type="text"] {
             background: #0f1b2d !important; border: 1px solid #28415c !important;
             border-radius: 6px !important; color: #f1f5f9 !important;
-            font-size: 11px !important; padding: 5px 7px !important;
-            height: 28px !important;
+            font-size: 11px !important; padding: 4px 6px !important;
+            height: 26px !important;
         }
         section[data-testid="stSidebar"] input[type="text"]::placeholder { color: #64748b !important; font-size: 10px !important; }
         section[data-testid="stSidebar"] .stTextInput,
         section[data-testid="stSidebar"] .stRadio {
-            margin-bottom: 0.25rem !important;
+            margin-bottom: 0.15rem !important;
+            margin-top: 0.1rem !important;
         }
         section[data-testid="stSidebar"] div[role="radiogroup"] {
-            max-height: calc(100vh - 190px);
+            max-height: calc(100vh - 160px);
             overflow-y: auto;
             gap: 0 !important;
             padding-right: 4px;
@@ -78,8 +81,8 @@ st.markdown(
             border-radius: 4px;
         }
         section[data-testid="stSidebar"] div[role="radiogroup"] label {
-            padding: 4px 6px !important;
-            margin: 1px 0 !important;
+            padding: 3px 5px !important;
+            margin: 0 !important;
             border-radius: 4px !important;
             transition: background 0.15s ease !important;
             white-space: nowrap !important;
@@ -104,7 +107,8 @@ st.markdown(
         section[data-testid="stSidebar"] label p {
             font-size: 11px !important; font-weight: 700 !important;
             text-transform: uppercase !important; letter-spacing: 0.9px !important;
-            color: #7892a8 !important; margin-bottom: 6px !important;
+            color: #7892a8 !important; margin-bottom: 4px !important;
+            margin-top: 2px !important;
         }
 
         .main .block-container,
