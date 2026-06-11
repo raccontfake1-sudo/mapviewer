@@ -108,7 +108,7 @@ st.markdown(
         .block-container,
         div[data-testid="stAppViewBlockContainer"] {
             padding: 0.65rem 1rem 1.25rem !important;
-            margin-top: 0 !important;
+            margin-top: -15px !important;
             max-width: 1540px !important;
         }
         .main .block-container > div:first-child { margin-top: 0 !important; }
@@ -430,13 +430,13 @@ def create_viewer(selected_id, source_text, mappings):
         ex = x  - (GR / dist) * dx;  ey = y  - (GR / dist) * dy
         svg_lines += f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" y2="{ey:.1f}" stroke="{col}" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.55"/>\n'
 
-        svg_nums += f'<text x="{x:.1f}" y="{y - GR - 8:.1f}" text-anchor="middle" fill="{col}" font-size="10" font-weight="700" font-family="Inter,sans-serif">#{rank}</text>\n'
+        svg_nums += f'<text x="{x:.1f}" y="{y - GR - 8:.1f}" text-anchor="middle" fill="{col}" font-size="14" font-weight="800" font-family="Inter,sans-serif">#{rank}</text>\n'
 
         svg_nodes += f"""<g class="mnode" onclick="return selectNode({rank}, event)" data-rank="{rank}" data-color="{col}">
   <circle cx="{x:.1f}" cy="{y:.1f}" r="{GR+6}" fill="{col}" opacity="0.15" class="gring"/>
   <circle cx="{x:.1f}" cy="{y:.1f}" r="{GR}" fill="{col}"/>
-  <text x="{x:.1f}" y="{y-7:.1f}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="800" font-family="Inter,sans-serif">{code}</text>
-  <text x="{x:.1f}" y="{y+9:.1f}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.9)" font-size="13" font-weight="700" font-family="Inter,sans-serif">{html.escape(pct)}</text>
+  <text x="{x:.1f}" y="{y-8:.1f}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="16" font-weight="800" font-family="Inter,sans-serif">{code}</text>
+  <text x="{x:.1f}" y="{y+10:.1f}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.9)" font-size="16" font-weight="700" font-family="Inter,sans-serif">{html.escape(pct)}</text>
 </g>\n"""
 
     mdata_json   = json.dumps(mapping_data,  ensure_ascii=False)
@@ -468,7 +468,7 @@ html,body{{font-family:'Inter',sans-serif;background:#0a1628;color:#e2e8f0;min-h
 }}
 .graph-header{{
   display:flex;align-items:center;gap:10px;
-  padding:14px 18px 10px;
+  padding:10px 16px 6px;
   border-bottom:1px solid #1d2b3f;
   flex-shrink:0;
 }}
@@ -494,9 +494,9 @@ html,body{{font-family:'Inter',sans-serif;background:#0a1628;color:#e2e8f0;min-h
 }}
 
 .tbl-section{{flex-shrink:0;border-bottom:1px solid #1d2b3f}}
-.tbl-header{{padding:12px 16px 8px;background:#0b1424}}
+.tbl-header{{padding:10px 16px 6px;background:#0b1424}}
 .tbl-title{{font-size:12px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:6px}}
-.tbl-sub{{font-size:10px;color:#6b8298;margin-top:2px}}
+.tbl-sub{{font-size:10px;color:#6b8298;margin-top:1px}}
 table{{width:100%;border-collapse:collapse;font-size:12px}}
 th{{
   background:linear-gradient(135deg,#0f766e,#2563eb);
@@ -549,8 +549,10 @@ tr.trow.active td{{background:#0f2f3a}}
 }}
 .cbox{{
   border:1px solid #1d2b3f;border-radius:8px;
-  padding:8px 10px;font-size:11px;line-height:1.6;
-  color:#a8bacb;background:#08111f;white-space:pre-wrap;
+  padding:8px 10px;font-size:11px;line-height:1.4;
+  color:#a8bacb;background:#08111f;
+  white-space:normal;
+  display:inline-block;
 }}
 
 .sgrid{{display:grid;grid-template-columns:1fr 1fr;gap:6px}}
@@ -603,13 +605,11 @@ tr.trow.active td{{background:#0f2f3a}}
           <circle cx="{cx}" cy="{cy}" r="{BR+12}" fill="#6366f1" opacity="0.12"/>
           <circle cx="{cx}" cy="{cy}" r="{BR}"
                   fill="url(#cgrad)" filter="drop-shadow(0 0 10px rgba(99,102,241,0.5))"/>
-          <text x="{cx}" y="{cy-9}" text-anchor="middle" dominant-baseline="middle"
-                fill="white" font-size="14" font-weight="800" font-family="Inter,sans-serif">ECC</text>
-          <text x="{cx}" y="{cy+8}" text-anchor="middle" dominant-baseline="middle"
-                fill="rgba(255,255,255,0.8)" font-size="11" font-weight="700"
-                font-family="Inter,sans-serif">{html.escape(str(selected_id))}</text>
-          <text x="{cx}" y="{cy+22}" text-anchor="middle" dominant-baseline="middle"
-                fill="rgba(255,255,255,0.4)" font-size="8" font-family="Inter,sans-serif">click</text>
+          <text x="{cx}" y="{cy-8}" text-anchor="middle" dominant-baseline="middle"
+                fill="white" font-size="16" font-weight="800" font-family="Inter,sans-serif">{html.escape(str(selected_id))}</text>
+          <text x="{cx}" y="{cy+10}" text-anchor="middle" dominant-baseline="middle"
+                fill="rgba(255,255,255,0.5)" font-size="12" font-weight="700"
+                font-family="Inter,sans-serif">click</text>
         </g>
 
         {svg_nodes}
@@ -729,18 +729,16 @@ function selectNode(rank, event) {{
     <div class="conf-row">${{item.icon}} <b style="color:#e2e8f0">Confidence:</b> ${{item.label}}</div>
 
     <div class="stitle">🎯 NIST Control Text</div>
-    <div class="cbox"><b style="color:#818cf8">${{esc(item.nist_control)}}</b>
-
-${{esc(item.nist_text)}}</div>
+    <div class="cbox" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><b style="color:#818cf8">${{esc(item.nist_control)}}</b> ${{esc(item.nist_text)}}</div>
 
     <div class="stitle">🤝 Commonality</div>
-    <div class="cbox">${{esc(item.commonality)}}</div>
+    <div class="cbox" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${{esc(item.commonality)}}</div>
 
     <div class="stitle">✅ Justification</div>
-    <div class="cbox">${{esc(item.justification)}}</div>
+    <div class="cbox" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${{esc(item.justification)}}</div>
 
     <div class="stitle">⚡ Differences</div>
-    <div class="cbox">${{esc(item.differences)}}</div>
+    <div class="cbox" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${{esc(item.differences)}}</div>
   `;
   detail.scrollTop = 0;
   return false;
@@ -766,7 +764,7 @@ function showEcc(event) {{
     <div class="stitle">🏷️ Control ID</div>
     <div class="cbox"><b style="color:#818cf8;font-size:14px">${{esc(ECC_ID)}}</b></div>
     <div class="stitle">📄 Description</div>
-    <div class="cbox" style="line-height:1.8">${{esc(ECC_TEXT)}}</div>
+    <div class="cbox" style="line-height:1.4;white-space:normal;display:inline-block;">${{esc(ECC_TEXT)}}</div>
     <div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#0a0f1e;border:1px solid #1e293b;font-size:10px;color:#6366f1;font-weight:600">
       💡 Click any outer node to view its NIST mapping details
     </div>
@@ -843,12 +841,8 @@ if os.path.exists(DATA_FILE):
             border-radius:10px;padding:12px 20px;
             display:flex;align-items:center;gap:18px;
             box-shadow:0 10px 30px rgba(0,0,0,0.18);
-            margin-bottom:10px;
+            margin-bottom:10px;margin-top:-5px;
         ">
-          <div style="flex-shrink:0;width:40px;height:40px;border-radius:50%;
-                      background:linear-gradient(135deg,#14b8a6,#2563eb);
-                      display:flex;align-items:center;justify-content:center;
-                      font-size:16px;font-weight:800;color:white;">E</div>
           <div>
             <div style="font-size:10px;font-weight:700;color:#67e8f9;
                         text-transform:uppercase;letter-spacing:1px;">ECC–NIST Framework</div>
