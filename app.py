@@ -134,6 +134,41 @@ st.markdown(
                 font-size: 16px !important;
                 padding: 10px 8px !important;
             }
+
+            /* ── Search bar: remove the right-side gap, make it full-width ──── */
+            html body div[data-testid="stTextInput"] {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            html body div[data-testid="stTextInput"] > div,
+            html body div[data-testid="stTextInput"] > div > div {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            html body div[data-testid="stTextInput"] input {
+                width: 100% !important;
+                box-sizing: border-box !important;
+                font-size: 15px !important;
+                padding: 10px 12px !important;
+            }
+
+            /* ── Every Streamlit column / block: strip extra side padding ──── */
+            html body div[data-testid="column"],
+            html body div[data-testid="stVerticalBlock"],
+            html body div[data-testid="stVerticalBlockBorderWrapper"] {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+
+            /* ── ECC Controls header row: no side gap either ──────────────── */
+            html body div[data-testid="stMarkdownContainer"] {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
         }
         @media (max-width: 480px) {
             .main .block-container,
