@@ -596,10 +596,12 @@ html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;overf
 
 /* ── responsive ── */
 @media (max-width:680px){{
-  .shell{{flex-direction:column;height:auto}}
-  .graph-col{{flex:none}}
+  html,body{{height:auto;overflow:visible;min-height:100%}}
+  .shell{{flex-direction:column;height:auto;min-height:100%}}
+  .graph-col{{flex:none;height:380px;border-right:none;border-bottom:1px solid #1d2b3f;}}
   .svg-wrap{{padding:8px}}
-  .right-col{{min-height:360px}}
+  .right-col{{flex:none;min-height:420px;height:auto;}}
+  .detail-col{{max-height:none;overflow-y:visible;}}
 }}
 </style>
 </head>
@@ -1028,7 +1030,7 @@ if os.path.exists(DATA_FILE):
     # ── CENTER: Graph Viewer (ECC desc + details live inside the HTML panel) ──
     with col_center:
         viewer_html = create_viewer(str(selected_id), src_text, mappings)
-        components.html(viewer_html, height=680, scrolling=True)
+        components.html(viewer_html, height=820, scrolling=True)
 
     # ── FINAL mobile override — placed last in the DOM so it wins any cascade
     # tie against Streamlit's own scoped CSS-in-JS column styles, which set
