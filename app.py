@@ -97,6 +97,27 @@ st.markdown(
                 grid-template-columns: repeat(2, 1fr) !important;
             }
         }
+        @media (max-width: 900px) {
+            /* Force the ECC controls column and its radio grid to use the FULL
+               mobile width — Streamlit sometimes leaves residual max-width from
+               the desktop column ratio (1.4 / 4.0 / 1.6) even after stacking. */
+            html body div[data-testid="stRadio"],
+            html body div[data-testid="stRadio"] > div,
+            html body div[data-testid="stRadio"] > div[role="radiogroup"] {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            html body div[data-testid="column"]:has(div[data-testid="stRadio"]) {
+                width: 100% !important;
+                max-width: 100% !important;
+                flex-basis: 100% !important;
+            }
+            /* Make pills bigger / easier to tap on full-width mobile grid */
+            div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+                min-height: 44px !important;
+                font-size: 14px !important;
+            }
+        }
         @media (max-width: 480px) {
             .main .block-container,
             .block-container,
