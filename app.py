@@ -1047,6 +1047,72 @@ if os.path.exists(DATA_FILE):
         viewer_html = create_viewer(str(selected_id), src_text, mappings)
         components.html(viewer_html, height=680, scrolling=True)
 
+    # ── Mobile-only JS fix: force column widths via inline style override ─────
+    # Streamlit sets inline `flex: X X Xpx` directly on column divs (from
+    # st.columns ratio), which beats CSS even with !important in some browsers.
+    # This script runs after load, checks viewport width, and on phones it
+    # directly rewrites the inline style so columns stack full-width and the
+    # ECC control pills become wide. On desktop it does nothing.
+    components.html(
+        """<script>
+        (function () {
+            function applyMobileFix() {
+                const w = window.parent.innerWidth || window.innerWidth;
+                if (w > 900) return; // desktop/tablet — leave everything as-is
+
+                const doc = window.parent.document;
+                // 1) Force every horizontal block of columns to stack vertically
+                doc.querySelectorAll('div[data-testid="stHorizontalBlock"]').forEach(hb => {
+                    hb.style.setProperty('flex-direction', 'column', 'important');
+                    hb.style.setProperty('width', '100%', 'important');
+                    hb.style.setProperty('gap', '8px', 'important');
+                });
+                // 2) Force every column inside to take full width, overriding
+                //    the inline flex-basis Streamlit set from the ratio list
+                doc.querySelectorAll('div[data-testid="column"]').forEach(col => {
+                    col.style.setProperty('width', '100%', 'important');
+                    col.style.setProperty('min-width', '100%', 'important');
+                    col.style.setProperty('max-width', '100%', 'important');
+                    col.style.setProperty('flex', '1 1 100%', 'important');
+                    col.style.setProperty('padding-left', '0px', 'important');
+                    col.style.setProperty('padding-right', '0px', 'important');
+                });
+                // 3) Force the ECC control pill grid (radiogroup) to 2 wide columns
+                doc.querySelectorAll('div[data-testid="stRadio"] > div[role="radiogroup"]').forEach(g => {
+                    g.style.setProperty('display', 'grid', 'important');
+                    g.style.setProperty('grid-template-columns', 'repeat(2, 1fr)', 'important');
+                    g.style.setProperty('width', '100%', 'important');
+                    g.style.setProperty('max-width', '100%', 'important');
+                });
+                doc.querySelectorAll('div[data-testid="stRadio"] > div[role="radiogroup"] > label').forEach(l => {
+                    l.style.setProperty('min-height', '48px', 'important');
+                    l.style.setProperty('font-size', '16px', 'important');
+                });
+                // 4) Search input full width, no right gap
+                doc.querySelectorAll('div[data-testid="stTextInput"] input').forEach(inp => {
+                    inp.style.setProperty('width', '100%', 'important');
+                    inp.style.setProperty('box-sizing', 'border-box', 'important');
+                });
+                doc.querySelectorAll('div[data-testid="stTextInput"]').forEach(ti => {
+                    ti.style.setProperty('width', '100%', 'important');
+                    ti.style.setProperty('max-width', '100%', 'important');
+                });
+            }
+            // Run now and retry a few times since Streamlit renders async
+            applyMobileFix();
+            setTimeout(applyMobileFix, 200);
+            setTimeout(applyMobileFix, 600);
+            setTimeout(applyMobileFix, 1200);
+            // Re-apply on resize/orientation change
+            window.parent.addEventListener('resize', applyMobileFix);
+            // Re-apply whenever Streamlit re-renders the DOM
+            const observer = new MutationObserver(() => applyMobileFix());
+            observer.observe(window.parent.document.body, { childList: true, subtree: true });
+        })();
+        </script>""",
+        height=0,
+    )
+
 else:
     st.markdown(
         f"""<div style="background:#1e293b;border:1px solid #dc2626;border-radius:10px;
