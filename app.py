@@ -13,11 +13,6 @@ import base64
 st.set_page_config(page_title="ECC-NIST Control Mapping Viewer", layout="wide")
 
 st.markdown(
-    """<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">""",
-    unsafe_allow_html=True,
-)
-
-st.markdown(
     """
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -1034,6 +1029,47 @@ if os.path.exists(DATA_FILE):
     with col_center:
         viewer_html = create_viewer(str(selected_id), src_text, mappings)
         components.html(viewer_html, height=680, scrolling=True)
+
+    # ── FINAL mobile override — placed last in the DOM so it wins any cascade
+    # tie against Streamlit's own scoped CSS-in-JS column styles, which set
+    # `width` and `flex` directly on a generated class (not inline), at every
+    # screen size. This block re-asserts full-width stacking with maximum
+    # selector strength as the very last word on the page.
+    st.markdown(
+        """<style>
+        @media screen and (max-width: 900px) {
+            html body div[data-testid="stHorizontalBlock"] {
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+            }
+            html body div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] {
+                width: 100% !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+                flex: 1 1 100% !important;
+            }
+            html body div[data-testid="stColumn"] {
+                width: 100% !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+                flex: 1 1 100% !important;
+            }
+            html body div[data-testid="stRadio"] div[role="radiogroup"] {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                width: 100% !important;
+            }
+            html body div[data-testid="stTextInput"],
+            html body div[data-testid="stTextInput"] div,
+            html body div[data-testid="stTextInput"] input {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+        </style>""",
+        unsafe_allow_html=True,
+    )
 
 else:
     st.markdown(
