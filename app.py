@@ -37,21 +37,23 @@ st.markdown(
 
         /* Responsive: on small screens, stack columns */
         /* ── Responsive: phone & tablet ── */
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .main .block-container,
             .block-container,
             div[data-testid="stAppViewBlockContainer"] {
                 padding: 0.3rem 0.3rem 1rem !important;
             }
-            /* Stack columns vertically on mobile */
-            div[data-testid="stHorizontalBlock"] {
+            /* Stack ALL columns vertically on mobile/tablet, including nested ones */
+            div[data-testid="stHorizontalBlock"],
+            div[data-testid="column"] > div[data-testid="stHorizontalBlock"] {
                 flex-direction: column !important;
                 gap: 8px !important;
             }
-            div[data-testid="stHorizontalBlock"] > div {
+            div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
                 width: 100% !important;
-                min-width: 0 !important;
-                flex: none !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+                flex: 1 1 100% !important;
             }
             /* Make header wrap nicely */
             div[data-testid="stAppViewBlockContainer"] > div:first-child div {
@@ -62,6 +64,17 @@ st.markdown(
                 font-size: 13px !important;
                 padding: 8px 14px !important;
             }
+            /* iframes (graph viewer, etc) must never exceed viewport width */
+            iframe {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+        @media (max-width: 420px) {
+            /* ECC control grid: 2 columns on very narrow phones for bigger tap targets */
+            div[data-testid="stRadio"] > div[role="radiogroup"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
         }
         @media (max-width: 480px) {
             .main .block-container,
@@ -69,6 +82,10 @@ st.markdown(
             div[data-testid="stAppViewBlockContainer"] {
                 padding: 0.2rem 0.2rem 0.8rem !important;
             }
+        }
+        /* Belt-and-braces: iframes should always respect their container width */
+        iframe {
+            max-width: 100% !important;
         }
 
         .stDownloadButton button {
@@ -398,7 +415,7 @@ html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;overf
 
 /* ── outer shell ── */
 .shell{{
-  display:flex;width:100%;height:100vh;
+  display:flex;width:100%;height:100%;
   border:1px solid #1d2b3f;border-radius:12px;
   box-shadow:0 18px 42px rgba(0,0,0,0.22);
   overflow:hidden;
