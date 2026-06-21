@@ -92,9 +92,10 @@ st.markdown(
             }
         }
         @media (max-width: 420px) {
-            /* ECC control grid: 2 columns on very narrow phones for bigger tap targets */
-            div[data-testid="stRadio"] > div[role="radiogroup"] {
-                grid-template-columns: repeat(2, 1fr) !important;
+            /* Extra-narrow phones: keep 2 columns but maximize pill size */
+            div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+                min-height: 50px !important;
+                font-size: 17px !important;
             }
         }
         @media (max-width: 900px) {
@@ -112,10 +113,15 @@ st.markdown(
                 max-width: 100% !important;
                 flex-basis: 100% !important;
             }
-            /* Make pills bigger / easier to tap on full-width mobile grid */
+            /* WIDER pills on mobile: 2 columns instead of 3, so each pill is wider */
+            div[data-testid="stRadio"] > div[role="radiogroup"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+                max-height: 460px !important;
+            }
             div[data-testid="stRadio"] > div[role="radiogroup"] > label {
-                min-height: 44px !important;
-                font-size: 14px !important;
+                min-height: 48px !important;
+                font-size: 16px !important;
+                padding: 10px 8px !important;
             }
         }
         @media (max-width: 480px) {
