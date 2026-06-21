@@ -47,103 +47,65 @@ st.markdown(
             html body .block-container,
             html body div[data-testid="stAppViewBlockContainer"] {
                 padding: 0.3rem 0.4rem 1rem !important;
+                max-width: 100% !important;
             }
-            /* Stack ALL columns vertically on mobile/tablet, including nested ones */
+
+            /* Stack ALL columns vertically — catches every Streamlit version's
+               testid naming (column / stColumn / stColumns) via attribute-contains */
             html body div[data-testid="stHorizontalBlock"] {
                 flex-direction: column !important;
                 flex-wrap: wrap !important;
                 gap: 8px !important;
                 width: 100% !important;
             }
-            html body div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+            html body div[data-testid="stHorizontalBlock"] > div,
+            html body div[data-testid*="olumn"] {
                 width: 100% !important;
                 min-width: 100% !important;
                 max-width: 100% !important;
+                flex: 1 1 100% !important;
                 flex-basis: 100% !important;
-                flex-grow: 1 !important;
-                flex-shrink: 1 !important;
-                padding: 0 !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
             }
-            /* Make header wrap nicely */
+            /* Catch-all: any direct child of a horizontal block gets full width,
+               regardless of what Streamlit named its testid in this version */
+            html body div[data-testid="stHorizontalBlock"] > * {
+                width: 100% !important;
+                max-width: 100% !important;
+                flex: 1 1 100% !important;
+            }
+
+            html body div[data-testid="stVerticalBlock"],
+            html body div[data-testid="stVerticalBlockBorderWrapper"] {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            /* Header text wraps nicely */
             div[data-testid="stAppViewBlockContainer"] > div:first-child div {
                 font-size: 16px !important;
             }
-            /* Download button full width */
             .stDownloadButton button {
                 font-size: 13px !important;
                 padding: 8px 14px !important;
             }
-            /* iframes (graph viewer, etc) must never exceed viewport width */
             iframe {
                 width: 100% !important;
                 max-width: 100% !important;
             }
-        }
-        /* Belt-and-braces: ANY viewport narrower than 900px logical px stacks columns,
-           even if media query is evaluated against a scaled/zoomed viewport */
-        @media (max-width: 1100px) and (pointer: coarse) {
-            html body div[data-testid="stHorizontalBlock"] {
-                flex-direction: column !important;
-                gap: 8px !important;
-            }
-            html body div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-                width: 100% !important;
-                min-width: 100% !important;
-                max-width: 100% !important;
-                flex-basis: 100% !important;
-            }
-        }
-        @media (max-width: 420px) {
-            /* Extra-narrow phones: keep 2 columns but maximize pill size */
-            div[data-testid="stRadio"] > div[role="radiogroup"] > label {
-                min-height: 50px !important;
-                font-size: 17px !important;
-            }
-        }
-        @media (max-width: 900px) {
-            /* Force the ECC controls column and its radio grid to use the FULL
-               mobile width — Streamlit sometimes leaves residual max-width from
-               the desktop column ratio (1.4 / 4.0 / 1.6) even after stacking. */
-            html body div[data-testid="stRadio"],
-            html body div[data-testid="stRadio"] > div,
-            html body div[data-testid="stRadio"] > div[role="radiogroup"] {
-                width: 100% !important;
-                max-width: 100% !important;
-                margin: 0 !important;
-            }
-            html body div[data-testid="stRadio"] {
-                padding: 0 !important;
-            }
-            html body div[data-testid="column"]:has(div[data-testid="stRadio"]) {
-                width: 100% !important;
-                max-width: 100% !important;
-                flex-basis: 100% !important;
-                padding: 0 !important;
-            }
-            html body div[data-testid="stVerticalBlock"]:has(> div[data-testid="stRadio"]) {
-                width: 100% !important;
-                gap: 0.4rem !important;
-            }
-            /* WIDER pills on mobile: 2 columns instead of 3, so each pill is wider */
-            div[data-testid="stRadio"] > div[role="radiogroup"] {
-                grid-template-columns: repeat(2, 1fr) !important;
-                max-height: 460px !important;
-            }
-            div[data-testid="stRadio"] > div[role="radiogroup"] > label {
-                min-height: 48px !important;
-                font-size: 16px !important;
-                padding: 10px 8px !important;
-            }
 
-            /* ── Search bar: remove the right-side gap, make it full-width ──── */
+            /* ── Search bar: full width, no right-side gap ─────────────────── */
             html body div[data-testid="stTextInput"] {
                 width: 100% !important;
                 max-width: 100% !important;
                 margin: 0 !important;
-                padding: 0 !important;
             }
-            html body div[data-testid="stTextInput"] > div,
-            html body div[data-testid="stTextInput"] > div > div {
+            html body div[data-testid="stTextInput"] > div {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            html body div[data-baseweb="input"] {
                 width: 100% !important;
                 max-width: 100% !important;
             }
@@ -154,20 +116,32 @@ st.markdown(
                 padding: 10px 12px !important;
             }
 
-            /* ── Every Streamlit column / block: strip extra side padding ──── */
-            html body div[data-testid="column"],
-            html body div[data-testid="stVerticalBlock"],
-            html body div[data-testid="stVerticalBlockBorderWrapper"] {
+            /* ── ECC control pill grid: WIDE 2-column layout ───────────────── */
+            html body div[data-testid="stRadio"] {
                 width: 100% !important;
                 max-width: 100% !important;
-                padding-left: 0 !important;
-                padding-right: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
-
-            /* ── ECC Controls header row: no side gap either ──────────────── */
-            html body div[data-testid="stMarkdownContainer"] {
+            html body div[data-testid="stRadio"] > div[role="radiogroup"] {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 6px !important;
                 width: 100% !important;
                 max-width: 100% !important;
+                max-height: 460px !important;
+            }
+            html body div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+                min-height: 48px !important;
+                font-size: 16px !important;
+                padding: 10px 8px !important;
+                width: 100% !important;
+            }
+        }
+        @media (max-width: 420px) {
+            html body div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+                min-height: 50px !important;
+                font-size: 17px !important;
             }
         }
         @media (max-width: 480px) {
@@ -881,12 +855,12 @@ if os.path.exists(DATA_FILE):
         )
 
         # Native st.radio — Streamlit handles all state and reruns natively.
-        # CSS below converts the vertical radio list into a 3-column pill grid.
+        # CSS below converts the vertical radio list into a 3-column pill grid
+        # (desktop only — mobile override lives in the global @media block above).
         st.markdown('''<style>
-        /* Wrap the radio group in a 3-col grid */
+        /* Wrap the radio group in a grid (3 cols on desktop, 2 on mobile) */
         div[data-testid="stRadio"] > div[role="radiogroup"] {
             display: grid !important;
-            grid-template-columns: repeat(3, 1fr) !important;
             gap: 5px !important;
             max-height: 420px !important;
             overflow-y: auto !important;
@@ -894,11 +868,21 @@ if os.path.exists(DATA_FILE):
             scrollbar-width: thin !important;
             scrollbar-color: #28415c #0b1728 !important;
         }
+        @media (min-width: 901px) {
+            div[data-testid="stRadio"] > div[role="radiogroup"] {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+        }
+        @media (max-width: 900px) {
+            div[data-testid="stRadio"] > div[role="radiogroup"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
         div[data-testid="stRadio"] > div[role="radiogroup"]::-webkit-scrollbar { width: 4px; }
         div[data-testid="stRadio"] > div[role="radiogroup"]::-webkit-scrollbar-thumb {
             background: #28415c; border-radius: 4px;
         }
-        /* Each label becomes a pill */
+        /* Each label becomes a pill (desktop sizing; mobile overrides in global @media) */
         div[data-testid="stRadio"] > div[role="radiogroup"] > label {
             background: #0a1628 !important;
             border: 1px solid #1d2b3f !important;
@@ -909,8 +893,12 @@ if os.path.exists(DATA_FILE):
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            min-height: 34px !important;
             transition: background .12s !important;
+        }
+        @media (min-width: 901px) {
+            div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+                min-height: 34px !important;
+            }
         }
         div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
             background: #112338 !important;
@@ -1046,72 +1034,6 @@ if os.path.exists(DATA_FILE):
     with col_center:
         viewer_html = create_viewer(str(selected_id), src_text, mappings)
         components.html(viewer_html, height=680, scrolling=True)
-
-    # ── Mobile-only JS fix: force column widths via inline style override ─────
-    # Streamlit sets inline `flex: X X Xpx` directly on column divs (from
-    # st.columns ratio), which beats CSS even with !important in some browsers.
-    # This script runs after load, checks viewport width, and on phones it
-    # directly rewrites the inline style so columns stack full-width and the
-    # ECC control pills become wide. On desktop it does nothing.
-    components.html(
-        """<script>
-        (function () {
-            function applyMobileFix() {
-                const w = window.parent.innerWidth || window.innerWidth;
-                if (w > 900) return; // desktop/tablet — leave everything as-is
-
-                const doc = window.parent.document;
-                // 1) Force every horizontal block of columns to stack vertically
-                doc.querySelectorAll('div[data-testid="stHorizontalBlock"]').forEach(hb => {
-                    hb.style.setProperty('flex-direction', 'column', 'important');
-                    hb.style.setProperty('width', '100%', 'important');
-                    hb.style.setProperty('gap', '8px', 'important');
-                });
-                // 2) Force every column inside to take full width, overriding
-                //    the inline flex-basis Streamlit set from the ratio list
-                doc.querySelectorAll('div[data-testid="column"]').forEach(col => {
-                    col.style.setProperty('width', '100%', 'important');
-                    col.style.setProperty('min-width', '100%', 'important');
-                    col.style.setProperty('max-width', '100%', 'important');
-                    col.style.setProperty('flex', '1 1 100%', 'important');
-                    col.style.setProperty('padding-left', '0px', 'important');
-                    col.style.setProperty('padding-right', '0px', 'important');
-                });
-                // 3) Force the ECC control pill grid (radiogroup) to 2 wide columns
-                doc.querySelectorAll('div[data-testid="stRadio"] > div[role="radiogroup"]').forEach(g => {
-                    g.style.setProperty('display', 'grid', 'important');
-                    g.style.setProperty('grid-template-columns', 'repeat(2, 1fr)', 'important');
-                    g.style.setProperty('width', '100%', 'important');
-                    g.style.setProperty('max-width', '100%', 'important');
-                });
-                doc.querySelectorAll('div[data-testid="stRadio"] > div[role="radiogroup"] > label').forEach(l => {
-                    l.style.setProperty('min-height', '48px', 'important');
-                    l.style.setProperty('font-size', '16px', 'important');
-                });
-                // 4) Search input full width, no right gap
-                doc.querySelectorAll('div[data-testid="stTextInput"] input').forEach(inp => {
-                    inp.style.setProperty('width', '100%', 'important');
-                    inp.style.setProperty('box-sizing', 'border-box', 'important');
-                });
-                doc.querySelectorAll('div[data-testid="stTextInput"]').forEach(ti => {
-                    ti.style.setProperty('width', '100%', 'important');
-                    ti.style.setProperty('max-width', '100%', 'important');
-                });
-            }
-            // Run now and retry a few times since Streamlit renders async
-            applyMobileFix();
-            setTimeout(applyMobileFix, 200);
-            setTimeout(applyMobileFix, 600);
-            setTimeout(applyMobileFix, 1200);
-            // Re-apply on resize/orientation change
-            window.parent.addEventListener('resize', applyMobileFix);
-            // Re-apply whenever Streamlit re-renders the DOM
-            const observer = new MutationObserver(() => applyMobileFix());
-            observer.observe(window.parent.document.body, { childList: true, subtree: true });
-        })();
-        </script>""",
-        height=0,
-    )
 
 else:
     st.markdown(
