@@ -411,8 +411,8 @@ def generate_pdf(selected_id, source_text, mappings):
 def create_viewer(selected_id, source_text, mappings):
     W, H   = 480, 400
     cx, cy = 240, 200
-    BR, GR = 36, 30
-    ORBIT  = 130
+    BR, GR = 38, 34
+    ORBIT  = 134
 
     svg_lines = svg_nodes = svg_nums = ""
     n = len(mappings)
@@ -426,7 +426,9 @@ def create_viewer(selected_id, source_text, mappings):
         nid   = f"node_{rank}"
         col, badge, label, icon = score_to_colors(item["final"])
         pct   = format_percent(item["final"])
-        code  = html.escape(item["short_code"])
+        # Full control ID (e.g. "GV.RR-01") shown in the circle, not just
+        # the truncated short_code (which would drop the "-01" suffix).
+        full_id = html.escape(item["mapping"])
 
         mapping_data[nid] = {
             "rank": str(rank), "nist_control": item["mapping"],
@@ -455,7 +457,7 @@ def create_viewer(selected_id, source_text, mappings):
         svg_nodes += f"""<g class="mnode" onclick="return selectNode({rank}, event)" data-rank="{rank}" data-color="{col}">
   <circle cx="{x:.1f}" cy="{y:.1f}" r="{GR+6}" fill="{col}" opacity="0.15" class="gring"/>
   <circle cx="{x:.1f}" cy="{y:.1f}" r="{GR}" fill="{col}"/>
-  <text x="{x:.1f}" y="{y-7:.1f}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="12" font-weight="800" font-family="Inter,sans-serif">{code}</text>
+  <text x="{x:.1f}" y="{y-7:.1f}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="9.5" font-weight="800" font-family="Inter,sans-serif">{full_id}</text>
   <text x="{x:.1f}" y="{y+8:.1f}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.9)" font-size="11" font-weight="700" font-family="Inter,sans-serif">{html.escape(pct)}</text>
 </g>\n"""
 
