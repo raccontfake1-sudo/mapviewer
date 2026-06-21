@@ -604,6 +604,10 @@ html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;overf
   .svg-wrap{{padding:8px}}
   .right-col{{flex:none;min-height:420px;height:auto;}}
   .detail-col{{max-height:none;overflow-y:visible;}}
+
+  /* Shrink the outer/result circles on phones so the graph feels less crowded */
+  .mnode{{transform-box:fill-box;transform-origin:center;transform:scale(0.78);}}
+  .cnode{{transform-box:fill-box;transform-origin:center;transform:scale(0.85);}}
 }}
 </style>
 </head>
