@@ -46,13 +46,14 @@ st.markdown(
             html body .main .block-container,
             html body .block-container,
             html body div[data-testid="stAppViewBlockContainer"] {
-                padding: 0.3rem 0.3rem 1rem !important;
+                padding: 0.3rem 0.4rem 1rem !important;
             }
             /* Stack ALL columns vertically on mobile/tablet, including nested ones */
             html body div[data-testid="stHorizontalBlock"] {
                 flex-direction: column !important;
                 flex-wrap: wrap !important;
                 gap: 8px !important;
+                width: 100% !important;
             }
             html body div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
                 width: 100% !important;
@@ -61,6 +62,7 @@ st.markdown(
                 flex-basis: 100% !important;
                 flex-grow: 1 !important;
                 flex-shrink: 1 !important;
+                padding: 0 !important;
             }
             /* Make header wrap nicely */
             div[data-testid="stAppViewBlockContainer"] > div:first-child div {
@@ -107,11 +109,20 @@ st.markdown(
             html body div[data-testid="stRadio"] > div[role="radiogroup"] {
                 width: 100% !important;
                 max-width: 100% !important;
+                margin: 0 !important;
+            }
+            html body div[data-testid="stRadio"] {
+                padding: 0 !important;
             }
             html body div[data-testid="column"]:has(div[data-testid="stRadio"]) {
                 width: 100% !important;
                 max-width: 100% !important;
                 flex-basis: 100% !important;
+                padding: 0 !important;
+            }
+            html body div[data-testid="stVerticalBlock"]:has(> div[data-testid="stRadio"]) {
+                width: 100% !important;
+                gap: 0.4rem !important;
             }
             /* WIDER pills on mobile: 2 columns instead of 3, so each pill is wider */
             div[data-testid="stRadio"] > div[role="radiogroup"] {
