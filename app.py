@@ -37,106 +37,30 @@ st.markdown(
 
         /* Responsive: on small screens, stack columns */
         /* ── Responsive: phone & tablet ── */
-        @media (max-width: 900px) {
-            html body .main .block-container,
-            html body .block-container,
-            html body div[data-testid="stAppViewBlockContainer"] {
-                padding: 0.3rem 0.4rem 1rem !important;
-                max-width: 100% !important;
+        @media (max-width: 768px) {
+            .main .block-container,
+            .block-container,
+            div[data-testid="stAppViewBlockContainer"] {
+                padding: 0.3rem 0.3rem 1rem !important;
             }
-
-            /* Stack ALL columns vertically — catches every Streamlit version's
-               testid naming (column / stColumn / stColumns) via attribute-contains */
-            html body div[data-testid="stHorizontalBlock"] {
+            /* Stack columns vertically on mobile */
+            div[data-testid="stHorizontalBlock"] {
                 flex-direction: column !important;
-                flex-wrap: wrap !important;
                 gap: 8px !important;
-                width: 100% !important;
             }
-            html body div[data-testid="stHorizontalBlock"] > div,
-            html body div[data-testid*="olumn"] {
+            div[data-testid="stHorizontalBlock"] > div {
                 width: 100% !important;
-                min-width: 100% !important;
-                max-width: 100% !important;
-                flex: 1 1 100% !important;
-                flex-basis: 100% !important;
-                padding-left: 0 !important;
-                padding-right: 0 !important;
+                min-width: 0 !important;
+                flex: none !important;
             }
-            /* Catch-all: any direct child of a horizontal block gets full width,
-               regardless of what Streamlit named its testid in this version */
-            html body div[data-testid="stHorizontalBlock"] > * {
-                width: 100% !important;
-                max-width: 100% !important;
-                flex: 1 1 100% !important;
-            }
-
-            html body div[data-testid="stVerticalBlock"],
-            html body div[data-testid="stVerticalBlockBorderWrapper"] {
-                width: 100% !important;
-                max-width: 100% !important;
-            }
-
-            /* Header text wraps nicely */
+            /* Make header wrap nicely */
             div[data-testid="stAppViewBlockContainer"] > div:first-child div {
                 font-size: 16px !important;
             }
+            /* Download button full width */
             .stDownloadButton button {
                 font-size: 13px !important;
                 padding: 8px 14px !important;
-            }
-            iframe {
-                width: 100% !important;
-                max-width: 100% !important;
-            }
-
-            /* ── Search bar: full width, no right-side gap ─────────────────── */
-            html body div[data-testid="stTextInput"] {
-                width: 100% !important;
-                max-width: 100% !important;
-                margin: 0 !important;
-            }
-            html body div[data-testid="stTextInput"] > div {
-                width: 100% !important;
-                max-width: 100% !important;
-            }
-            html body div[data-baseweb="input"] {
-                width: 100% !important;
-                max-width: 100% !important;
-            }
-            html body div[data-testid="stTextInput"] input {
-                width: 100% !important;
-                box-sizing: border-box !important;
-                font-size: 15px !important;
-                padding: 10px 12px !important;
-            }
-
-            /* ── ECC control pill grid: WIDE 2-column layout ───────────────── */
-            html body div[data-testid="stRadio"] {
-                width: 100% !important;
-                max-width: 100% !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            html body div[data-testid="stRadio"] > div[role="radiogroup"] {
-                display: grid !important;
-                grid-template-columns: repeat(2, 1fr) !important;
-                gap: 6px !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                max-height: 460px !important;
-            }
-            html body div[data-testid="stRadio"] > div[role="radiogroup"] > label {
-                min-height: 48px !important;
-                font-size: 16px !important;
-                padding: 10px 8px !important;
-                width: 100% !important;
-            }
-        }
-        @media (max-width: 420px) {
-            html body div[data-testid="stRadio"] > div[role="radiogroup"] > label {
-                min-height: 50px !important;
-                font-size: 17px !important;
             }
         }
         @media (max-width: 480px) {
@@ -145,10 +69,6 @@ st.markdown(
             div[data-testid="stAppViewBlockContainer"] {
                 padding: 0.2rem 0.2rem 0.8rem !important;
             }
-        }
-        /* Belt-and-braces: iframes should always respect their container width */
-        iframe {
-            max-width: 100% !important;
         }
 
         .stDownloadButton button {
@@ -478,7 +398,7 @@ html,body{{font-family:'Inter',sans-serif;background:#08111f;color:#e2e8f0;overf
 
 /* ── outer shell ── */
 .shell{{
-  display:flex;width:100%;height:100%;
+  display:flex;width:100%;height:100vh;
   border:1px solid #1d2b3f;border-radius:12px;
   box-shadow:0 18px 42px rgba(0,0,0,0.22);
   overflow:hidden;
@@ -850,12 +770,12 @@ if os.path.exists(DATA_FILE):
         )
 
         # Native st.radio — Streamlit handles all state and reruns natively.
-        # CSS below converts the vertical radio list into a 3-column pill grid
-        # (desktop only — mobile override lives in the global @media block above).
+        # CSS below converts the vertical radio list into a 3-column pill grid.
         st.markdown('''<style>
-        /* Wrap the radio group in a grid (3 cols on desktop, 2 on mobile) */
+        /* Wrap the radio group in a 3-col grid */
         div[data-testid="stRadio"] > div[role="radiogroup"] {
             display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
             gap: 5px !important;
             max-height: 420px !important;
             overflow-y: auto !important;
@@ -863,21 +783,11 @@ if os.path.exists(DATA_FILE):
             scrollbar-width: thin !important;
             scrollbar-color: #28415c #0b1728 !important;
         }
-        @media (min-width: 901px) {
-            div[data-testid="stRadio"] > div[role="radiogroup"] {
-                grid-template-columns: repeat(3, 1fr) !important;
-            }
-        }
-        @media (max-width: 900px) {
-            div[data-testid="stRadio"] > div[role="radiogroup"] {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
-        }
         div[data-testid="stRadio"] > div[role="radiogroup"]::-webkit-scrollbar { width: 4px; }
         div[data-testid="stRadio"] > div[role="radiogroup"]::-webkit-scrollbar-thumb {
             background: #28415c; border-radius: 4px;
         }
-        /* Each label becomes a pill (desktop sizing; mobile overrides in global @media) */
+        /* Each label becomes a pill */
         div[data-testid="stRadio"] > div[role="radiogroup"] > label {
             background: #0a1628 !important;
             border: 1px solid #1d2b3f !important;
@@ -888,12 +798,8 @@ if os.path.exists(DATA_FILE):
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
+            min-height: 34px !important;
             transition: background .12s !important;
-        }
-        @media (min-width: 901px) {
-            div[data-testid="stRadio"] > div[role="radiogroup"] > label {
-                min-height: 34px !important;
-            }
         }
         div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
             background: #112338 !important;
@@ -1029,47 +935,6 @@ if os.path.exists(DATA_FILE):
     with col_center:
         viewer_html = create_viewer(str(selected_id), src_text, mappings)
         components.html(viewer_html, height=680, scrolling=True)
-
-    # ── FINAL mobile override — placed last in the DOM so it wins any cascade
-    # tie against Streamlit's own scoped CSS-in-JS column styles, which set
-    # `width` and `flex` directly on a generated class (not inline), at every
-    # screen size. This block re-asserts full-width stacking with maximum
-    # selector strength as the very last word on the page.
-    st.markdown(
-        """<style>
-        @media screen and (max-width: 900px) {
-            html body div[data-testid="stHorizontalBlock"] {
-                display: flex !important;
-                flex-direction: column !important;
-                width: 100% !important;
-            }
-            html body div[data-testid="stHorizontalBlock"] div[data-testid="stColumn"] {
-                width: 100% !important;
-                min-width: 100% !important;
-                max-width: 100% !important;
-                flex: 1 1 100% !important;
-            }
-            html body div[data-testid="stColumn"] {
-                width: 100% !important;
-                min-width: 100% !important;
-                max-width: 100% !important;
-                flex: 1 1 100% !important;
-            }
-            html body div[data-testid="stRadio"] div[role="radiogroup"] {
-                display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
-                width: 100% !important;
-            }
-            html body div[data-testid="stTextInput"],
-            html body div[data-testid="stTextInput"] div,
-            html body div[data-testid="stTextInput"] input {
-                width: 100% !important;
-                max-width: 100% !important;
-            }
-        }
-        </style>""",
-        unsafe_allow_html=True,
-    )
 
 else:
     st.markdown(
