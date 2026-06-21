@@ -13,6 +13,11 @@ import base64
 st.set_page_config(page_title="ECC-NIST Control Mapping Viewer", layout="wide")
 
 st.markdown(
+    """<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">""",
+    unsafe_allow_html=True,
+)
+
+st.markdown(
     """
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -38,22 +43,24 @@ st.markdown(
         /* Responsive: on small screens, stack columns */
         /* ── Responsive: phone & tablet ── */
         @media (max-width: 900px) {
-            .main .block-container,
-            .block-container,
-            div[data-testid="stAppViewBlockContainer"] {
+            html body .main .block-container,
+            html body .block-container,
+            html body div[data-testid="stAppViewBlockContainer"] {
                 padding: 0.3rem 0.3rem 1rem !important;
             }
             /* Stack ALL columns vertically on mobile/tablet, including nested ones */
-            div[data-testid="stHorizontalBlock"],
-            div[data-testid="column"] > div[data-testid="stHorizontalBlock"] {
+            html body div[data-testid="stHorizontalBlock"] {
                 flex-direction: column !important;
+                flex-wrap: wrap !important;
                 gap: 8px !important;
             }
-            div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+            html body div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
                 width: 100% !important;
                 min-width: 100% !important;
                 max-width: 100% !important;
-                flex: 1 1 100% !important;
+                flex-basis: 100% !important;
+                flex-grow: 1 !important;
+                flex-shrink: 1 !important;
             }
             /* Make header wrap nicely */
             div[data-testid="stAppViewBlockContainer"] > div:first-child div {
@@ -68,6 +75,20 @@ st.markdown(
             iframe {
                 width: 100% !important;
                 max-width: 100% !important;
+            }
+        }
+        /* Belt-and-braces: ANY viewport narrower than 900px logical px stacks columns,
+           even if media query is evaluated against a scaled/zoomed viewport */
+        @media (max-width: 1100px) and (pointer: coarse) {
+            html body div[data-testid="stHorizontalBlock"] {
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            html body div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+                width: 100% !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+                flex-basis: 100% !important;
             }
         }
         @media (max-width: 420px) {
